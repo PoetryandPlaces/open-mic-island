@@ -1,6 +1,6 @@
-# Stanza Island
+# Couplet Cove
 
-A cozy low-poly island for meeting up online. Pick a critter, wash ashore, walk around with WASD, talk on mic, type in chat, and read poems at the open mic on the wooden stage.
+A cozy low-poly island cove for meeting up online, made by Poetry and Places. Pick a critter, wash ashore, walk around with WASD, talk on mic, type in chat, and read poems at the open mic on the wooden stage.
 
 ## How to meet up
 
