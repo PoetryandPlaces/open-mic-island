@@ -705,11 +705,11 @@ const bulbs = [];
   put(new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), mat(0x2f2f36)), 0, STAGE.h + 1.6, -9.12);
   circles.push({ x: 0, z: -9.2, r: 0.3 });
 
-  put(new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.1, 8), woodLight), 1.6, STAGE.h + 0.7, -10.6);
+  put(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.38, 0.1, 10), woodLight), 2.7, STAGE.h + 0.7, -11.1);
   for (const s of [-1, 1]) for (const t of [-1, 1]) {
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.66, 4), woodDark), 1.6 + 0.2 * s, STAGE.h + 0.33, -10.6 + 0.2 * t);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.66, 4), woodDark), 2.7 + 0.22 * s, STAGE.h + 0.33, -11.1 + 0.22 * t);
   }
-  circles.push({ x: 1.6, z: -10.6, r: 0.35 });
+  circles.push({ x: 2.7, z: -11.1, r: 0.42, top: STAGE.h + 0.75 });   // the stool: hop up and sit
   for (const s of [-1, 1]) {
     put(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.3, 0.55, 7), mat(0xd9825b)), 4.3 * s, STAGE.h + 0.27, -7.6);
     put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), mat(0x5aa651)), 4.3 * s, STAGE.h + 0.85, -7.6);
@@ -1220,11 +1220,12 @@ const turnToward = (obj, target, k) => {
 /* ---------- world queries ---------- */
 const inRect = (r, x, z) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1;
 function groundAt(x, z) {
+  // seats first (stage stool, audience logs, campfire stumps), so a seat on the stage isn't hidden by the stage floor
+  for (const b of boxes) if (b.top && inRect(b, x, z)) return b.top;
+  for (const c of circles) if (c.top && Math.hypot(x - c.x, z - c.z) < c.r) return c.top;
   if (inRect(STAGE, x, z)) return STAGE.h;
   if (inRect(STEPS, x, z)) return STEPS.h;
   if (inRect(DOCK, x, z)) return DOCK.h;
-  for (const b of boxes) if (b.top && inRect(b, x, z)) return b.top;
-  for (const c of circles) if (c.top && Math.hypot(x - c.x, z - c.z) < c.r) return c.top;
   const r = Math.hypot(x, z);
   if (r < GRASS_R) return 0;
   if (r < 24) return SAND_TOP;
@@ -1796,7 +1797,7 @@ function applyPresence(c, pr) {
   c.mic = pr.mic === 1;
   if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
-  c.net = pr.nt === 1; c.stung = pr.st === 1; c.digging = pr.dg === 1;
+  c.net = pr.nt === 1; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
   if (typeof pr.n === 'string') c.n = cleanName(pr.n);
   if (typeof pr.k === 'string' && KINDS[pr.k]) c.set(pr.k);
   if (c.fresh && c.hasPos) {
@@ -1823,7 +1824,7 @@ function sendPresence(force, target) {
     x: Math.round(pos.x * 100) / 100, y: Math.round(pos.y * 100) / 100, z: Math.round(pos.z * 100) / 100,
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
-    h: me.hat || '', nt: me.net ? 1 : 0, rd: stageReader === me ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
+    h: me.hat || '', nt: me.net ? 1 : 0, rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -2699,6 +2700,12 @@ function applyPose(c, dt) {
     if (e.role === 'a' && !e.fx && e.t > D * 0.35) { e.fx = true; emoteFx(c, e); }
     if (e.t >= D || !e.other.root.parent) c.emote = null;
   }
+  c.sitK = (c.sitK || 0) + ((c.sitting ? 1 : 0) - (c.sitK || 0)) * Math.min(1, dt * 8);
+  if (c.sitK > 0.01) {                                          // settle down onto the seat
+    c.rig.position.y -= 0.16 * c.sitK;
+    c.rig.scale.y *= 1 - 0.1 * c.sitK; c.rig.scale.x *= 1 + 0.06 * c.sitK; c.rig.scale.z *= 1 + 0.06 * c.sitK;
+    c.rig.rotation.x -= 0.1 * c.sitK;
+  }
   if (c.digging) { c.rig.rotation.x += 0.45 + Math.sin(t * 22) * 0.15; c.rig.position.y += Math.abs(Math.sin(t * 22)) * 0.05; }
   c.rig.position.z = lean;
   c.rig.position.y += hop;
@@ -2856,6 +2863,7 @@ function update(dt) {
   const g = groundAt(pos.x, pos.z);
   const inW = inWaterAt(pos.x, pos.z);
   const overLog = boxes.some(b => b.top && inRect(b, pos.x, pos.z)) || circles.some(c => c.top && Math.hypot(pos.x - c.x, pos.z - c.z) < c.r);
+  const onSeat = overLog && Math.abs(pos.y - g) < 0.05;
   if (!grounded && vy > 0 && overLog && g > hopBase + 0.1 && pos.y >= g - 0.08) {
     // hopping up toward something higher (a log): land on it right away instead of sailing over its thin top
     pos.y = g; vy = 0; grounded = true;
@@ -2869,6 +2877,8 @@ function update(dt) {
     vy -= 22 * dt; pos.y += vy * dt;
     if (pos.y <= g) { pos.y = g; vy = 0; grounded = true; } else grounded = false;
   }
+  me.sitT = onSeat && grounded && !movingNow && !me.emote ? (me.sitT || 0) + dt : 0;
+  me.sitting = me.sitT > 0.35;
   me.root.position.set(pos.x, pos.y, pos.z);
   animateCritter(me, dt, movingNow, runNow, grounded);
   applyPose(me, dt); updateGear(me, dt);
@@ -2945,7 +2955,7 @@ function update(dt) {
   mp.needsUpdate = true;
   bulbs.forEach((b, i) => b.material.color.setHSL(0.11, 1, 0.72 + 0.1 * Math.sin(t * 2 + i * 0.9) * amp));
 
-  nearMic = active && pos.y > 0.6 && Math.hypot(pos.x, pos.z + 9.2) < 2.3;
+  nearMic = active && pos.y > 0.6 && pos.y < 1.2 && Math.hypot(pos.x, pos.z + 9.2) < 2.0;
   if (stageReader === me && (!active || !inRect(STAGE_ZONE, pos.x, pos.z))) stopReading(active ? 'left' : 'quiet');
   tickSpot(dt);
   if (joined) {
