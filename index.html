@@ -472,15 +472,45 @@ body[data-world="cafe"] .island-only, body[data-world="castle"] .island-only, bo
 }
 #libPanel h2, #letterPanel h2 { margin: 0; font: 700 1.4rem var(--font-display); color: var(--plank); font-variation-settings: "SOFT" 100, "WONK" 1; }
 #libClose, #letterClose { font: 800 1rem var(--font-body); background: var(--tan); border: 0; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; color: var(--ink); }
-#libList, #libPoem { overflow-y: auto; min-height: 0; }
+#libList { overflow-y: auto; min-height: 0; }
+.shelf { display: flex; align-items: flex-end; gap: 4px; padding: 10px 10px 0; background: linear-gradient(#5b3a2c, #6e4232); border-radius: 10px 10px 0 0; border-bottom: 10px solid #4a2e22; overflow-x: auto; }
+.spine { --c: #7a68a1; flex: none; width: 34px; border: 0; border-radius: 4px 4px 2px 2px; background: linear-gradient(90deg, rgba(0,0,0,.18), transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%), var(--c); color: #fffaf0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8px 0 6px; box-shadow: inset 0 6px 0 rgba(232,198,106,.7), inset 0 -6px 0 rgba(232,198,106,.7); transition: transform .25s ease; }
+.spine span { writing-mode: vertical-rl; transform: rotate(180deg); font: 700 .72rem "Fraunces", "Times New Roman", serif; line-height: 1.05; max-height: 100%; overflow: hidden; text-shadow: 0 1px 0 rgba(0,0,0,.35); }
+.spine small { font: 800 .55rem var(--font-body); letter-spacing: .02em; writing-mode: vertical-rl; transform: rotate(180deg); opacity: .9; }
+.spine:hover { transform: translateY(-6px); }
+.spine.out { transform: translateY(-60px) rotate(-6deg); opacity: 0; transition: transform .26s ease-in, opacity .26s ease-in; }
+.shelfHint { margin: 8px 0 10px; font-size: .78rem; font-weight: 700; color: var(--muted); text-align: center; }
+#bookView { --cover: #7a68a1; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -54%); z-index: 15; width: min(640px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; }
+#bookView .book { display: flex; background: var(--cover); padding: 10px; border-radius: 10px; box-shadow: 0 10px 28px rgba(46,42,69,.35); perspective: 1400px; }
+#bookView .page { flex: 1; min-width: 0; height: min(430px, calc(100vh - 210px)); overflow: hidden; position: relative; background: linear-gradient(90deg, #f6ecd8, #fffaf0 12%, #fffaf0 88%, #f3e7cf); padding: 18px 20px 26px; box-sizing: border-box; color: #3a3226; transform-style: preserve-3d; }
+#bookView #pageL { border-radius: 6px 0 0 6px; box-shadow: inset -10px 0 14px -10px rgba(0,0,0,.35); }
+#bookView #pageR { border-radius: 0 6px 6px 0; box-shadow: inset 10px 0 14px -10px rgba(0,0,0,.35); }
+#bookView #pageL:only-child, #bookView #pageR[hidden] + * { border-radius: 6px; }
+#bookView .page h3 { margin: 30% 0 6px; text-align: center; font: 700 1.6rem/1.15 "Fraunces", "Times New Roman", serif; color: #3a3226; }
+#bookView .page .by { text-align: center; margin: 0; font: italic 600 1rem "Fraunces", "Times New Roman", serif; }
+#bookView .page .orn { text-align: center; font-size: 1.6rem; margin: 18px 0; color: #b08a5a; }
+#bookView .page .from { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; margin: 0; font: 700 .7rem var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: #9a8466; }
+#bookView .page h4 { margin: 0 0 2px; font: 700 1.05rem "Fraunces", "Times New Roman", serif; }
+#bookView .page .yr { margin: 0 0 8px; font: 700 .72rem var(--font-body); color: #9a8466; }
+#bookView .page pre { margin: 0; white-space: pre-wrap; font: 500 .9rem/1.48 "Fraunces", "Times New Roman", serif; }
+#bookView .page .pno { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font: 700 .7rem var(--font-body); color: #9a8466; }
+#bookView .page.blank { background: #fffaf0; }
+#bookView #pageR.flipF { transform-origin: left center; animation: flipF .23s ease-in forwards; }
+#bookView #pageL.flipF { transform-origin: left center; animation: flipF .23s ease-in forwards; }
+#bookView #pageL.flipB { transform-origin: right center; animation: flipB .23s ease-in forwards; }
+@keyframes flipF { to { transform: rotateY(-90deg); filter: brightness(.8); } }
+@keyframes flipB { to { transform: rotateY(90deg); filter: brightness(.8); } }
+#bookView .bookBar { display: flex; align-items: center; justify-content: center; gap: 10px; }
+#bookView .bookBar button { font: 800 .9rem var(--font-body); border: 0; border-radius: 10px; padding: 7px 14px; cursor: pointer; background: var(--paper); color: var(--ink); box-shadow: 0 2px 0 rgba(46,42,69,.25); }
+#bookView .bookBar button:disabled { opacity: .45; cursor: default; }
+#bookView #bookReturn { background: var(--plank-dark); color: var(--paper); }
+#bookWhere { font: 800 .8rem var(--font-body); color: var(--paper); background: rgba(46,42,69,.55); padding: 4px 10px; border-radius: 999px; }
+body.in-lobby #bookView { display: none !important; }
 #libList h4 { margin: 10px 0 4px; font: 800 .78rem var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .libBook { display: block; width: 100%; text-align: left; font: 700 .92rem var(--font-body); color: var(--ink); background: #f4f0fb; border: 2px solid #ddd3ef; border-radius: 10px; padding: 7px 10px; margin: 0 0 5px; cursor: pointer; }
 .libBook:hover { background: #e9e1f7; }
 .libNote { font-size: .8rem; line-height: 1.4; background: #fff6e0; border: 2px solid #ecd9a6; border-radius: 10px; padding: 8px 10px; }
-#libBack { font: 800 .8rem var(--font-body); background: var(--tan); border: 0; border-radius: 9px; padding: 6px 10px; cursor: pointer; color: var(--ink); }
-#poemTitle { margin: 10px 0 2px; font: 700 1.25rem var(--font-display); color: var(--plank); }
-#poemBy { margin: 0 0 10px; font-size: .82rem; font-weight: 700; color: var(--muted); }
-#poemText, .paper { margin: 0; white-space: pre-wrap; font: 500 1rem/1.5 "Fraunces", "Times New Roman", serif; color: var(--ink); }
+#libPanel .paper, .paper { margin: 0; white-space: pre-wrap; font: 500 1rem/1.5 "Fraunces", "Times New Roman", serif; color: var(--ink); }
 .paper { background: #fffaf0; border: 2px solid #ecd9a6; border-radius: 12px; padding: 12px 14px; }
 .lpTo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .86rem; margin: 2px 0 10px; }
 .lpTo select { flex: 1; font: 700 .9rem var(--font-body); padding: 6px 8px; border-radius: 10px; border: 2px solid #c4b6e2; background: #f4f0fb; color: var(--ink); }
@@ -604,7 +634,10 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
 <section id="libPanel" class="sign" hidden aria-labelledby="libTitle">
   <div class="bagHead"><h2 id="libTitle">The cafe library</h2><button id="libClose" type="button" aria-label="Close library">✕</button></div>
   <div id="libList"></div>
-  <article id="libPoem" hidden><button id="libBack" type="button">‹ All poems</button><h3 id="poemTitle"></h3><p id="poemBy"></p><pre id="poemText"></pre></article>
+</section>
+<section id="bookView" hidden aria-label="Book">
+  <div class="book"><div id="pageL" class="page"></div><div id="pageR" class="page"></div></div>
+  <div class="bookBar"><button id="bookPrev" type="button" aria-label="Previous page">‹</button><span id="bookWhere"></span><button id="bookNext" type="button" aria-label="Next page">›</button><button id="bookReturn" type="button">Put it back</button></div>
 </section>
 <section id="letterPanel" class="sign" hidden aria-labelledby="letterTitle">
   <div class="bagHead"><h2 id="letterTitle">Write a letter</h2><button id="letterClose" type="button" aria-label="Close">✕</button></div>
@@ -2104,6 +2137,7 @@ chooseKind(savedKind, false);
 
 function openLobby() {
   stopReading('quiet');
+  if (typeof returnBook === 'function') returnBook(true);
   if (typeof bagPanel !== 'undefined') { bagPanel.hidden = true; }
   lobbyOpen = true;
   document.body.classList.add('in-lobby');
@@ -2191,6 +2225,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.tagName !== 'BUTTON' && !chatInput.disabled) {
     e.preventDefault(); openChat(); chatInput.focus(); return;
   }
+  if (book && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { e.preventDefault(); if (!e.repeat) turnPage(e.code === 'ArrowRight' ? 1 : -1); return; }   // arrows turn pages while you hold a book
   if (e.target.tagName === 'BUTTON' && (e.code === 'Space' || e.code === 'Enter')) return;
   if (!e.repeat) {
     if (e.code === 'KeyF') { e.preventDefault(); onActionKey(); return; }
@@ -2198,6 +2233,7 @@ window.addEventListener('keydown', e => {
     if (e.code === 'KeyH') { e.preventDefault(); toggleHelp(); return; }
     if (e.code === 'KeyL' && CASTLE) { e.preventDefault(); if (letterPanel.hidden) openLetter(); else closeLetter(); return; }
     if (e.code === 'Escape' && !libPanel.hidden) { closeLibrary(); return; }
+    if (e.code === 'Escape' && book) { returnBook(false); return; }
     if (e.code === 'Escape' && !letterPanel.hidden) { closeLetter(); return; }
     if (e.code === 'Escape' && !letterCard.hidden) { showNextLetter(); return; }
     if (e.code === 'KeyC') { e.preventDefault(); applaud(); return; }
@@ -2751,7 +2787,7 @@ function attachAudio(id, stream) {
   if (ctx && c.meter && c.meter.src) {
     try {
       const d = ctx.createDelay(1), fb = ctx.createGain(), tone = ctx.createBiquadFilter(), wet = ctx.createGain();
-      d.delayTime.value = 0.17; fb.gain.value = 0.32; tone.type = 'lowpass'; tone.frequency.value = 2600; wet.gain.value = 0;
+      d.delayTime.value = 0.09; fb.gain.value = 0.3; tone.type = 'lowpass'; tone.frequency.value = 2600; wet.gain.value = 0;
       c.meter.src.connect(d); d.connect(tone); tone.connect(fb); fb.connect(d); tone.connect(wet); wet.connect(ctx.destination);
       c.echo = { wet };
     } catch (e) { c.echo = null; }
@@ -3306,7 +3342,7 @@ function updateGear(c, dt = 1 / 60) {
     if (hat && ITEMS[hat]) { const hm = makeHat(hat); hm.position.add(new V(h[0], h[1], h[2])); g.add(hm); }
     if (net) { c.netMesh = makeNet(); g.add(c.netMesh); } else c.netMesh = null;
     if (rod) { c.rodMesh = makeRod(); g.add(c.rodMesh); } else c.rodMesh = null;
-    if (cook) { c.stickMesh = makeStick(cook); g.add(c.stickMesh); } else c.stickMesh = null;
+    if (cook) { c.stickMesh = makeStick(cook, c); g.add(c.stickMesh); } else c.stickMesh = null;
     if (stung) { c.bump = put(new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), bumpMat), 0.13, h[1] - 0.12, h[2] + 0.22, g, false); } else c.bump = null;
     c.gear = g; c.rig.add(g);
   }
@@ -3680,8 +3716,8 @@ function tickCooking(dt) {
 }
 // the roasting stick (everyone sees it); the marshmallow or fish browns as it cooks
 const stickGeo = new THREE.CylinderGeometry(0.018, 0.022, 1.1, 5);
-function makeStick(type) {
-  if (HELD[type]) return makeHeld(type);
+function makeStick(type, owner) {
+  if (HELD[type]) return makeHeld(type, owner);
   const g = new THREE.Group();
   const st = put(new THREE.Mesh(stickGeo, mat(0x8a5a38)), 0, 0, 0, g, false);
   st.position.set(0.22, 0.95, 0.55); st.rotation.x = Math.PI / 2 - 0.45;
@@ -3702,7 +3738,7 @@ function tickStick(c) {
   const food = c.stickMesh.userData.food;
   if (c.stickMesh.userData.held) {                       // a cup or sandwich: bob along, lift it up for a sip now and then
     c.sipT = Math.max(0, (c.sipT || 0) - 1 / 60);
-    const sip = c === me ? Math.sin(Math.min(1, c.sipT / 0.7) * Math.PI) : Math.max(0, Math.sin((t + c.stickMesh.userData.ph) * 2.6)) ** 8;
+    const sip = c.cook === 'book' ? 0 : c === me ? Math.sin(Math.min(1, c.sipT / 0.7) * Math.PI) : Math.max(0, Math.sin((t + c.stickMesh.userData.ph) * 2.6)) ** 8;
     food.position.set(0.3 - sip * 0.18, 0.78 + sip * 0.38 + Math.sin(t * 3) * 0.015, 0.38 + sip * 0.1);
     food.rotation.x = -sip * 0.6;
     return;
@@ -3791,6 +3827,7 @@ function startMaking(s) {
     addLine('', 'You need a ' + TOOLS[s.tool].name + ' for that. Maybe it’s hidden behind one of the pictures on the wall?', true);
     return;
   }
+  if (book) returnBook(true);
   holding = null; me.cook = '';
   making = { s, t: 0, dur: 2.2, tick: 0 };
   turnToward(me.root, Math.PI / 2, 1);
@@ -3912,10 +3949,17 @@ function tickCafe(dt) {
   }
 }
 // what you're holding: a cup of coffee, a matcha latte or a sandwich
-const HELD = { coffee: 1, matcha: 1, sandwich: 1 };
-function makeHeld(type) {
+const HELD = { coffee: 1, matcha: 1, sandwich: 1, book: 1 };
+function makeHeld(type, owner) {
   const g = new THREE.Group(), item = new THREE.Group();
-  if (type === 'sandwich') {
+  if (type === 'book') {                                          // an open book held up to read
+    const cov = mat(owner && owner.bookCol ? parseInt(owner.bookCol.slice(1), 16) : 0x7a68a1), paper = mat(0xfffaf0);
+    for (const s of [-1, 1]) {
+      const c = put(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.28), cov), 0.1 * s, 0, 0, item, false); c.rotation.z = -0.25 * s;
+      const pg = put(new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.26), paper), 0.095 * s, 0.02, 0, item, false); pg.rotation.z = -0.25 * s;
+    }
+    item.rotation.x = -0.9;
+  } else if (type === 'sandwich') {
     put(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.22), mat(0xe8c48a)), 0, 0, 0, item, false);
     put(new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.03, 0.24), mat(0x86c862)), 0, 0.045, 0, item, false);
     put(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.03, 0.2), mat(0xe8584a)), 0, 0.075, 0, item, false);
@@ -3935,6 +3979,7 @@ function makeHeld(type) {
 }
 
 const LIBRARY = [
+{"poet": "Geoffrey Chaucer", "title": "The General Prologue (opening)", "year": "c. 1387–1400", "text": "Whan that Aprill with his shoures soote\nThe droghte of March hath perced to the roote,\nAnd bathed every veyne in swich licour\nOf which vertu engendred is the flour;\nWhan Zephirus eek with his sweete breeth\nInspired hath in every holt and heeth\nThe tendre croppes, and the yonge sonne\nHath in the Ram his half cours yronne,\nAnd smale foweles maken melodye,\nThat slepen al the nyght with open ye\n(So priketh hem nature in hir corages),\nThanne longen folk to goon on pilgrimages,\nAnd palmeres for to seken straunge strondes,\nTo ferne halwes, kowthe in sondry londes;\nAnd specially from every shires ende\nOf Engelond to Caunterbury they wende,\nThe hooly blisful martir for to seke,\nThat hem hath holpen whan that they were seeke.\n\nBifil that in that seson on a day,\nIn Southwerk at the Tabard as I lay\nRedy to wenden on my pilgrymage\nTo Caunterbury with ful devout corage,\nAt nyght was come into that hostelrye\nWel nyne and twenty in a compaignye,\nOf sondry folk, by aventure yfalle\nIn felaweshipe, and pilgrimes were they alle,\nThat toward Caunterbury wolden ryde.\nThe chambres and the stables weren wyde,\nAnd wel we weren esed atte beste.\nAnd shortly, whan the sonne was to reste,\nSo hadde I spoken with hem everichon\nThat I was of hir felaweshipe anon,\nAnd made forward erly for to ryse,\nTo take oure wey ther as I yow devyse.\n\nBut nathelees, whil I have tyme and space,\nEr that I ferther in this tale pace,\nMe thynketh it acordaunt to resoun\nTo telle yow al the condicioun\nOf ech of hem, so as it semed me,\nAnd whiche they weren, and of what degree,\nAnd eek in what array that they were inne;\nAnd at a knyght than wol I first bigynne."},
 {
 "poet": "William Shakespeare",
 "title": "Sonnet 18",
@@ -4002,38 +4047,128 @@ const LIBRARY = [
 "text": "Safe upon the solid rock the ugly houses stand:\nCome and see my shining palace built upon the sand!"
 }
 ];
-/* --- the cafe library: classic poems to read on the bean bags --- */
-const libPanel = document.getElementById('libPanel'), libList = document.getElementById('libList'), libPoem = document.getElementById('libPoem');
+/* --- the cafe library: take a book off the shelf, carry it around, and turn its pages --- */
+const libPanel = document.getElementById('libPanel'), libList = document.getElementById('libList');
+const bookView = document.getElementById('bookView');
 const inLibrary = () => CAFE && pos.x > 5.8 && pos.z < -7 && pos.z > -13.7;
-function showPoem(i) {
-  const p = LIBRARY[i];
-  document.getElementById('poemTitle').textContent = p.title;
-  document.getElementById('poemBy').textContent = p.poet + ', ' + p.year;
-  document.getElementById('poemText').textContent = p.text;
-  libList.hidden = true; libPoem.hidden = false; libPoem.scrollTop = 0;
-  chimeNotes([523, 659], 0.03, 'sine', 0.08);
-  track('cafe/read-poem');
+const BOOKS = [
+  { poet: 'Geoffrey Chaucer', title: 'The Canterbury Tales', color: '#6e4232' },
+  { poet: 'William Shakespeare', title: 'Sonnets', color: '#7a68a1' },
+  { poet: 'Edgar Allan Poe', title: 'Poems', color: '#2e2a45' },
+  { poet: 'Emily Dickinson', title: 'Poems', color: '#f2b3c8' },
+  { poet: 'Christina Rossetti', title: 'Goblin Market and Other Poems', color: '#5aa651' },
+  { poet: 'Elizabeth Barrett Browning', title: 'Sonnets from the Portuguese', color: '#c9a7f2' },
+  { poet: 'Sara Teasdale', title: 'Flame and Shadow', color: '#d9825b' },
+  { poet: 'Edna St. Vincent Millay', title: 'A Few Figs from Thistles', color: '#d9b26a' }
+];
+const LINES_PER_PAGE = 15;
+// lay a book out into pages: a title page, then each poem, split at stanza breaks where it can
+function bookPages(bk) {
+  const pages = [{ cover: true }];
+  for (const p of LIBRARY.filter(p => p.poet === bk.poet)) {
+    const lines = p.text.split('\n');
+    let i = 0, first = true;
+    while (i < lines.length) {
+      let end = Math.min(lines.length, i + LINES_PER_PAGE);
+      if (end < lines.length) {                                  // prefer to break at a blank line
+        for (let k = end; k > i + 8; k--) if (lines[k - 1] === '') { end = k; break; }
+      }
+      const chunk = lines.slice(i, end); while (chunk.length && chunk[0] === '') chunk.shift();
+      pages.push({ title: first ? p.title : '', year: first ? p.year : '', text: chunk.join('\n'), cont: !first });
+      first = false; i = end;
+    }
+  }
+  return pages;
+}
+let book = null;                                                 // { bk, pages, at }
+function pageHtml(el, pg, n) {
+  el.textContent = '';
+  if (!pg) { el.classList.add('blank'); return; }
+  el.classList.remove('blank');
+  if (pg.cover) {
+    el.classList.add('coverPage');
+    const t = document.createElement('h3'); t.textContent = book.bk.title;
+    const by = document.createElement('p'); by.className = 'by'; by.textContent = book.bk.poet;
+    const orn = document.createElement('p'); orn.className = 'orn'; orn.textContent = '❦';
+    const from = document.createElement('p'); from.className = 'from'; from.textContent = 'From the shelves of the Cozy Cafe';
+    el.append(t, by, orn, from);
+  } else {
+    el.classList.remove('coverPage');
+    if (pg.title) { const t = document.createElement('h4'); t.textContent = pg.title; el.append(t); if (pg.year) { const y = document.createElement('p'); y.className = 'yr'; y.textContent = pg.year; el.append(y); } }
+    const pre = document.createElement('pre'); pre.textContent = pg.text; el.append(pre);
+  }
+  const num = document.createElement('span'); num.className = 'pno'; num.textContent = pg.cover ? '' : String(n); el.append(num);
+}
+const twoUp = () => window.innerWidth >= 640;
+function renderBook() {
+  const L = document.getElementById('pageL'), Rp = document.getElementById('pageR');
+  const step = twoUp() ? 2 : 1;
+  pageHtml(L, book.pages[book.at], book.at);
+  Rp.hidden = step === 1;
+  if (step === 2) pageHtml(Rp, book.pages[book.at + 1], book.at + 1);
+  document.getElementById('bookPrev').disabled = book.at === 0;
+  document.getElementById('bookNext').disabled = book.at + step >= book.pages.length;
+  document.getElementById('bookWhere').textContent = book.at === 0 ? 'Cover' : 'Page ' + book.at + (step === 2 && book.pages[book.at + 1] ? '–' + (book.at + 1) : '') + ' of ' + (book.pages.length - 1);
+}
+function turnPage(dir) {
+  if (!book) return;
+  const step = twoUp() ? 2 : 1, next = book.at + dir * step;
+  if (next < 0 || next >= book.pages.length) return;
+  const leaf = document.getElementById(dir > 0 ? (step === 2 ? 'pageR' : 'pageL') : 'pageL');
+  leaf.classList.remove('flipF', 'flipB'); void leaf.offsetWidth;
+  leaf.classList.add(dir > 0 ? 'flipF' : 'flipB');
+  noiseBurst(0.18, 'highpass', 2800 + Math.random() * 800, 0.07); noiseBurst(0.1, 'bandpass', 1200, 0.03, 0.06);   // the swish of a page
+  setTimeout(() => { book.at = next; renderBook(); leaf.classList.remove('flipF', 'flipB'); }, 230);
+}
+function takeBook(i) {
+  const bk = BOOKS[i];
+  book = { bk, pages: bookPages(bk), at: 0, i };
+  libPanel.hidden = true;
+  bookView.style.setProperty('--cover', bk.color);
+  bookView.hidden = false;
+  renderBook();
+  holding = null; making = null;                                  // your hands are full with a book now
+  me.cook = 'book'; me.bookCol = bk.color; me.gearKey = ''; sendPresence(true);
+  noiseBurst(0.12, 'lowpass', 600, 0.1); chimeNotes([523, 659], 0.03, 'sine', 0.08);
+  popAt(pos.x, pos.y + 2.3, pos.z, 'You took out ' + bk.title, 'good');
+  track('cafe/book-' + bk.poet.split(' ').pop().toLowerCase());
+}
+function returnBook(quiet) {
+  if (!book) return;
+  book = null; bookView.hidden = true;
+  if (me.cook === 'book') { me.cook = ''; sendPresence(true); }
+  if (!quiet) popAt(pos.x, pos.y + 2.3, pos.z, 'Book returned', '');
+  canvas.focus();
 }
 function openLibrary() {
   libList.textContent = '';
   const note = document.createElement('div'); note.className = 'libNote';
   const nb = document.createElement('b'); nb.textContent = 'New on the shelf: Anne Carson, winner of the 2026 Nobel Prize in Literature.';
   const nt = document.createElement('span'); nt.textContent = ' Her books are still under copyright, so the cafe can’t shelve her poems here. Look for Autobiography of Red, Glass, Irony and God, Nox, Float and If Not, Winter (her Sappho) at your local library.';
-  note.append(nb, nt); libList.append(note);
-  let poet = '';
-  LIBRARY.forEach((p, i) => {
-    if (p.poet !== poet) { poet = p.poet; const h = document.createElement('h4'); h.textContent = poet; libList.append(h); }
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'libBook';
-    b.textContent = p.title; b.addEventListener('click', () => showPoem(i));
-    libList.append(b);
+  note.append(nb, nt);
+  const shelf = document.createElement('div'); shelf.className = 'shelf';
+  BOOKS.forEach((bk, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'spine';
+    b.style.setProperty('--c', bk.color); b.style.height = (118 + (i * 37) % 34) + 'px';
+    b.title = 'Take out ' + bk.title + ' by ' + bk.poet;
+    const t = document.createElement('span'); t.textContent = bk.title;
+    const a = document.createElement('small'); a.textContent = bk.poet.split(' ').pop();
+    b.append(t, a);
+    b.addEventListener('click', () => { b.classList.add('out'); setTimeout(() => takeBook(i), 260); });
+    shelf.append(b);
   });
-  libList.hidden = false; libPoem.hidden = true; libPanel.hidden = false;
-  noiseBurst(0.25, 'highpass', 3000, 0.05);                         // a page turning
+  const hint = document.createElement('p'); hint.className = 'shelfHint'; hint.textContent = 'Tap a book to take it out. You can carry it anywhere, even up to the mic.';
+  libList.append(shelf, hint, note);
+  libPanel.hidden = false;
+  noiseBurst(0.25, 'highpass', 3000, 0.05);
   track('cafe/library', true);
 }
 function closeLibrary() { libPanel.hidden = true; canvas.focus(); }
 document.getElementById('libClose').addEventListener('click', closeLibrary);
-document.getElementById('libBack').addEventListener('click', () => { libPoem.hidden = true; libList.hidden = false; });
+document.getElementById('bookPrev').addEventListener('click', () => turnPage(-1));
+document.getElementById('bookNext').addEventListener('click', () => turnPage(1));
+document.getElementById('bookReturn').addEventListener('click', () => returnBook(false));
+window.addEventListener('resize', () => { if (book) { if (twoUp() && book.at % 2) book.at--; renderBook(); } });
 
 /* --- your own stage echo: while you read with your mic on, you hear a soft echo of your voice (quieter than
    what listeners hear). Only the echo is played back, never your dry voice, and it is quiet and darkened so it
@@ -4043,7 +4178,7 @@ function buildSelfEcho() {
   const ctx = audioCtx(); if (!ctx || !myMeter || !myMeter.src || selfEcho) return;
   try {
     const d = ctx.createDelay(1), fb = ctx.createGain(), tone = ctx.createBiquadFilter(), hp = ctx.createBiquadFilter(), wet = ctx.createGain();
-    d.delayTime.value = 0.2; fb.gain.value = 0.2; tone.type = 'lowpass'; tone.frequency.value = 2000; hp.type = 'highpass'; hp.frequency.value = 220; wet.gain.value = 0;
+    d.delayTime.value = 0.06; fb.gain.value = 0.22; tone.type = 'lowpass'; tone.frequency.value = 2000; hp.type = 'highpass'; hp.frequency.value = 220; wet.gain.value = 0;
     myMeter.src.connect(hp); hp.connect(d); d.connect(tone); tone.connect(fb); fb.connect(d); tone.connect(wet); wet.connect(ctx.destination);
     selfEcho = { wet };
   } catch (e) { selfEcho = null; }

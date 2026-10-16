@@ -54,7 +54,7 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - Three pictures on the left wall hide tools: a coffee scoop, a bamboo whisk and a bread knife. Press F by a picture to peek behind it. Tools stay in your bag.
 - At the counter, press F at the espresso machine, the matcha station or the sandwich board to make coffee, a matcha latte or a sandwich, then sip or munch it.
 - You can step outside onto the street, but the autumn wind is strong and blows you back in through the door.
-- A library corner in the back has bean bags to sink into. Press F there to read classic public-domain poems (Shakespeare, Poe, Dickinson, Rossetti, Barrett Browning, Teasdale, Millay). Anne Carson's work is still under copyright, so the shelf has a note pointing people to her books instead.
+- A library corner in the back has bean bags to sink into. Press F there to see the bookshelf, and tap a book to take it out: it opens as a real book you page through (arrow keys or the ‹ › buttons), and your critter holds it so you can carry it anywhere, even to the mic. The books are public-domain classics: the opening of Chaucer's General Prologue to The Canterbury Tales, plus Shakespeare, Poe, Dickinson, Rossetti, Barrett Browning, Teasdale and Millay. Anne Carson's work is still under copyright, so the shelf has a note pointing people to her books instead.
 - The cafe has its own theme song (`cafe-music.mp3`).
 - A cafe link starts with `cafe-` (for example `#room=cafe-mossy-lantern-k3x9`), which is how everyone with the link lands in the cafe.
 
