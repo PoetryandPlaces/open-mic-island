@@ -292,7 +292,7 @@ kbd {
 #lobby .online { justify-content: center; margin: 0; }
 body.in-lobby #title, body.in-lobby #dock, body.in-lobby #meSign, body.in-lobby #hint, body.in-lobby #chat, body.in-lobby #helpBtn,
 body.in-lobby #joy, body.in-lobby #hopBtn, body.in-lobby #tags, body.in-lobby #bubble, body.in-lobby #readBtn,
-body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.in-lobby #ctxBtn, body.in-lobby #soundPanel, body.in-lobby #helpBtn { display: none !important; }
+body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.in-lobby #ctxBtn, body.in-lobby #soundPanel, body.in-lobby #helpBtn, body.in-lobby #stagePanel, body.in-lobby #stageTv { display: none !important; }
 
 
 @media (pointer: coarse) {
@@ -351,6 +351,32 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 #lobbyRoomBtn { font: 700 .84rem var(--font-body); background: none; border: 0; padding: 4px 0; margin-top: 4px; color: var(--muted); text-decoration: underline; cursor: pointer; }
 #newRoomBtn { background: none; padding: 4px 0; margin-top: 4px; align-self: flex-start; color: var(--muted); text-decoration: underline; font-weight: 700; }
 .audio-sink { display: none; }
+#stagePanel {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 6;
+  bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  width: min(300px, calc(100vw - 32px)); box-sizing: border-box; padding: 10px 12px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#stagePanel h3 { margin: 0; font: 700 1rem var(--font-display); color: var(--plank); font-variation-settings: "SOFT" 100, "WONK" 1; }
+#stagePanel .row { display: flex; gap: 6px; align-items: center; }
+#stagePanel button { font: 800 .8rem var(--font-body); border: 0; border-radius: 10px; padding: 7px 10px; cursor: pointer; background: var(--tan); color: var(--ink); white-space: nowrap; }
+#pickSong { flex: 1; background: var(--plank-dark) !important; color: var(--paper) !important; }
+#ytUrl { flex: 1; min-width: 0; font: 600 .82rem var(--font-body); color: var(--ink); background: #fbf9fe; border: 2px solid #c4b6e2; border-radius: 10px; padding: 6px 8px; }
+#stagePanel .now { justify-content: space-between; font-size: .78rem; font-weight: 700; color: var(--muted); }
+#stagePanel .now span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#stopSong { background: #c4583a !important; color: #fff !important; }
+#stageTv {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 7;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  width: 280px; box-sizing: border-box; padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 6px; align-items: center;
+}
+.tvHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; font-size: .78rem; font-weight: 800; color: var(--plank-dark); }
+.tvHead span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tvMute, #tvTap { font: 800 .74rem var(--font-body); border: 0; border-radius: 8px; padding: 4px 8px; cursor: pointer; background: var(--tan); color: var(--ink); white-space: nowrap; }
+#tvTap { background: var(--leaf); color: #fff; font-size: .85rem; padding: 7px 14px; }
+#tvFrame iframe { display: block; border-radius: 8px; }
+@media (max-width: 760px) { #stageTv { top: auto; bottom: calc(150px + env(safe-area-inset-bottom, 0px)); width: 264px; } }
+@media (pointer: coarse) { #stagePanel { bottom: calc(126px + env(safe-area-inset-bottom, 0px)); } }
 .minBtn {
   display: grid !important; place-items: center; padding: 0 !important;
   color: var(--ink); background: var(--tan); border: 0; border-radius: 8px; cursor: pointer;
@@ -459,6 +485,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
   <span class="key-only"><kbd>F</kbd> dig by a rock / swing your net</span>
   <span class="key-only"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ask for a hug, cheek kiss or high five</span>
+  <span class="key-only"><kbd>C</kbd> applaud</span>
   <span class="key-only"><kbd>B</kbd> your bag · <kbd>Enter</kbd> chat · <kbd>H</kbd> this help</span>
   <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to dig, read at the mic, or hug someone nearby.</span>
 </div>
@@ -507,6 +534,17 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   <div id="bagList"></div>
 </section>
 <button id="ctxBtn" type="button" hidden></button>
+<section id="stagePanel" class="sign" hidden aria-label="Stage music">
+  <h3>Stage music</h3>
+  <div class="row"><button id="pickSong" type="button">Play a song file</button><input id="songFile" type="file" accept="audio/*" hidden></div>
+  <form id="ytForm" class="row" autocomplete="off"><input id="ytUrl" type="text" inputmode="url" placeholder="or paste a YouTube link" aria-label="YouTube link"><button type="submit">Play</button></form>
+  <div class="row now"><span id="stageNow">Nothing playing</span><button id="stopSong" type="button" hidden>Stop</button></div>
+</section>
+<section id="stageTv" class="sign" hidden aria-label="Now playing on stage">
+  <div class="tvHead"><span id="tvTitle">Now playing on stage</span><button id="tvMute" type="button">Mute for me</button></div>
+  <div id="tvFrame"></div>
+  <button id="tvTap" type="button" hidden>Tap to listen</button>
+</section>
 <section id="soundPanel" class="sign" hidden aria-label="Music and sound">
   <div class="sRow"><span>Music</span><button id="musicToggle" type="button" aria-pressed="false">Off</button></div>
   <label class="sRow col">Music volume <input id="musicVol" type="range" min="0" max="100" step="1"></label>
@@ -1415,6 +1453,7 @@ window.addEventListener('keydown', e => {
     if (e.code === 'KeyF') { e.preventDefault(); onActionKey(); return; }
     if (e.code === 'KeyB') { e.preventDefault(); toggleBag(); return; }
     if (e.code === 'KeyH') { e.preventDefault(); toggleHelp(); return; }
+    if (e.code === 'KeyC') { e.preventDefault(); applaud(); return; }
     if (e.code === 'Escape' && !soundPanel.hidden) { toggleSoundPanel(false); return; }
     if (e.code === 'Escape' && !hintEl.hidden) { toggleHelp(false); return; }
     if (e.code === 'Escape' && !bagPanel.hidden) { toggleBag(false); return; }
@@ -1484,6 +1523,7 @@ function startReading() {
 }
 function stopReading(why) {
   if (stageReader !== me) return;
+  stopStageMusic();
   stageReader = null; me.reading = false;
   if (actPoem) actPoem.send({ on: 0 }).catch(() => {});
   sendPresence(true);
@@ -1504,6 +1544,7 @@ function setRemoteReading(c, on) {
     addLine('', nameOf(c) + ' stepped up to the mic.', true);
   } else if (stageReader === c) {
     stageReader = null;
+    closeTv();
     addLine('', 'Snaps for ' + nameOf(c) + '!', true);
     snaps();
   }
@@ -1583,7 +1624,7 @@ const safeName = (name, kind) => name && hasBad(name) ? (NOISE[kind] || 'Meow') 
 // little synthesized critter voices (no audio files needed)
 // Real recordings: drop short clips into a "sounds" folder in the repo with these names and they
 // replace the synthesized voices automatically. Until then the synthesized ones play.
-const SOUND_FILES = { cat: 'sounds/cat.mp3', frog: 'sounds/frog.mp3', mouse: 'sounds/mouse.mp3', fish: 'sounds/fish.mp3', dog: 'sounds/dog.mp3', splash: 'sounds/splash.mp3', waves: 'sounds/waves.mp3', fire: 'sounds/fire.mp3' };
+const SOUND_FILES = { cat: 'sounds/cat.mp3', frog: 'sounds/frog.mp3', mouse: 'sounds/mouse.mp3', fish: 'sounds/fish.mp3', dog: 'sounds/dog.mp3', splash: 'sounds/splash.mp3', waves: 'sounds/waves.mp3', fire: 'sounds/fire.mp3', applause: 'sounds/applause.mp3' };
 const soundBufs = {};
 let soundsLoading = false;
 function loadSounds() {
@@ -1802,7 +1843,7 @@ function dropRemote(id, silent) {
   if (!silent && c.hasPos) addLine('', nameOf(c) + ' sailed off.', true);
   if (c.audio) { c.audio.srcObject = null; c.audio.remove(); }
   if (c.meter) c.meter.close();
-  if (stageReader === c) stageReader = null;
+  if (stageReader === c) { stageReader = null; closeTv(); }
   scene.remove(c.root); c.tag.remove(); c.bubble.remove(); remotes.delete(id);
   updateCount();
 }
@@ -1965,9 +2006,10 @@ async function connect() {
     ensureRemote(id);
     sendPresence(true, id);
     if (micStream) room.addStream(micStream, { target: id });
+    catchUpStageMusic(id);
   };
   room.onPeerLeave = id => dropRemote(id);
-  room.onPeerStream = (stream, id) => attachAudio(id, stream);
+  room.onPeerStream = (stream, id, meta) => { if (meta && meta.music) attachStageMusic(id, stream); else attachAudio(id, stream); };
   actPres.onMessage = (data, meta) => {
     const id = meta && meta.peerId; if (!id) return;
     const c = ensureRemote(id);
@@ -2615,7 +2657,8 @@ const musicBtn = document.getElementById('musicBtn'), soundPanel = document.getE
 const musicToggle = document.getElementById('musicToggle'), musicVol = document.getElementById('musicVol'), sfxVol = document.getElementById('sfxVol');
 const music = new Audio('music.mp3');
 music.loop = true; music.preload = 'none';
-const applyMusicVol = () => { music.volume = Math.min(1, musicPct / 100 * 0.6); };
+let duckMusic = false;                                   // background music dips while someone plays stage music
+const applyMusicVol = () => { music.volume = Math.min(1, musicPct / 100 * 0.6) * (duckMusic ? 0.2 : 1); };
 applyMusicVol();
 let musicOn = store.get('cove-music') === '1';
 function renderMusic() {
@@ -2652,6 +2695,163 @@ document.addEventListener('pointerdown', e => {
 });
 window.addEventListener('resize', () => { if (!soundPanel.hidden) placeSoundPanel(); });
 renderMusic();
+
+/* --- stage music: the person at the mic can play a song file or a YouTube link for everyone ---
+   Song files stream live to listeners (like voices). YouTube can't be captured, so instead every
+   listener's island opens the same video in a small visible player, started at the same point. */
+const stagePanel = document.getElementById('stagePanel'), songFile = document.getElementById('songFile');
+const stageNow = document.getElementById('stageNow'), stopSongBtn = document.getElementById('stopSong');
+const stageTv = document.getElementById('stageTv'), tvTitle = document.getElementById('tvTitle'), tvFrame = document.getElementById('tvFrame');
+const tvMuteBtn = document.getElementById('tvMute'), tvTap = document.getElementById('tvTap');
+let stageMusic = null;          // what I'm playing as the reader: { type: 'yt', id } or { type: 'file', name, el, url, stream }
+let tvOn = false, tvMuted = false, tvAudio = null, ytPlayer = null, ytId = '', ytApiP = null;
+function syncDuck() { duckMusic = !!stageMusic || tvOn; applyMusicVol(); }
+function ytIdFrom(text) {
+  const s = String(text || '').trim();
+  const m = s.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([A-Za-z0-9_-]{11})/) || s.match(/^([A-Za-z0-9_-]{11})$/);
+  return m ? m[1] : '';
+}
+function loadYT() {
+  if (ytApiP) return ytApiP;
+  ytApiP = new Promise((ok, bad) => {
+    if (window.YT && window.YT.Player) return ok(window.YT);
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) prev(); ok(window.YT); };
+    const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api';
+    sc.onerror = () => { ytApiP = null; bad(new Error('yt')); };
+    document.head.append(sc);
+    setTimeout(() => { if (!(window.YT && window.YT.Player)) { ytApiP = null; bad(new Error('timeout')); } }, 12000);
+  });
+  return ytApiP;
+}
+function showTv(title, video) {
+  tvOn = true; stageTv.hidden = false; tvTitle.textContent = title;
+  tvFrame.hidden = !video; tvTap.hidden = true;
+  tvMuteBtn.textContent = tvMuted ? 'Unmute' : 'Mute for me';
+  syncDuck();
+}
+function closeTv() {
+  tvOn = false; stageTv.hidden = true; tvTap.hidden = true;
+  if (ytPlayer) { try { ytPlayer.destroy(); } catch (e) {} ytPlayer = null; ytId = ''; }
+  tvFrame.textContent = '';
+  if (tvAudio) { tvAudio.srcObject = null; tvAudio.remove(); tvAudio = null; }
+  syncDuck();
+}
+function ytPlay(id, at, title, mine) {
+  showTv(title, true);
+  loadYT().then(YT => {
+    if (!tvOn) return;
+    if (ytPlayer && ytId === id) { ytPlayer.seekTo(at, true); ytPlayer.playVideo(); return; }
+    if (ytPlayer) { try { ytPlayer.destroy(); } catch (e) {} ytPlayer = null; }
+    tvFrame.textContent = ''; const holder = document.createElement('div'); tvFrame.append(holder);
+    ytId = id;
+    ytPlayer = new YT.Player(holder, {
+      width: 256, height: 144, videoId: id,
+      playerVars: { autoplay: 1, start: Math.floor(at), playsinline: 1, rel: 0 },
+      events: {
+        onReady: e => { e.target.setVolume(tvMuted ? 0 : 85); if (at > 1) e.target.seekTo(at, true); e.target.playVideo(); setTimeout(() => { if (ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== 1 && ytPlayer.getPlayerState() !== 3) tvTap.hidden = false; }, 2500); },
+        onStateChange: e => { if (e.data === 1) tvTap.hidden = true; if (e.data === 0 && mine) stopStageMusic(); },
+        onError: () => {
+          addLine('', 'That YouTube video can’t play here (its owner may not allow it on other sites). Try another link or a song file.', true);
+          if (mine) stopStageMusic(); else closeTv();
+        }
+      }
+    });
+  }).catch(() => { addLine('', 'Couldn’t load YouTube right now. Try a song file instead.', true); if (mine) stopStageMusic(); else closeTv(); });
+}
+function sendStage(data, target) { if (actWorld) actWorld.send(data, target ? { target } : undefined).catch(() => {}); }
+function stopStageMusic() {
+  if (!stageMusic) return;
+  if (stageMusic.type === 'file') {
+    try { stageMusic.el.pause(); } catch (e) {}
+    try { if (room) room.removeStream(stageMusic.stream); } catch (e) {}
+    URL.revokeObjectURL(stageMusic.url);
+  }
+  stageMusic = null;
+  sendStage({ e: 'mstop' });
+  closeTv(); renderStagePanel();
+}
+function playSongFile(f) {
+  if (!f || stageReader !== me) return;
+  if (!/^audio\//.test(f.type) && !/\.(mp3|m4a|aac|wav|ogg|oga|flac|webm)$/i.test(f.name)) { addLine('', 'That doesn’t look like an audio file. Try an mp3, m4a or wav.', true); return; }
+  const ctx = audioCtx(); if (!ctx) return;
+  stopStageMusic();
+  try {
+    const url = URL.createObjectURL(f), el = new Audio(url);
+    const src = ctx.createMediaElementSource(el), dest = ctx.createMediaStreamDestination(), local = ctx.createGain();
+    local.gain.value = 0.6; src.connect(dest); src.connect(local); local.connect(ctx.destination);
+    const name = f.name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ').trim().slice(0, 60) || 'a song';
+    stageMusic = { type: 'file', name, el, url, stream: dest.stream, local };
+    local.gain.value = tvMuted ? 0 : 0.6;
+    el.onended = () => stopStageMusic();
+    el.play().catch(() => {});
+    if (room) room.addStream(dest.stream, { metadata: { music: 1 } });
+    sendStage({ e: 'file', name });
+    showTv('You’re playing: ' + name, false);
+    renderStagePanel();
+  } catch (e) { addLine('', 'Couldn’t play that file. Try an mp3 instead.', true); }
+}
+function playYouTube(link) {
+  if (stageReader !== me) return;
+  const id = ytIdFrom(link);
+  if (!id) { addLine('', 'That doesn’t look like a YouTube link. Copy the address of a YouTube video and paste it here.', true); return; }
+  stopStageMusic();
+  stageMusic = { type: 'yt', id };
+  ytPlay(id, 0, 'You’re playing on stage', true);
+  sendStage({ e: 'yt', id, at: 0 });
+  renderStagePanel();
+}
+function renderStagePanel() {
+  stopSongBtn.hidden = !stageMusic;
+  stageNow.textContent = !stageMusic ? 'Nothing playing' : stageMusic.type === 'yt' ? 'Playing a YouTube video' : 'Playing: ' + stageMusic.name;
+}
+// a new person arrives while I'm playing: catch them up (after their island has met me)
+function catchUpStageMusic(id) {
+  setTimeout(() => {
+    if (!stageMusic || stageReader !== me) return;
+    if (stageMusic.type === 'file') { try { room.addStream(stageMusic.stream, { target: id, metadata: { music: 1 } }); } catch (e) {} sendStage({ e: 'file', name: stageMusic.name }, id); }
+    else sendStage({ e: 'yt', id: stageMusic.id, at: ytPlayer && ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0 }, id);
+  }, 2500);
+}
+function attachStageMusic(id, stream) {
+  if (tvAudio) { tvAudio.srcObject = null; tvAudio.remove(); }
+  const a = document.createElement('audio');
+  a.className = 'audio-sink'; a.autoplay = true; a.playsInline = true; a.srcObject = stream; a.muted = tvMuted; a.volume = 0.8;
+  document.body.append(a);
+  a.play().catch(() => { tvTap.hidden = false; });
+  tvAudio = a;
+}
+function onStageWorld(c, data) {
+  if (data.e === 'mstop') { if (c === stageReader || tvOn) closeTv(); return; }
+  if (c !== stageReader) return;                      // only the person at the mic controls the music
+  if (data.e === 'yt' && typeof data.id === 'string' && /^[A-Za-z0-9_-]{11}$/.test(data.id)) {
+    const at = (num(data.at, 0, 36000) || 0) + 0.4;
+    ytPlay(data.id, at, nameOf(c) + ' is playing on stage', false);
+  } else if (data.e === 'file' && typeof data.name === 'string') {
+    const nm = cleanName(data.name.slice(0, 60)) || 'a song';
+    showTv(nameOf(c) + ' is playing: ' + (hasBad(nm) ? (NOISE[c.kind] || 'Meow') : nm), false);
+  }
+}
+document.getElementById('pickSong').addEventListener('click', () => songFile.click());
+songFile.addEventListener('change', () => { playSongFile(songFile.files[0]); songFile.value = ''; canvas.focus(); });
+document.getElementById('ytForm').addEventListener('submit', e => {
+  e.preventDefault(); const inp = document.getElementById('ytUrl');
+  playYouTube(inp.value); inp.value = ''; canvas.focus();
+});
+stopSongBtn.addEventListener('click', () => { stopStageMusic(); canvas.focus(); });
+tvMuteBtn.addEventListener('click', () => {
+  tvMuted = !tvMuted; tvMuteBtn.textContent = tvMuted ? 'Unmute' : 'Mute for me';
+  if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(tvMuted ? 0 : 85);
+  if (tvAudio) tvAudio.muted = tvMuted;
+  if (stageMusic && stageMusic.type === 'file') stageMusic.local.gain.value = tvMuted ? 0 : 0.6;   // only my speakers, the stream keeps going
+  canvas.focus();
+});
+tvTap.addEventListener('click', () => {
+  tvTap.hidden = true;
+  if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+  if (tvAudio) tvAudio.play().catch(() => {});
+});
+renderStagePanel();
 
 /* --- hugs, cheek kisses, high fives (the other person always says yes first) --- */
 const EMOTES = {
@@ -2737,6 +2937,12 @@ function applyPose(c, dt) {
     c.rig.scale.y *= 1 - 0.1 * c.sitK; c.rig.scale.x *= 1 + 0.06 * c.sitK; c.rig.scale.z *= 1 + 0.06 * c.sitK;
     c.rig.rotation.x -= 0.1 * c.sitK;
   }
+  if (c.clapT > 0) {                                           // happy clapping wiggle
+    c.clapT -= dt;
+    const k = Math.min(1, c.clapT / 0.3);
+    c.rig.rotation.z += Math.sin(t * 28) * 0.1 * k;
+    c.rig.position.y += Math.abs(Math.sin(t * 14)) * 0.09 * k;
+  }
   if (c.digging) { c.rig.rotation.x += 0.45 + Math.sin(t * 22) * 0.15; c.rig.position.y += Math.abs(Math.sin(t * 22)) * 0.05; }
   c.rig.position.z = lean;
   c.rig.position.y += hop;
@@ -2756,6 +2962,12 @@ function hookWorld(T) {
       if (Math.hypot(c.root.position.x - trees[data.i].x, c.root.position.z - trees[data.i].z) < 3) shakeTree(data.i, c);
     } else if (data.e === 'eat' && isInt(data.i, 0, trees.length - 1) && isInt(data.k, 0, 9)) startEat(data.i, data.k, c);
     else if (data.e === 'swing') c.swingT = 0.45;
+    else if (data.e === 'yt' || data.e === 'file' || data.e === 'mstop') onStageWorld(c, data);
+    else if (data.e === 'clap' && nowMs() - (c.lastClap || 0) > 1000) {      // hear the crowd, louder when you're close
+      c.lastClap = nowMs();
+      const p = c.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
+      clapFx(c, Math.max(0.25, 1 - d / 30) * 0.8);
+    }
   };
   actAsk.onMessage = (data, meta) => {
     const id = meta && meta.peerId, c = id && remotes.get(id);
@@ -2780,6 +2992,22 @@ function hookWorld(T) {
     const ca = remotes.get(data.a), cb = remotes.get(b);
     if (ca && cb && ca.hasPos && cb.hasPos) playEmote(data.t, ca, cb);
   };
+}
+
+/* --- applause (C) --- */
+let lastClap = 0;
+function clapFx(c, vol) {
+  const p = c.root.position;
+  c.clapT = 1.1;
+  if (!playBuf('applause', 0.85 * vol, 0.95 + Math.random() * 0.1)) for (let i = 0; i < 8; i++) noiseBurst(0.05, 'bandpass', 1700 + Math.random() * 600, 0.3 * vol, i * 0.13 + Math.random() * 0.04, 0.7);
+  popAt(p.x, p.y + 2.3, p.z, 'Clap clap!', 'good');
+  burst(p.x, p.y + 1.2, p.z, 6, sparkMat, 0.8, 2.2);
+}
+function applaud() {
+  if (!joined || lobbyOpen || nowMs() - lastClap < 1200) return;
+  lastClap = nowMs();
+  clapFx(me, 1);
+  if (actWorld) actWorld.send({ e: 'clap' }).catch(() => {});
 }
 
 /* --- context button (dig / swing net) and the per-frame world tick --- */
@@ -3000,6 +3228,7 @@ function update(dt) {
     tickBubble(me, dt, 1.9);
   }
   const mine = stageReader === me, showRead = active && (mine || nearMic);
+  stagePanel.hidden = !(active && mine);
   readBtn.hidden = !showRead;
   if (showRead) {
     readLbl.textContent = mine ? 'Finish reading' : stageReader ? nameOf(stageReader) + ' is reading' : 'Start reading';

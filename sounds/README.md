@@ -13,6 +13,7 @@ built-in sound plays instead, so it's safe to swap or remove any of them.
 | `splash.mp3` | Jumping or wading into the ocean                  |
 | `waves.mp3`  | Ocean loop, only heard near the shore             |
 | `fire.mp3`   | Campfire loop, only heard near the fire           |
+| `applause.mp3` | Applause when someone presses C                 |
 
 Keep each clip short and small (under about 200 KB) so the island loads fast.
 
@@ -21,4 +22,4 @@ Keep each clip short and small (under about 200 KB) so the island loads fast.
 All clips come from Pixabay under the Pixabay Content License (free to use, no attribution
 required), trimmed and volume-matched for the island:
 dragon-studio (splash, ocean waves, frog), maxhammarback (fire), freesound_community
-(fish bubble "daneben", dog bark), tanweraman (mouse squeak), sound_garage (cat meow).
+(fish bubble "daneben", dog bark, applause), tanweraman (mouse squeak), sound_garage (cat meow).

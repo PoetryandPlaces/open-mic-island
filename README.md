@@ -37,6 +37,8 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - Press F next to a rock on the grass to dig for treasure (nets, bows, party hats, flower crowns, berets). Press B to open your bag and wear things.
 - Hold the bug net and press F near fireflies to catch them.
 - Stand next to someone and press 1, 2 or 3 to ask for a hug, a cheek kiss or a high five. They have to accept first.
+- Press C to applaud. Your critter claps and everyone on the island hears it (louder the closer they are).
 - Chat makes your critter's sound, and bad words are replaced with it in big red letters.
 - Walk up to the microphone on the stage and press Space to take the mic. A spotlight follows you until you press Space again or step off the stage. Only one person can read at a time.
+- While you have the mic, a **Stage music** panel lets you play a song file from your computer (it streams to everyone) or paste a YouTube link (everyone's island opens the same video in a small player, started at the same point). Listeners can mute it for themselves, and it stops when you finish reading. Some YouTube videos don't allow playing on other sites; those show a message instead.
 - The round button in the bottom-left corner (with your critter's face) shows how to play. Press H to open it.
