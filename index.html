@@ -2415,7 +2415,7 @@ const safeName = (name, kind) => name && hasBad(name) ? (NOISE[kind] || 'Meow') 
 // little synthesized critter voices (no audio files needed)
 // Real recordings: drop short clips into a "sounds" folder in the repo with these names and they
 // replace the synthesized voices automatically. Until then the synthesized ones play.
-const SOUND_FILES = { cat: 'sounds/cat.mp3', frog: 'sounds/frog.mp3', mouse: 'sounds/mouse.mp3', fish: 'sounds/fish.mp3', dog: 'sounds/dog.mp3', splash: 'sounds/splash.mp3', waves: 'sounds/waves.mp3', fire: 'sounds/fire.mp3', applause: 'sounds/applause.mp3' };
+const SOUND_FILES = { cat: 'sounds/cat.mp3', frog: 'sounds/frog.mp3', mouse: 'sounds/mouse.mp3', fish: 'sounds/fish.mp3', dog: 'sounds/dog.mp3', splash: 'sounds/splash.mp3', waves: 'sounds/waves.mp3', fire: 'sounds/fire.mp3', applause: 'sounds/applause.mp3', wee: 'sounds/wee.mp3' };
 const soundBufs = {};
 let soundsLoading = false;
 function loadSounds() {
@@ -3323,7 +3323,7 @@ function tickFairies() {
 
 /* --- the bag: treasure you dig up, things you wear, fireflies in a jar --- */
 const ITEMS = {
-  net: { name: 'Bug net', slot: 'hand', color: '#c9b48a' },
+  net: { name: 'Bug net', slot: 'hand', color: '#c9b48a', note: 'Catches fireflies on the island and fairies at the castle' },
   rod: { name: 'Fishing rod', slot: 'hand', color: '#c99260' },
   bow: { name: 'Ribbon bow', slot: 'head', color: '#f2b3c8' },
   partyhat: { name: 'Party hat', slot: 'head', color: '#6878a1' },
@@ -4361,11 +4361,26 @@ window.addEventListener('resize', () => { if (book) { if (twoUp() && book.at % 2
    can't build up into feedback. Headphones make it sound best. */
 let selfEcho = null, selfEchoOn = store.get('cove-selfecho') !== '0';
 function buildSelfEcho() {
+  // Sounds like hearing yourself through a stage mic: your voice gets a mic-like tone (less boom, a little
+  // more presence), then one quick slapback and a softer second bounce, like the walls of a small room.
+  // There's no feedback loop, so it never repeats over and over or turns into a whooshy, phasey smear.
   const ctx = audioCtx(); if (!ctx || !myMeter || !myMeter.src || selfEcho) return;
   try {
-    const d = ctx.createDelay(1), fb = ctx.createGain(), tone = ctx.createBiquadFilter(), hp = ctx.createBiquadFilter(), wet = ctx.createGain();
-    d.delayTime.value = 0.06; fb.gain.value = 0.22; tone.type = 'lowpass'; tone.frequency.value = 2000; hp.type = 'highpass'; hp.frequency.value = 220; wet.gain.value = 0;
-    myMeter.src.connect(hp); hp.connect(d); d.connect(tone); tone.connect(fb); fb.connect(d); tone.connect(wet); wet.connect(ctx.destination);
+    const hp = ctx.createBiquadFilter(), presence = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(), comp = ctx.createDynamicsCompressor();
+    hp.type = 'highpass'; hp.frequency.value = 170;                                   // trims the boomy low end, like a vocal mic
+    presence.type = 'peaking'; presence.frequency.value = 3000; presence.Q.value = 0.9; presence.gain.value = 4;
+    lp.type = 'lowpass'; lp.frequency.value = 6500;
+    comp.threshold.value = -26; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.18;
+    myMeter.src.connect(hp); hp.connect(presence); presence.connect(lp); lp.connect(comp);
+    const tap = (time, level, cut) => {
+      const d = ctx.createDelay(0.5), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      d.delayTime.value = time; g.gain.value = level; f.type = 'lowpass'; f.frequency.value = cut;
+      comp.connect(d); d.connect(f); f.connect(g); return g;
+    };
+    const wet = ctx.createGain(); wet.gain.value = 0;
+    tap(0.075, 1, 5000).connect(wet);                                                  // the slapback
+    tap(0.15, 0.4, 3000).connect(wet);                                                 // a softer second bounce, then it's gone
+    wet.connect(ctx.destination);
     selfEcho = { wet };
   } catch (e) { selfEcho = null; }
 }
@@ -4385,7 +4400,7 @@ function castleLoot() {
     bag.items.net = 1; saveBag(); renderBag(); bagBtn.classList.add('new');
     sfx.find(); burst(pos.x, pos.y + 0.8, pos.z, 14, sparkMat, 1.2, 3.5);
     popAt(pos.x, pos.y + 2.3, pos.z, 'Found a bug net!', 'good');
-    addLine('', 'You found a bug net! Open your bag (B), hold it, then press F near the little fairies to catch one.', true);
+    addLine('', 'You found a bug net! Open your bag (B), hold it, then press F near the little fairies to catch one. It’s the same net that catches fireflies on the island.', true);
     track('castle/found-net');
     return;
   }
@@ -4410,53 +4425,103 @@ function nearTable() {
   for (const tb of castleTables) if (Math.abs(pos.x - tb.x) < 2.2 && pos.z > tb.z0 - 0.8 && pos.z < tb.z1 + 0.8) return tb;
   return null;
 }
+// Each dish sits on a little plate and gets eaten bit by bit: bites (or sips) visibly use it up, and
+// what's left is crumbs on the plate (or an empty goblet). Everyone sees the same dishes go.
+const plateGeo = new THREE.CylinderGeometry(0.21, 0.19, 0.02, 14), plateMat = mat(0xfffaf0), crumbMatS = mat(0xd9a05a);
 function makeFood(k) {
-  const g = new THREE.Group();
+  const g = new THREE.Group(), parts = {};
+  if (k !== 4) put(new THREE.Mesh(plateGeo, plateMat), 0, 0.01, 0, g, false);
+  const crumbs = new THREE.Group(); crumbs.visible = false; g.add(crumbs);
+  for (let i = 0; i < 5; i++) put(new THREE.Mesh(new THREE.SphereGeometry(0.018, 4, 3), crumbMatS), (Math.random() - 0.5) * 0.2, 0.025, (Math.random() - 0.5) * 0.2, crumbs, false);
+  let max = 3, drink = false, bite;
   if (k === 0) {                                                  // a roast with a little bone
-    const r = put(new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.22, 3, 8), mat(0xb5652e)), 0, 0.14, 0, g, false); r.rotation.z = Math.PI / 2;
+    const meat = put(new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.22, 3, 8), mat(0xb5652e)), 0, 0.14, 0, g, false); meat.rotation.z = Math.PI / 2;
     put(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 5), mat(0xfff6e6)), 0.26, 0.16, 0, g, false).rotation.z = Math.PI / 2;
-  } else if (k === 1) {                                           // a pie
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.1, 12), mat(0xe8b25a)), 0, 0.06, 0, g, false);
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 12), mat(0xc9506a)), 0, 0.115, 0, g, false);
+    bite = n => { const s = [1, 0.62, 0.32][n] || 0; meat.visible = s > 0; meat.scale.set(1, s || 1, 1); meat.position.x = (1 - s) * 0.14; crumbs.visible = n >= 2; };
+  } else if (k === 1) {                                           // a pie: slices go one at a time
+    const pie = new THREE.Group(); g.add(pie);
+    for (let w = 0; w < 3; w++) {                                 // three wedges
+      const wedge = new THREE.Group(); pie.add(wedge);
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.17, 0.1, 10, 1, false, w * Math.PI * 2 / 3, Math.PI * 2 / 3), mat(0xe8b25a)), 0, 0.07, 0, wedge, false);
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.165, 0.02, 10, 1, false, w * Math.PI * 2 / 3, Math.PI * 2 / 3), mat(0xc9506a)), 0, 0.125, 0, wedge, false);
+    }
+    bite = n => { pie.children.forEach((w, i) => { w.visible = i >= n; }); crumbs.visible = n >= 1; };
   } else if (k === 2) {                                           // a two-tier cake with a cherry
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.14, 12), mat(0xf7b2c4)), 0, 0.08, 0, g, false);
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.12, 12), mat(0xfff6e6)), 0, 0.21, 0, g, false);
-    put(new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), mat(0xe8584a)), 0, 0.3, 0, g, false);
-  } else if (k === 3) {                                           // a fruit bowl
+    const bottom = put(new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.14, 12), mat(0xf7b2c4)), 0, 0.08, 0, g, false);
+    const topT = put(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.12, 12), mat(0xfff6e6)), 0, 0.21, 0, g, false);
+    const cherry = put(new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), mat(0xe8584a)), 0, 0.3, 0, g, false);
+    bite = n => { cherry.visible = n < 1; topT.visible = n < 2; bottom.visible = n < 3; crumbs.visible = n >= 2; };
+  } else if (k === 3) {                                           // a fruit bowl: one fruit at a time
     put(new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat(0xe8c66a, { side: THREE.DoubleSide })), 0, 0.2, 0, g, false);
-    [0xe8584a, 0xffd36b, 0x8ce99a, 0x9775fa].forEach((c, i) => put(new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), mat(c)), Math.cos(i * 1.6) * 0.08, 0.22, Math.sin(i * 1.6) * 0.08, g, false));
-  } else if (k === 4) {                                           // a golden goblet
+    const fruit = [0xe8584a, 0xffd36b, 0x8ce99a, 0x9775fa].map((c, i) => put(new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), mat(c)), Math.cos(i * 1.6) * 0.08, 0.22, Math.sin(i * 1.6) * 0.08, g, false));
+    max = 4;
+    bite = n => fruit.forEach((f, i) => { f.visible = i >= n; });
+  } else if (k === 4) {                                           // a golden goblet of berry juice: sip by sip
     put(new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.16, 8, 1, true), mat(0xe8c66a, { side: THREE.DoubleSide })), 0, 0.26, 0, g, false).rotation.x = Math.PI;
     put(new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.14, 4), mat(0xe8c66a)), 0, 0.1, 0, g, false);
     put(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 8), mat(0xe8c66a)), 0, 0.02, 0, g, false);
+    const juice = put(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.01, 10), mat(0x9b3a6e)), 0, 0.325, 0, g, false);
+    drink = true;
+    bite = n => { const lv = [1, 0.66, 0.33][n]; juice.visible = lv !== undefined; if (lv) { juice.position.y = 0.19 + 0.135 * lv; juice.scale.set(0.35 + 0.65 * lv, 1, 0.35 + 0.65 * lv); } };
   } else {                                                        // a pudding with cream
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.16, 10), mat(0x8a5a3a)), 0, 0.08, 0, g, false);
-    put(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xfffaf0)), 0, 0.16, 0, g, false);
+    const pud = put(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.16, 10), mat(0x8a5a3a)), 0, 0.09, 0, g, false);
+    const cream = put(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xfffaf0)), 0, 0.17, 0, g, false);
+    bite = n => { cream.visible = n < 1; pud.visible = n < 3; pud.scale.y = n >= 2 ? 0.45 : 1; pud.position.y = n >= 2 ? 0.05 : 0.09; crumbs.visible = n >= 2; };
   }
+  g.userData = { bites: 0, max, drink, bite };
   return g;
 }
-function spawnFeast(tb, who) {
-  if (tb.feast) { tb.feast.until = nowMs() + 120000; return; }
+function spawnFeast(tb, who, fresh) {
+  if (tb.feast && !fresh) { tb.feast.until = nowMs() + 120000; return; }
+  if (tb.feast) scene.remove(tb.feast.g);
   const g = new THREE.Group(); scene.add(g);
   let k = 0;
   for (let z = tb.z0 + 0.5; z < tb.z1 - 0.3; z += 0.75) for (const dx of [-0.42, 0.42]) {
-    const f = makeFood((k++ + (dx > 0 ? 3 : 0)) % 6); f.position.set(tb.x + dx, 0.96, z); f.rotation.y = Math.random() * 6; f.scale.setScalar(0.01); g.add(f);
+    const f = makeFood((k++ + (dx > 0 ? 3 : 0)) % 6); f.position.set(tb.x + dx, 0.96, z); f.rotation.y = (k * 2.39) % 6.28; f.scale.setScalar(0.01); g.add(f);
   }
   tb.feast = { g, until: nowMs() + 120000, grow: 0 };
   for (let i = 0; i < 6; i++) setTimeout(() => burst(tb.x, 1.4, tb.z0 + Math.random() * (tb.z1 - tb.z0), 6, sparkMat, 0.8, 2.6), i * 90);
   const near = soundNear(who);
   if (near > 0.02) chimeNotes([523, 659, 784, 1046, 1318], 0.07 * Math.max(0.4, near), 'triangle', 0.07);
 }
+// the dish closest to you that still has something left
+function nearestDish(tb) {
+  if (!tb.feast) return null;
+  let best = null, bd = 2.4;                                       // close enough to reach across the table
+  for (const f of tb.feast.g.children) {
+    if (f.userData.bites >= f.userData.max) continue;
+    const d = Math.hypot(f.position.x - pos.x, f.position.z - pos.z);
+    if (d < bd) { bd = d; best = f; }
+  }
+  return best;
+}
+function biteDish(f) {
+  f.userData.bites++;
+  f.userData.bite(f.userData.bites);
+}
 function feastAction(tb) {
   if (tb.feast) {
-    if (nowMs() - lastFeastBite < 1100) return;
-    lastFeastBite = nowMs();
-    sfx.crunch(1); setTimeout(() => sfx.crunch(0.7), 220);
-    burst(pos.x, pos.y + 1.1, pos.z, 5, appleBitMat, 0.6, 1.6);
-    popAt(pos.x, pos.y + 2.3, pos.z, ['Delicious!', 'Mmm, so good', 'A royal bite!', 'Yum yum'][Math.floor(Math.random() * 4)], 'good');
-    setTimeout(() => popAt(pos.x, pos.y + 2.0, pos.z, '♥', 'heart'), 450);
-    track('castle/ate-feast', true);
-    return;
+    const dish = nearestDish(tb);
+    if (!dish) {
+      const left = tb.feast.g.children.some(f => f.userData.bites < f.userData.max);
+      if (left) { popAt(pos.x, pos.y + 2.3, pos.z, 'Scoot closer to a dish', ''); return; }
+      if (!bag.tools.wand) { popAt(pos.x, pos.y + 2.3, pos.z, 'All gone! Someone needs a wand', ''); return; }
+    } else {
+      if (nowMs() - lastFeastBite < 900) return;
+      lastFeastBite = nowMs();
+      biteDish(dish);
+      turnToward(me.root, Math.atan2(dish.position.x - pos.x, dish.position.z - pos.z), 1);
+      if (dish.userData.drink) { slurp(1.2); popAt(pos.x, pos.y + 2.3, pos.z, ['Glug glug!', 'Sweet berry juice', 'Cheers!'][Math.floor(Math.random() * 3)], 'good'); }
+      else {
+        sfx.crunch(1); setTimeout(() => sfx.crunch(0.7), 220);
+        burst(dish.position.x, 1.1, dish.position.z, 5, appleBitMat, 0.5, 1.4);
+        popAt(pos.x, pos.y + 2.3, pos.z, ['Delicious!', 'Mmm, so good', 'A royal bite!', 'Yum yum'][Math.floor(Math.random() * 4)], 'good');
+      }
+      if (dish.userData.bites >= dish.userData.max) setTimeout(() => popAt(pos.x, pos.y + 2.0, pos.z, '♥', 'heart'), 450);
+      if (actWorld) actWorld.send({ e: 'bite', i: castleTables.indexOf(tb), k: tb.feast.g.children.indexOf(dish) }).catch(() => {});
+      track('castle/ate-feast', true);
+      return;
+    }
   }
   if (!bag.tools.wand) {
     popAt(pos.x, pos.y + 2.3, pos.z, 'You need a magic wand', '');
@@ -4465,14 +4530,25 @@ function feastAction(tb) {
   }
   me.castT = 0.45;
   turnToward(me.root, Math.atan2(tb.x - pos.x, 0.0001), 1);
-  spawnFeast(tb, me);
+  spawnFeast(tb, me, true);
   popAt(pos.x, pos.y + 2.4, pos.z, 'A feast appears!', 'good');
   if (actWorld) actWorld.send({ e: 'feast', i: castleTables.indexOf(tb) }).catch(() => {});
   track('castle/feast');
 }
 function remoteFeast(c, i) {
   const tb = castleTables[i], p = c.root.position;
-  if (tb && Math.abs(p.x - tb.x) < 4 && p.z > tb.z0 - 3 && p.z < tb.z1 + 3) spawnFeast(tb, c);
+  if (!tb || Math.abs(p.x - tb.x) > 4 || p.z < tb.z0 - 3 || p.z > tb.z1 + 3) return;
+  const empty = tb.feast && !tb.feast.g.children.some(f => f.userData.bites < f.userData.max);
+  spawnFeast(tb, c, empty);
+}
+function remoteBite(c, i, k) {
+  const tb = castleTables[i]; if (!tb || !tb.feast) return;
+  const dish = tb.feast.g.children[k], p = c.root.position;
+  if (!dish || dish.userData.bites >= dish.userData.max || Math.hypot(p.x - dish.position.x, p.z - dish.position.z) > 3) return;
+  biteDish(dish);
+  const near = soundNear(c);
+  if (dish.userData.drink) slurp(near); else if (near > 0.02) sfx.crunch(near);
+  burst(dish.position.x, 1.1, dish.position.z, 3, appleBitMat, 0.4, 1.2);
 }
 // the rainbow slide
 function rainbowPoint(a, phi, lift = 0) {
@@ -4486,7 +4562,7 @@ function startSlide() {
   slide = { a: best, phase: 'fall', t: 0, from: { x: pos.x, y: pos.y, z: pos.z }, tick: 0 };
   stopReading('quiet');
   popAt(pos.x, pos.y + 2.3, pos.z, 'Wheee!', 'good');
-  chimeNotes([784, 659, 523], 0.06, 'sine', 0.09);
+  if (!playBuf('wee', 0.55)) chimeNotes([784, 659, 523], 0.06, 'sine', 0.09);
   track('castle/rainbow-slide');
 }
 function tickSlide(dt) {
@@ -4502,7 +4578,7 @@ function tickSlide(dt) {
     const p = rainbowPoint(s.a, phi), ahead = rainbowPoint(s.a, Math.max(0, phi - 0.05));
     pos.x = p.x; pos.y = p.y; pos.z = p.z;
     turnToward(me.root, Math.atan2(ahead.x - p.x, ahead.z - p.z), Math.min(1, dt * 10));
-    if (s.tick <= 0) { s.tick = 0.22; noiseBurst(0.3, 'bandpass', 700 + k * 1600, 0.06 + k * 0.05, 0, 1.4); burst(pos.x, pos.y + 0.2, pos.z, 2, sparkMat, 0.3, 0.8); }
+    if (s.tick <= 0) { s.tick = 0.22; burst(pos.x, pos.y + 0.2, pos.z, 2, sparkMat, 0.3, 0.8); }   // a trail of sparkles
     if (k >= 1) {
       s.phase = 'pot'; s.t = 0;
       const ex = RAINBOW.out + RAINBOW.r;
@@ -4649,7 +4725,9 @@ function renderBag() {
     btn.textContent = it.slot === 'hand' ? (on ? 'Put away' : 'Hold') : (on ? 'Take off' : 'Wear');
     btn.classList.toggle('on', on);
     btn.addEventListener('click', () => wearItem(id));
-    row.append(dot, name, btn); bagList.append(row);
+    row.append(dot, name, btn);
+    if (it.note) { const sm = document.createElement('small'); sm.textContent = it.note; row.append(sm); }
+    bagList.append(row);
   }
   if (CASTLE || bag.fairies) {
     const fr = document.createElement('div'); fr.className = 'bagRow jar';
@@ -5077,6 +5155,7 @@ function hookWorld(T) {
     else if (data.e === 'peek' && CAFE && isInt(data.i, 0, cafeFrames.length - 1)) remotePeek(c, data.i);
     else if (data.e === 'brew' && CAFE && isInt(data.i, 0, cafeStations.length - 1)) remoteBrew(c, data.i);
     else if (data.e === 'feast' && CASTLE && isInt(data.i, 0, castleTables.length - 1)) remoteFeast(c, data.i);
+    else if (data.e === 'bite' && CASTLE && isInt(data.i, 0, castleTables.length - 1) && isInt(data.k, 0, 40)) remoteBite(c, data.i, data.k);
     else if (data.e === 'letter' && CASTLE && isInt(data.v, 0, VERSES.length - 1)) receiveLetter(c, data.v);
     else if (data.e === 'clap' && nowMs() - (c.lastClap || 0) > 1000) {      // hear the crowd, louder when you're close
       c.lastClap = nowMs();
@@ -5182,7 +5261,10 @@ function tickWorld(dt) {
   if (ctxMode === 'making') ctxBtn.textContent = MAKE[making.s.type].doing + '… ' + Math.round(making.t / making.dur * 100) + '%';
   else if (ctxMode === 'peek') ctxBtn.textContent = 'Peek behind (F)';
   else if (ctxMode === 'library') ctxBtn.textContent = 'Browse books (F)';
-  else if (ctxMode === 'feast') ctxBtn.textContent = tableNear.feast ? 'Have a bite (F)' : bag.tools.wand ? 'Wave your wand (F)' : 'Feast table (F)';
+  else if (ctxMode === 'feast') {
+    const dish = nearestDish(tableNear), anyLeft = tableNear.feast && tableNear.feast.g.children.some(f => f.userData.bites < f.userData.max);
+    ctxBtn.textContent = dish ? (dish.userData.drink ? 'Take a sip (F)' : 'Have a bite (F)') : anyLeft ? 'Walk to a dish' : bag.tools.wand ? 'Wave your wand (F)' : tableNear.feast ? 'All gone' : 'Feast table (F)';
+  }
   else if (ctxMode === 'make') ctxBtn.textContent = MAKE[stationNear.type].verb + ' (F)';
   else if (ctxMode) ctxBtn.textContent = ctxMode === 'cooking' ? (cooking.t < cooking.dur ? 'Roasting… ' + Math.round(cooking.t / cooking.dur * 100) + '%' : 'Yum!') : ctxMode === 'cook' ? 'Cook (F)' : ctxMode === 'dig' ? (CASTLE ? 'Dig in the cloud (F)' : 'Dig here (F)') : ctxMode === 'net' ? 'Swing net (F)'
     : !fishing ? 'Cast (F)' : fishing.phase === 'bite' ? 'Reel in! (F)' : fishing.phase === 'reel' ? 'Stop! (F)' : 'Wait for a bite…';
@@ -5312,7 +5394,7 @@ function update(dt) {
     place(c.tag, new V(p.x, p.y + 1.75, p.z));
     tickBubble(c, dt, 2.0);
   }
-  if (selfEcho && actx) selfEcho.wet.gain.setTargetAtTime(stageReader === me && micOn && selfEchoOn ? 0.12 : 0, actx.currentTime, 0.25);   // your own echo, softer than listeners hear
+  if (selfEcho && actx) selfEcho.wet.gain.setTargetAtTime(stageReader === me && micOn && selfEchoOn ? 0.2 : 0, actx.currentTime, 0.25);   // your own echo, softer than listeners hear
 
   // camera follow (a slow drift around the island while you're at the entrance)
   const look = joined ? new V(pos.x, pos.y + 1, pos.z) : new V(0, 1, -2);

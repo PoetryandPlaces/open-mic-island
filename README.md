@@ -63,7 +63,8 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 
 - A glass castle on a cloud, with rainbows and shimmering, iridescent sunshine. The open mic stage inside is pearl and gold, with the Poetry and Places sign and spotlight.
 - Press F by a cloud tuft outside to dig for a magic wand or a feather quill.
-- With a wand, press F at one of the two long tables to make a feast for everyone. Press F again to eat.
+- With a wand, press F at one of the two long tables to make a feast for everyone. Press F again to eat or drink from the dish nearest you: roasts, pies and cakes get smaller bite by bite until only crumbs are left on the plate, fruit bowls empty one fruit at a time, and goblets drain sip by sip. Everyone sees the dishes go. When a table is empty, wave the wand again for a fresh feast.
+- One bug net does everything: it catches fireflies on the island and fairies at the castle.
 - With a quill, press L (or use the bag) to write a little "roses are red" letter to someone in the room. Letters are picked from a set of friendly verses, so nothing else can be sent.
 - Tiny glowing fairies flit around the castle. Cloud tufts sometimes hide a bug net: hold it and press F near a fairy to catch it, then look at them in your jar or let them go.
 - Step off the edge of the cloud and you slide down a rainbow into a pot of gold, which pops you back up to the castle.
