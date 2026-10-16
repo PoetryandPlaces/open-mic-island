@@ -77,6 +77,7 @@ Open `https://openmic.poetryandplaces.org/trailer.html` in Chrome or Edge. It is
 
 - Pick a trailer: **1 · Somewhere to gather** (a vague, dreamy teaser), **2 · Take the mic** (the open mic), or **3 · Everything** (every feature, labeled).
 - Pick **Widescreen 16:9** (YouTube, website) or **Vertical 9:16** (Reels, TikTok, Shorts), the music, and whether to include sound effects and name tags.
+- **Export → Game footage only** records each scene as its own clean clip (no titles, captions, logo or music) so you can edit your own version in CapCut, Canva or Premiere.
 - **Preview** plays it; **Record & download** saves a video file (MP4 in recent Chrome, otherwise WebM). Keep the tab in front while it records.
 - Each shot loads the real game in trailer mode (`index.html#trailer=<scene>`): scripted critters act out the scene on your screen only. Trailer mode never joins the meetup network and sends nothing to GoatCounter.
 - Shots, captions and title cards live in the `TRAILERS` list in `trailer.html`; the scenes themselves (who stands where, what they do, camera moves) live in `TR_SCENES` near the end of `index.html`.

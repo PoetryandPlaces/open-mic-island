@@ -7,13 +7,13 @@
 <title>Trailer Studio · Couplet Cove</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Lexend:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&family=Italiana&family=Poiret+One&family=Itim&family=Baloo+2:wght@800&family=Abril+Fatface&family=Bowlby+One&family=Special+Elite&family=DM+Serif+Display&family=Rubik+Mono+One&display=swap">
 <style>
   :root { --ink: #2e2a45; --paper: #fbf9fe; --lav: #eee7f8; --plank: #7a68a1; --plank-dark: #6878a1; --muted: #6b6585; }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; background: #1f1c2e; color: var(--paper); font-family: "Lexend", system-ui, sans-serif; }
   header { padding: 18px 24px 6px; }
-  h1 { margin: 0; font: 700 1.6rem "Fraunces", serif; color: var(--lav); }
+  h1 { margin: 0; font: 400 2rem "Italiana", serif; color: var(--lav); letter-spacing: .02em; }
   header p { margin: 4px 0 0; color: #b9b3d1; font-size: .88rem; }
   main { display: grid; grid-template-columns: 330px 1fr; gap: 20px; padding: 14px 24px 24px; align-items: start; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
@@ -62,6 +62,12 @@
         <option value="tall">Vertical 9:16 (1080×1920) · Reels, TikTok, Shorts</option>
       </select>
     </label>
+    <label class="row">Export
+      <select id="mode">
+        <option value="trailer">Finished trailer (titles, captions, music)</option>
+        <option value="footage">Game footage only (a clean clip per scene, no text or music)</option>
+      </select>
+    </label>
     <label class="row">Music
       <select id="music">
         <option value="auto">Pick for me</option>
@@ -73,7 +79,7 @@
     </label>
     <div class="checks">
       <label><input type="checkbox" id="sfx" checked> Sound effects</label>
-      <label><input type="checkbox" id="tags" checked> Name tags</label>
+      <label><input type="checkbox" id="tags"> Name tags</label>
     </div>
     <div class="btns">
       <button id="preview" type="button">Preview</button>
@@ -96,54 +102,61 @@
 </main>
 <script>
 (() => {
-/* ---------- the trailers: shots in order, from vague to exact ----------
-   A shot is either a title card, or a scene filmed in the game. Scenes are defined in index.html
-   (TR_SCENES); "from" starts partway into a scene. */
-const URL_LINE = 'openmic.poetryandplaces.org';
-const LAUNCH = ['October 24 · 4:00 pm PT', 'at the Poetry and Places Obsession Open Mic'];
-const PRESENTS = { presents: true, dur: 3.6 };
-const TAGLINE = { card: ['Somewhere between', 'a poem and a place…'], dur: 4 };
-const END_CARD = { card: ['Couplet Cove'], sub: [URL_LINE, 'Opens ' + LAUNCH[0], LAUNCH[1]], dur: 6 };
+/* ============================== THE SCRIPT ==============================
+   All the words in the three trailers live here, so they're easy to edit.
+   Each trailer is a list of shots, in order:
+     { presents: true, dur }                    the logo with "poetry and places presents"
+     { bubble: ['line', 'line'], dur }          a crumpled-paper speech bubble
+     { title: 'Couplet Cove', sub: [...], dur } the name in glossy bubble letters
+     { end: 'tease' | 'full', dur }             the closing card (date, Obsession open mic, link)
+     { scene, world, from, dur, caption }       a scene filmed in the game ("captions" = timed list)
+   dur is how many seconds the shot lasts. */
+const EVENT = {
+  date: 'October 24', time: '4:00 pm PT',
+  invite: ['…see you on October 24', 'at 4:00 pm PT?'],
+  name: 'Obsession', line: 'a poetry and places open mic',
+  link: 'openmic.poetryandplaces.org'
+};
 const TRAILERS = {
   t1: { name: 'Somewhere to gather', music: 'castle-music.mp3', bars: true, shots: [
-    PRESENTS,
-    TAGLINE,
+    { presents: true, dur: 3.6 },
+    { bubble: ['somewhere between', 'a poem and a place…'], dur: 4.2 },
     { scene: 'island-tour', world: 'island', from: 0, dur: 6, blur: 7, caption: 'an island at golden hour' },
-    { scene: 'cafe-tour', world: 'cafe', from: 2, dur: 5.5, blur: 7, caption: 'a cafe that smells like coffee' },
+    { scene: 'cafe-tour', world: 'cafe', from: 2, dur: 5.5, blur: 7, caption: 'a cafe that smells like cinnamon and joy' },
     { scene: 'castle-tour', world: 'castle', from: 0, dur: 5.5, blur: 7, caption: 'a castle above the clouds' },
-    { scene: 'open-mic', world: 'island', from: 4.4, dur: 6, blur: 4, caption: 'and a stage, waiting for your words' },
-    { card: ['Couplet Cove'], sub: LAUNCH, dur: 6 }
+    { scene: 'open-mic', world: 'island', from: 4.4, dur: 6, blur: 4, caption: 'and a stage, waiting for your stories' },
+    { end: 'tease', dur: 7 }
   ] },
   t2: { name: 'Take the mic', music: 'cafe-music.mp3', bars: false, shots: [
-    PRESENTS,
-    TAGLINE,
+    { presents: true, dur: 3.6 },
+    { bubble: ['somewhere between', 'a poem and a place…'], dur: 4.2 },
     { scene: 'open-mic', world: 'island', from: 0, dur: 27.5, captions: [
-      { t: 0.6, d: 3.6, text: 'Gather with friends, from anywhere' },
-      { t: 4.6, d: 4.4, text: 'Step up to the mic' },
-      { t: 10, d: 4.4, text: 'Everyone hears you, live' },
-      { t: 15, d: 4.4, text: 'Your words, your spotlight' },
+      { t: 0.6, d: 3.6, text: 'gather with friends, from anywhere' },
+      { t: 4.6, d: 4.4, text: 'step up to the mic' },
+      { t: 10, d: 4.4, text: 'everyone hears you, live' },
+      { t: 15, d: 4.4, text: 'your words, your spotlight' },
       { t: 20.2, d: 4.6, text: 'and the room cheers you on' }
     ] },
-    END_CARD
+    { end: 'full', dur: 7 }
   ] },
   t3: { name: 'Everything', music: 'music.mp3', bars: false, shots: [
-    PRESENTS,
-    { card: ['Couplet Cove'], sub: ['an online home for open mics'], dur: 3.5 },
-    { scene: 'island-tour', world: 'island', from: 4, dur: 5, caption: 'Meet up on a cozy island' },
-    { scene: 'island-fun', world: 'island', from: 0, dur: 7.5, caption: 'Talk on your mic. Chat in bubbles.' },
-    { scene: 'open-mic', world: 'island', from: 8, dur: 6.5, caption: 'Read at the open mic' },
-    { scene: 'island-fun', world: 'island', from: 8.4, dur: 5.5, caption: 'Go fishing' },
-    { scene: 'island-fun', world: 'island', from: 14, dur: 7, caption: 'Dig for treasure. Roast s’mores.' },
-    { scene: 'island-fun', world: 'island', from: 21, dur: 7, caption: 'Catch fireflies. Share a hug.' },
-    { scene: 'cafe-tour', world: 'cafe', from: 1.5, dur: 6, caption: 'Make a private Cozy Cafe' },
-    { scene: 'cafe-fun', world: 'cafe', from: 0, dur: 5, caption: 'Find tools hidden behind the pictures' },
-    { scene: 'cafe-fun', world: 'cafe', from: 5, dur: 6, caption: 'Brew a latte' },
-    { scene: 'cafe-fun', world: 'cafe', from: 11, dur: 6.5, caption: 'Borrow a classic from the library' },
-    { scene: 'castle-tour', world: 'castle', from: 0, dur: 6, caption: 'or a Cloudy Castle' },
-    { scene: 'castle-fun', world: 'castle', from: 0.5, dur: 6.5, caption: 'Wave a wand for a feast' },
-    { scene: 'castle-fun', world: 'castle', from: 7, dur: 6, caption: 'Send letters. Catch fairies.' },
+    { presents: true, dur: 3.6 },
+    { title: 'Couplet Cove', sub: ['an online home for open mics'], dur: 3.8 },
+    { scene: 'island-tour', world: 'island', from: 4, dur: 5, caption: 'meet up on a cozy island' },
+    { scene: 'island-fun', world: 'island', from: 0, dur: 7.5, caption: 'talk on your mic, chat in bubbles' },
+    { scene: 'open-mic', world: 'island', from: 8, dur: 6.5, caption: 'read at the open mic' },
+    { scene: 'island-fun', world: 'island', from: 8.4, dur: 5.5, caption: 'go fishing' },
+    { scene: 'island-fun', world: 'island', from: 14, dur: 7, caption: 'dig for treasure, roast s’mores' },
+    { scene: 'island-fun', world: 'island', from: 21, dur: 7, caption: 'catch fireflies, share a hug' },
+    { scene: 'cafe-tour', world: 'cafe', from: 1.5, dur: 6, caption: 'make a private cozy cafe' },
+    { scene: 'cafe-fun', world: 'cafe', from: 0, dur: 5, caption: 'find tools hidden behind the pictures' },
+    { scene: 'cafe-fun', world: 'cafe', from: 5, dur: 6, caption: 'brew a latte' },
+    { scene: 'cafe-fun', world: 'cafe', from: 11, dur: 6.5, caption: 'borrow a classic from the library' },
+    { scene: 'castle-tour', world: 'castle', from: 0, dur: 6, caption: 'or a cloudy castle' },
+    { scene: 'castle-fun', world: 'castle', from: 0.5, dur: 6.5, caption: 'wave a wand for a feast' },
+    { scene: 'castle-fun', world: 'castle', from: 7, dur: 6, caption: 'send letters, catch fairies' },
     { scene: 'castle-fun', world: 'castle', from: 13, dur: 8, caption: 'and slide down the rainbow' },
-    END_CARD
+    { end: 'full', dur: 7 }
   ] }
 };
 
@@ -195,46 +208,209 @@ function loadShot(shot, frame, n) {
 }
 function nextSceneIndex(from) { for (let i = from; i < run.shots.length; i++) if (run.shots[i].scene) return i; return -1; }
 
-/* ---------- drawing ---------- */
-const logo = new Image(); logo.src = 'pp-logo-light.png';           // the Poetry and Places mark, in light lavender
-function drawPresents(local) {
-  cardBg();
-  const S = Math.min(W, H) / 1080, k = Math.min(1, local / 0.9);
-  g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.textBaseline = 'middle';
-  const lh = 300 * S, lw = logo.naturalWidth ? lh * logo.naturalWidth / logo.naturalHeight : 0;
-  if (lw) g.drawImage(logo, W / 2 - lw / 2, H / 2 - lh * 0.9 - (1 - k) * 14 * S, lw, lh);
-  g.fillStyle = '#eee7f8'; g.font = fontD(Math.round(78 * S));
-  g.fillText('Poetry and Places', W / 2, H / 2 + 120 * S);
-  g.fillStyle = '#e8c66a'; g.font = 'italic ' + fontD(Math.round(46 * S));
-  g.fillText('presents', W / 2, H / 2 + 200 * S);
-  g.restore();
-}
-const fontD = px => '700 ' + px + 'px Fraunces, "Times New Roman", serif';
+/* ---------- drawing: the Poetry and Places look ----------
+   Lavender paper, thin flight paths with a little plane, crumpled-paper speech bubbles with a purple
+   shadow, glossy purple bubble letters, and ransom-note letters for the open mic's name. */
+const INK = '#5d6898', PLUM = '#6b55a0', LAV = '#ece6f6';
+const logoC = new Image(); logoC.src = 'pp-logo.png';              // the logo in its own colors, for the lavender cards
+const logoL = new Image(); logoL.src = 'pp-logo-light.png';        // a light version that shows up over the game
 const fontB = (w, px) => w + ' ' + px + 'px Lexend, system-ui, sans-serif';
-function cardBg() {
-  const gr = g.createLinearGradient(0, 0, 0, H);
-  gr.addColorStop(0, '#2e2a45'); gr.addColorStop(0.6, '#4a3f6b'); gr.addColorStop(1, '#7a68a1');
-  g.fillStyle = gr; g.fillRect(0, 0, W, H);
-  g.fillStyle = 'rgba(255, 236, 196, 0.08)';                     // a soft stage-light glow
-  g.beginPath(); g.ellipse(W / 2, H * 0.55, W * 0.38, H * 0.3, 0, 0, Math.PI * 2); g.fill();
-}
-function drawCard(shot, local) {
-  cardBg();
-  const S = Math.min(W, H) / 1080, big = Math.round((shot.card.length > 1 ? 84 : 120) * S);
-  const k = Math.min(1, local / 0.8);
-  g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = '#eee7f8'; g.font = fontD(big);
-  const lines = shot.card, sub = shot.sub || [];
-  const total = lines.length * big * 1.15 + sub.length * 46 * S * 1.4 + (sub.length ? 30 * S : 0);
-  let y = H / 2 - total / 2 + big * 0.55 - (1 - k) * 18 * S;
-  for (const l of lines) { g.fillText(l, W / 2, y); y += big * 1.15; }
-  if (sub.length) {
-    y += 14 * S;
-    g.fillStyle = '#e8c66a'; g.fillRect(W / 2 - 60 * S, y - 22 * S, 120 * S, 3 * S);
-    y += 26 * S;
-    sub.forEach((l, i) => { g.font = fontB(i ? 600 : 700, Math.round((i ? 34 : 44) * S)); g.fillStyle = i ? '#c9c3e0' : '#f7d9e4'; g.fillText(l, W / 2, y); y += 46 * S * 1.4; });
+const F = {
+  thin: px => '400 ' + px + 'px Italiana, "Times New Roman", serif',
+  deco: px => '400 ' + px + 'px "Poiret One", "Century Gothic", sans-serif',
+  hand: px => '400 ' + px + 'px Itim, "Comic Sans MS", sans-serif',
+  bubbly: px => '800 ' + px + 'px "Baloo 2", "Arial Rounded MT Bold", sans-serif'
+};
+const FONT_LOADS = [F.thin(60), F.deco(60), F.hand(60), F.bubbly(60), '400 60px "Abril Fatface"', '400 60px "Bowlby One"', '400 60px "Special Elite"', '400 60px "DM Serif Display"', '400 60px "Rubik Mono One"', fontB(700, 40)];
+const SZ = () => Math.min(W, H) / 1080, TALL = () => H > W;
+function seeded(seed) { let s = seed % 2147483647 || 1; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
+const paperTex = (() => {                                          // crumpled paper
+  const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d'), r = seeded(42);
+  x.fillStyle = '#f5f4f6'; x.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 150; i++) {
+    x.beginPath(); const cx = r() * 512, cy = r() * 512, n = 3 + Math.floor(r() * 3);
+    for (let k = 0; k < n; k++) { const a = k / n * 6.283 + r(), d = 30 + r() * 90; x[k ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * d, cy + Math.sin(a) * d); }
+    x.closePath(); x.fillStyle = r() < 0.5 ? 'rgba(255,255,255,' + (0.3 + r() * 0.4) + ')' : 'rgba(115,110,130,' + (0.02 + r() * 0.035) + ')'; x.fill();
   }
+  x.strokeStyle = 'rgba(110,105,125,.08)'; x.lineWidth = 1;
+  for (let i = 0; i < 45; i++) { x.beginPath(); x.moveTo(r() * 512, r() * 512); x.lineTo(r() * 512, r() * 512); x.stroke(); }
+  return c;
+})();
+const paperFill = g.createPattern(paperTex, 'repeat');
+function lavBg() { g.fillStyle = LAV; g.fillRect(0, 0, W, H); }
+// a thin flight path, drawn on as the card plays, with a little plane at the tip
+const PLANE = new Path2D('M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z');
+function bez(p, t) { const u = 1 - t; return [u * u * u * p[0][0] + 3 * u * u * t * p[1][0] + 3 * u * t * t * p[2][0] + t * t * t * p[3][0], u * u * u * p[0][1] + 3 * u * u * t * p[1][1] + 3 * u * t * t * p[2][1] + t * t * t * p[3][1]]; }
+function flight(pts, prog) {
+  const P = pts.map(([x, y]) => [x * W, y * H]), S = SZ(), end = Math.max(0.002, Math.min(1, prog));
+  g.save(); g.strokeStyle = PLUM; g.globalAlpha = 0.85; g.lineWidth = 2.2 * S; g.lineCap = 'round';
+  g.beginPath();
+  for (let i = 0; i <= 90; i++) { const [x, y] = bez(P, end * i / 90); i ? g.lineTo(x, y) : g.moveTo(x, y); }
+  g.stroke();
+  const [x, y] = bez(P, end), [xa, ya] = bez(P, Math.max(0, end - 0.01)), [xb, yb] = bez(P, Math.min(1, end + 0.01));
+  g.globalAlpha = 1; g.translate(x, y); g.rotate(Math.atan2(yb - ya, xb - xa) + Math.PI / 2);
+  const s = 2.6 * S; g.scale(s, s); g.translate(-12, -12); g.fillStyle = PLUM; g.fill(PLANE);
   g.restore();
+}
+function ease(k) { k = Math.max(0, Math.min(1, k)); return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
+// a crumpled paper speech bubble with a purple shadow, like the Obsession poster
+function speech(cx, cy, lines, px, rot, appear = 1) {
+  const S = SZ(), r = seeded(lines.join('').length * 97 + 13);
+  g.font = F.hand(px);
+  const w = Math.max(...lines.map(l => g.measureText(l).width)) + 130 * S, h = lines.length * px * 1.28 + 96 * S;
+  const j = () => (r() - 0.5) * 0.05 * h, x0 = -w / 2, x1 = w / 2, y0 = -h / 2, y1 = h / 2;
+  const pts = [[x0 + j(), y0 + j()], [x0 + w * 0.45, y0 - h * 0.05], [x1 + j(), y0 + j()], [x1 + w * 0.02, y0 + h * 0.48], [x1 + j(), y1 + j()],
+    [x0 + w * 0.36, y1 + j()], [x0 + w * 0.13, y1 + h * 0.5], [x0 + w * 0.22, y1 + j()], [x0 + j(), y1 + j()], [x0 - w * 0.015, 0]];
+  const path = new Path2D(); pts.forEach(([x, y], i) => i ? path.lineTo(x, y) : path.moveTo(x, y)); path.closePath();
+  const k = ease(appear);
+  g.save(); g.translate(cx, cy); g.rotate(rot); g.scale(0.9 + 0.1 * k, 0.9 + 0.1 * k); g.globalAlpha = k;
+  g.save(); g.translate(18 * S, 16 * S); g.fillStyle = '#cdb8e8'; g.fill(path); g.restore();
+  g.save(); g.translate(10 * S, 9 * S); g.fillStyle = '#8b4f9f'; g.fill(path); g.restore();
+  g.fillStyle = paperFill; g.fill(path);
+  g.fillStyle = INK; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = F.hand(px);
+  lines.forEach((l, i) => g.fillText(l, 0, (i - (lines.length - 1) / 2) * px * 1.28));
+  g.restore();
+}
+// glossy purple bubble letters (like the Poetry & Places banner), drawn once and reused
+const glossCache = new Map();
+function glossy(text, px) {
+  const key = text + '|' + px; if (glossCache.has(key)) return glossCache.get(key);
+  const c = document.createElement('canvas'), x = c.getContext('2d');
+  x.font = F.bubbly(px); const tw = x.measureText(text).width;
+  c.width = Math.ceil(tw + px * 0.9); c.height = Math.ceil(px * 1.7);
+  const cx = c.width / 2, cy = c.height / 2;
+  x.font = F.bubbly(px); x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+  x.fillStyle = '#7a2ab0'; x.fillText(text, cx + px * 0.025, cy + px * 0.07);              // depth
+  const gr = x.createLinearGradient(0, cy - px * 0.5, 0, cy + px * 0.5);
+  gr.addColorStop(0, '#f3c2ff'); gr.addColorStop(0.45, '#c46cf0'); gr.addColorStop(1, '#9440d4');
+  x.fillStyle = gr; x.fillText(text, cx, cy);
+  x.save(); x.globalCompositeOperation = 'source-atop';                                         // the shine across the top
+  const sh = x.createLinearGradient(0, cy - px * 0.48, 0, cy - px * 0.08);
+  sh.addColorStop(0, 'rgba(255,255,255,.8)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = sh; x.fillRect(0, cy - px * 0.5, c.width, px * 0.42);
+  x.restore();
+  x.strokeStyle = 'rgba(255,255,255,.5)'; x.lineWidth = Math.max(1, px * 0.022); x.strokeText(text, cx - px * 0.012, cy - px * 0.02);
+  glossCache.set(key, c); return c;
+}
+function star(x, y, r, col, a) {
+  g.save(); g.globalAlpha = a; g.fillStyle = col; g.beginPath();
+  for (let i = 0; i < 8; i++) { const ang = i * Math.PI / 4, rr = i % 2 ? r * 0.38 : r; g.lineTo(x + Math.cos(ang) * rr, y + Math.sin(ang) * rr); }
+  g.closePath(); g.fill(); g.restore();
+}
+function drawGlossy(text, cx, cy, maxPx, maxW, appear = 1) {
+  g.font = F.bubbly(100); const ratio = g.measureText(text).width / 100;
+  const px = Math.round(Math.min(maxPx, maxW / ratio)), img = glossy(text, px), k = ease(appear), S = SZ();
+  g.save(); g.globalAlpha = k; g.shadowColor = 'rgba(110, 60, 150, .28)'; g.shadowBlur = 30 * S; g.shadowOffsetY = 14 * S;
+  const sc = 0.92 + 0.08 * k; g.translate(cx, cy + (1 - k) * 20 * S); g.scale(sc, sc);
+  g.drawImage(img, -img.width / 2, -img.height / 2); g.restore();
+  const tw = ratio * px, tw2 = Math.sin(performance.now() / 400) * 0.25 + 0.75;
+  star(cx + tw / 2 + 20 * S, cy - px * 0.55, 26 * S, '#d9c9f2', k * tw2);
+  star(cx + tw / 2 + 62 * S, cy - px * 0.2, 16 * S, '#e9ddfa', k * (1.5 - tw2));
+  star(cx - tw / 2 - 30 * S, cy + px * 0.4, 18 * S, '#d9c9f2', k * (1.5 - tw2));
+}
+// ransom-note letters for the open mic's name
+const RANSOM_FONTS = ['"Abril Fatface"', '"Bowlby One"', '"Special Elite"', '"DM Serif Display"', '"Rubik Mono One"', 'Italiana'];
+function ransom(word, cx, cy, px, appear = 1) {
+  const r = seeded(word.length * 31 + 7), S = SZ(), tiles = [];
+  for (const ch of word) {
+    const f = RANSOM_FONTS[Math.floor(r() * RANSOM_FONTS.length)], size = px * (0.82 + r() * 0.34);
+    const dark = r() < 0.5, upper = r() < 0.45;
+    g.font = '400 ' + size + 'px ' + f; const c = upper ? ch.toUpperCase() : ch.toLowerCase();
+    const w = g.measureText(c).width + size * 0.28;
+    tiles.push({ c, f, size, w, h: size * 1.15, rot: (r() - 0.5) * 0.16, dy: (r() - 0.5) * px * 0.16, bg: dark ? (r() < 0.5 ? '#7a63a8' : '#5a4a86') : (r() < 0.5 ? '#ffffff' : '#efe6fb'), fg: dark ? (r() < 0.5 ? '#ffffff' : '#e9ddfa') : (r() < 0.5 ? '#6b55a0' : '#5d6898') });
+  }
+  const total = tiles.reduce((a, t) => a + t.w, 0) + (tiles.length - 1) * 6 * S;
+  let x = cx - total / 2;
+  tiles.forEach((t, i) => {
+    const k = ease(appear * tiles.length - i * 0.6);
+    if (k <= 0) { x += t.w + 6 * S; return; }
+    g.save(); g.globalAlpha = k; g.translate(x + t.w / 2, cy + t.dy); g.rotate(t.rot); g.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k);
+    g.fillStyle = 'rgba(139, 79, 159, .55)'; g.fillRect(-t.w / 2 + 5 * S, -t.h / 2 + 6 * S, t.w, t.h);
+    g.fillStyle = t.bg; g.fillRect(-t.w / 2, -t.h / 2, t.w, t.h);
+    g.fillStyle = t.fg; g.font = '400 ' + t.size + 'px ' + t.f; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t.c, 0, t.size * 0.04);
+    g.restore();
+    x += t.w + 6 * S;
+  });
+}
+function drawLogo(img, cx, cy, h, a = 1) {
+  if (!img.naturalWidth) return;
+  const w = h * img.naturalWidth / img.naturalHeight;
+  g.save(); g.globalAlpha = a; g.drawImage(img, cx - w / 2, cy - h / 2, w, h); g.restore();
+}
+function drawPresents(local, dur) {
+  const S = SZ(), k = local / dur;
+  lavBg();
+  flight([[-0.05, 0.25], [0.3, -0.08], [0.55, 0.5], [1.05, 0.14]], k * 1.25);
+  drawLogo(logoC, W / 2, H * 0.43 - (TALL() ? 40 : 0) * S, 250 * S, ease(local / 0.9));
+  g.save(); g.globalAlpha = ease((local - 0.5) / 0.8); g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = INK; g.font = F.thin(Math.round(96 * S)); g.fillText('poetry and places', W / 2, H * 0.43 + 200 * S - (TALL() ? 40 : 0) * S);
+  g.fillStyle = PLUM; g.font = F.deco(Math.round(58 * S)); g.fillText('presents', W / 2, H * 0.43 + 285 * S - (TALL() ? 40 : 0) * S);
+  g.restore();
+}
+function drawBubbleCard(shot, local) {
+  const S = SZ();
+  lavBg();
+  flight([[-0.04, 0.82], [0.25, 1.05], [0.3, 0.45], [1.04, 0.3]], local / shot.dur * 1.2);
+  const px = Math.round((TALL() ? 76 : 84) * S);
+  speech(W / 2, H * 0.47, shot.bubble, px, -0.05, local / 0.7);
+  drawLogo(logoC, W - 70 * S, H - 66 * S, 68 * S, 0.85);
+}
+function drawTitleCard(shot, local) {
+  const S = SZ();
+  lavBg();
+  flight([[1.05, 0.2], [0.7, -0.1], [0.4, 0.4], [-0.05, 0.15]], local / shot.dur * 1.2);
+  drawGlossy(shot.title, W / 2, H * 0.46, 200 * S, W * 0.86, local / 0.8);
+  g.save(); g.globalAlpha = ease((local - 0.6) / 0.8); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = INK; g.font = F.deco(Math.round(62 * S));
+  (shot.sub || []).forEach((l, i) => g.fillText(l, W / 2, H * 0.46 + 170 * S + i * 70 * S));
+  g.restore();
+  drawLogo(logoC, W - 70 * S, H - 66 * S, 68 * S, 0.85);
+}
+function drawEndCard(shot, local) {
+  const S = SZ(), tall = TALL(), full = shot.end === 'full';
+  lavBg();
+  flight(tall ? [[-0.05, 0.08], [0.4, -0.02], [0.75, 0.16], [1.05, 0.05]] : [[-0.05, 0.1], [0.3, -0.04], [0.85, 0.02], [1.05, 0.32]], local / shot.dur * 1.15);
+  const a = k0 => ease((local - k0) / 0.7);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (tall) {
+    drawGlossy('Couplet Cove', W / 2, H * 0.24, 190 * S, W * 0.88, local / 0.8);
+    if (full) { g.save(); g.globalAlpha = a(0.5); g.fillStyle = INK; g.font = F.deco(Math.round(56 * S)); g.fillText(EVENT.link, W / 2, H * 0.31); g.restore(); }
+    speech(W / 2, H * 0.47, EVENT.invite, Math.round(68 * S), -0.05, (local - 1) / 0.7);
+    ransom(EVENT.name, W / 2, H * 0.66, 110 * S, (local - 1.8) / 1.2);
+    g.save(); g.globalAlpha = a(2.6); g.fillStyle = INK; g.font = F.deco(Math.round(58 * S)); g.fillText(EVENT.line, W / 2, H * 0.735); g.restore();
+  } else {
+    drawGlossy('Couplet Cove', W / 2, H * 0.2, 170 * S, W * 0.7, local / 0.8);
+    if (full) { g.save(); g.globalAlpha = a(0.5); g.fillStyle = INK; g.font = F.deco(Math.round(54 * S)); g.fillText(EVENT.link, W / 2, H * 0.335); g.restore(); }
+    speech(W * 0.28, H * 0.63, EVENT.invite, Math.round(62 * S), -0.05, (local - 1) / 0.7);
+    ransom(EVENT.name, W * 0.73, H * 0.58, 118 * S, (local - 1.8) / 1.2);
+    g.save(); g.globalAlpha = a(2.6); g.fillStyle = INK; g.font = F.deco(Math.round(54 * S)); g.fillText(EVENT.line, W * 0.73, H * 0.73); g.restore();
+  }
+  drawLogo(logoC, W - 70 * S, H - 66 * S, 68 * S, 0.85);
+}
+function wrapLines(text, font, maxW) { g.font = font; return wrap(text, maxW); }
+function drawCardShot(shot, local) {
+  if (shot.presents) drawPresents(local, shot.dur);
+  else if (shot.bubble) drawBubbleCard(shot, local);
+  else if (shot.title) drawTitleCard(shot, local);
+  else drawEndCard(shot, local);
+}
+// captions over the game: a scrap of crumpled paper with a purple shadow
+function drawCaption(text, a) {
+  if (!text || a <= 0) return;
+  const S = SZ(), px = Math.round((TALL() ? 62 : 54) * S);
+  g.font = F.hand(px);
+  const lines = wrap(text, W * 0.8), w = Math.max(...lines.map(l => g.measureText(l).width)) + 64 * S, h = lines.length * px * 1.25 + 34 * S;
+  const cy = H - (run.def.bars && !TALL() ? H * 0.1 + 10 * S : (TALL() ? 300 : 110) * S) - h / 2;
+  g.save(); g.globalAlpha = Math.min(1, a); g.translate(W / 2, cy); g.rotate(-0.025);
+  g.fillStyle = '#8b4f9f'; g.fillRect(-w / 2 + 9 * S, -h / 2 + 9 * S, w, h);
+  g.fillStyle = paperFill; g.fillRect(-w / 2, -h / 2, w, h);
+  g.fillStyle = INK; g.textAlign = 'center'; g.textBaseline = 'middle';
+  lines.forEach((l, i) => g.fillText(l, 0, (i - (lines.length - 1) / 2) * px * 1.25 + 2 * S));
+  g.restore();
+}
+// just the logo, small in the bottom-right corner over the game
+function drawWatermark() {
+  const S = SZ(), inBar = run.def.bars && !TALL();
+  drawLogo(logoL, W - 64 * S, H - (inBar ? H * 0.05 : 62 * S), 64 * S, 0.8);
 }
 function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, Math.min(r, h / 2, w / 2)); }
 function wrap(text, maxW) {
@@ -280,50 +456,21 @@ function drawOverlays(doc) {
     g.restore();
   }
 }
-function drawCaption(text, a) {
-  if (!text || a <= 0) return;
-  const S = Math.min(W, H) / 1080, px = Math.round(62 * S);
-  g.save(); g.globalAlpha = a; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-  g.font = (run.def.shots === TRAILERS.t1.shots ? 'italic ' : '') + fontD(px);
-  const y = H - (run.def.bars && W > H ? H * 0.1 + 46 * S : (W > H ? 92 : 300) * S);
-  const lines = wrap(text, W * 0.86);
-  lines.forEach((l, i) => {
-    const yy = y - (lines.length - 1 - i) * px * 1.15;
-    g.shadowColor = 'rgba(20, 16, 36, .75)'; g.shadowBlur = 18 * S; g.lineWidth = 7 * S; g.strokeStyle = 'rgba(46, 42, 69, .55)'; g.lineJoin = 'round';
-    g.strokeText(l, W / 2, yy); g.fillStyle = '#fff8ee'; g.fillText(l, W / 2, yy);
-  });
-  g.restore();
-}
 function drawScene(shot, local) {
   const doc = shot.frame && shot.frame.contentDocument, cv = doc && doc.getElementById('scene');
   if (!cv) { g.fillStyle = '#000'; g.fillRect(0, 0, W, H); return; }
   g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
   if (shot.blur) { g.filter = 'blur(' + shot.blur * Math.min(W, H) / 1080 + 'px) saturate(1.1)'; g.drawImage(cv, -20, -20, W + 40, H + 40); g.filter = 'none'; }
   else { g.drawImage(cv, 0, 0, W, H); try { drawOverlays(doc); } catch (e) {} }
-  if (run.def.bars && W > H) { g.fillStyle = '#000'; g.fillRect(0, 0, W, H * 0.1); g.fillRect(0, H * 0.9, W, H * 0.1); }
+  if (run.footage) return;
+  if (run.def.bars && W > H) { g.fillStyle = LAV; g.fillRect(0, 0, W, H * 0.1); g.fillRect(0, H * 0.9, W, H * 0.1); }   // lavender frame bars
   if (shot.caption) drawCaption(shot.caption, Math.min(1, (local - 0.5) / 0.6, (shot.dur - local) / 0.5));
   if (shot.captions) for (const c of shot.captions) if (local >= c.t && local <= c.t + c.d) drawCaption(c.text, Math.min(1, (local - c.t) / 0.5, (c.t + c.d - local) / 0.5));
 }
 function drawFade(local, dur) {
   const a = Math.max(0, 1 - local / 0.45, 1 - (dur - local) / 0.45);
-  if (a > 0) { g.fillStyle = 'rgba(0, 0, 0, ' + Math.min(1, a) + ')'; g.fillRect(0, 0, W, H); }
+  if (a > 0) { g.fillStyle = 'rgba(236, 230, 246, ' + Math.min(1, a) + ')'; g.fillRect(0, 0, W, H); }   // fade through lavender
 }
-// the Poetry and Places logo, small in the bottom-right corner the whole way through; the copyright sits bottom-left
-function drawWatermark() {
-  const S = Math.min(W, H) / 1080, inBar = run.def.bars && W > H;
-  const base = H - (inBar ? H * 0.05 - 26 * S : 30 * S);
-  g.save(); g.globalAlpha = 0.72; g.shadowColor = 'rgba(20, 16, 36, .55)'; g.shadowBlur = 8 * S;
-  const lh = 62 * S, lw = logo.naturalWidth ? lh * logo.naturalWidth / logo.naturalHeight : 0;
-  g.font = fontD(Math.round(26 * S)); g.fillStyle = '#eee7f8'; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
-  const right = W - 30 * S;
-  g.fillText('Poetry and Places', right, base - 6 * S);
-  const tw = g.measureText('Poetry and Places').width;
-  if (lw) g.drawImage(logo, right - tw - 12 * S - lw, base - lh, lw, lh);
-  g.globalAlpha = 0.5; g.font = fontB(600, Math.round(17 * S)); g.textAlign = 'left';
-  g.fillText('© 2026 Poetry and Places', 30 * S, base - 6 * S);
-  g.restore();
-}
-
 /* ---------- audio ---------- */
 function setupAudio() {
   if (!actx) {
@@ -363,16 +510,9 @@ function finish(stopped) {
   $('preview').disabled = $('record').disabled = false; $('stop').disabled = true;
   [...$('shotList').children].forEach(li => li.classList.remove('now'));
   if (r.recorder && r.recorder.state !== 'inactive') {
-    r.recorder.onstop = () => {
-      const type = r.recorder.mimeType || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm';
-      const blob = new Blob(r.chunks, { type });
-      const name = 'couplet-cove-trailer-' + r.key.slice(1) + '-' + r.def.name.toLowerCase().replace(/[^a-z]+/g, '-') + '-' + ($('fmt').value === 'tall' ? '9x16' : '16x9') + '.' + ext;
-      const url = URL.createObjectURL(blob), a = document.createElement('a');
-      a.href = url; a.download = name; a.textContent = '⬇ ' + name + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)';
-      $('downloads').prepend(a); a.click();
-      setStatus(stopped ? 'Stopped early. The part that was recorded is saved below.' : 'Done! Your trailer downloaded. It’s also linked below.');
-    };
-    r.recorder.stop();
+    const done = r.footage ? (stopped ? 'Stopped early. The clips recorded so far are saved below.' : 'Done! Every scene downloaded as its own clip (also linked below).')
+      : (stopped ? 'Stopped early. The part that was recorded is saved below.' : 'Done! Your trailer downloaded. It’s also linked below.');
+    saveRecorder(r.recorder, r.footage ? clipName(r, r.shots[r.i], r.i) : clipName(r), done);
   } else setStatus(stopped ? 'Stopped.' : 'Preview finished.');
 }
 function tick(now) {
@@ -391,15 +531,15 @@ function tick(now) {
     } else {
       if (run.waiting) { run.waiting = false; if (run.recorder && run.recorder.state === 'paused') run.recorder.resume(); setStatus(run.recorder ? 'Recording…' : 'Previewing…'); }
       if (shot.scene && shot.frame.contentWindow.__trailer) shot.frame.contentWindow.__trailer.pause();
+      if (run.footage && run.record) { saveRecorder(run.recorder, clipName(run, shot, run.i)); startRecorder(); }
       startShot(nextI);
     }
     local = Math.min(local, run.shots[run.i].dur);
   }
   const cur = run.shots[run.i];
   local = run.clock - run.shotStart;
-  if (cur.presents) drawPresents(local); else if (cur.card) drawCard(cur, local); else drawScene(cur, local);
-  if (!cur.presents) drawWatermark();
-  drawFade(local, cur.dur);
+  if (run.footage) drawScene(cur, local);                           // clean footage: just the game
+  else { if (cur.scene) { drawScene(cur, local); drawWatermark(); } else drawCardShot(cur, local); drawFade(local, cur.dur); }
   // music: fade in at the start and out at the very end
   if (run.music && musicGain) {
     const left = run.total - run.clock;
@@ -413,13 +553,15 @@ async function begin(record) {
   const key = $('pick').value, def = TRAILERS[key];
   [W, H] = sizeFor($('fmt').value); out.width = W; out.height = H; layoutFeeds();
   setupAudio();
-  const shots = def.shots.map(s => Object.assign({}, s));
-  run = { key, def, shots, i: 0, clock: 0, last: performance.now(), total: shots.reduce((a, s) => a + s.dur, 0), waiting: false, chunks: [] };
-  $('shotList').innerHTML = shots.map(s => '<li>' + (s.presents ? 'Poetry and Places presents' : s.card ? 'Title: ' + s.card.join(' ') : s.scene + (s.caption ? ' · “' + s.caption + '”' : '')) + ' (' + s.dur + 's)</li>').join('');
+  const footage = $('mode').value === 'footage';
+  const shots = def.shots.filter(s => !footage || s.scene).map(s => Object.assign({}, s, footage ? { blur: 0 } : {}));
+  run = { footage, key, def, shots, i: 0, clock: 0, last: performance.now(), total: shots.reduce((a, s) => a + s.dur, 0), waiting: false, chunks: [] };
+  $('shotList').innerHTML = shots.map(s => '<li>' + (s.presents ? 'poetry and places presents' : s.bubble ? 'Bubble: ' + s.bubble.join(' ') : s.title ? 'Title: ' + s.title : s.end ? 'Closing card' : s.scene + (s.caption ? ' · “' + s.caption + '”' : '')) + ' (' + s.dur + 's)</li>').join('');
   $('preview').disabled = $('record').disabled = true; $('stop').disabled = false;
   setStatus('Loading the first shots…');
-  await document.fonts.load(fontD(80)); await document.fonts.load(fontB(700, 40));
-  if (!logo.complete) await new Promise(r => { logo.onload = logo.onerror = r; });
+  await Promise.all(FONT_LOADS.map(f => document.fonts.load(f).catch(() => {})));
+  for (const im of [logoC, logoL]) if (!im.complete) await new Promise(r => { im.onload = im.onerror = r; });
+  glossCache.clear();
   // load the first scene (and the next one) before rolling
   const a = nextSceneIndex(0), b = a >= 0 ? nextSceneIndex(a + 1) : -1;
   if (a >= 0) loadShot(shots[a], frames[0], a);
@@ -430,22 +572,46 @@ async function begin(record) {
     await new Promise(r => setTimeout(r, 150));
   }
   if (!run) return;
-  const track = $('music').value === 'auto' ? def.music : $('music').value;
+  const track = footage ? '' : $('music').value === 'auto' ? def.music : $('music').value;
   if (track) { run.music = new Audio(track); run.music.loop = true; try { actx.createMediaElementSource(run.music).connect(musicGain); } catch (e) {} musicGain.gain.value = 0; run.music.play().catch(() => {}); }
   if (record) {
-    const stream = new MediaStream([...out.captureStream(30).getVideoTracks(), ...recDest.stream.getAudioTracks()]);
-    const types = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
-    const mimeType = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
-    run.recorder = new MediaRecorder(stream, Object.assign({ videoBitsPerSecond: 12e6, audioBitsPerSecond: 192e3 }, mimeType ? { mimeType } : {}));
-    const chunks = run.chunks; run.recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-    run.recorder.start(1000);
+    run.stream = new MediaStream([...out.captureStream(30).getVideoTracks(), ...recDest.stream.getAudioTracks()]);
+    run.record = true;
+    if (!footage) startRecorder();
     setStatus('Recording… keep this tab in front until it finishes (about ' + Math.round(run.total) + ' seconds).');
   } else setStatus('Previewing…');
   run.last = performance.now();
   startShotFirst();
   requestAnimationFrame(tick);
 }
+// recording: one file for a finished trailer, or one file per scene for clean footage
+function startRecorder() {
+  const types = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  const mimeType = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+  const rec = new MediaRecorder(run.stream, Object.assign({ videoBitsPerSecond: 12e6, audioBitsPerSecond: 192e3 }, mimeType ? { mimeType } : {}));
+  const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.chunks = chunks; rec.start(1000);
+  run.recorder = rec;
+}
+function clipName(r, shot, n) {
+  const fmt = $('fmt').value === 'tall' ? '9x16' : '16x9';
+  if (!shot) return 'couplet-cove-trailer-' + r.key.slice(1) + '-' + r.def.name.toLowerCase().replace(/[^a-z]+/g, '-') + '-' + fmt;
+  return 'couplet-cove-t' + r.key.slice(1) + '-clip-' + String(n + 1).padStart(2, '0') + '-' + shot.scene + '-' + fmt;
+}
+function saveRecorder(rec, base, msg) {
+  if (!rec || rec.state === 'inactive') return;
+  rec.onstop = () => {
+    const type = rec.mimeType || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(rec.chunks, { type }), name = base + '.' + ext;
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; a.textContent = '⬇ ' + name + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)';
+    $('downloads').prepend(a); a.click();
+    if (msg) setStatus(msg);
+  };
+  rec.stop();
+}
 function startShotFirst() {
+  if (run.footage && run.record) startRecorder();
   const s = run.shots[0];
   run.i = 0; run.shotStart = 0;
   [...$('shotList').children].forEach((li, k) => li.classList.toggle('now', k === 0));
@@ -455,7 +621,8 @@ $('preview').addEventListener('click', () => begin(false));
 $('record').addEventListener('click', () => begin(true));
 $('stop').addEventListener('click', () => finish(true));
 [W, H] = sizeFor('wide'); layoutFeeds();
-cardBg(); g.textAlign = 'center'; g.fillStyle = '#eee7f8'; g.font = fontD(90); g.fillText('Trailer Studio', W / 2, H / 2);
+lavBg(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = INK; g.font = F.thin(110); g.fillText('trailer studio', W / 2, H / 2);
+document.fonts.load(F.thin(110)).then(() => { if (!run) { lavBg(); g.fillStyle = INK; g.font = F.thin(110); g.fillText('trailer studio', W / 2, H / 2); } });
 })();
 </script>
 </body>
