@@ -290,6 +290,8 @@ kbd {
 }
 #enterBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4f5d82; }
 #lobby .online { justify-content: center; margin: 0; }
+.legal { margin: -6px 0 0; text-align: center; font-size: .72rem; font-weight: 600; color: var(--muted); }
+.legal a { color: var(--plank-dark); }
 body.in-lobby #title, body.in-lobby #dock, body.in-lobby #meSign, body.in-lobby #hint, body.in-lobby #chat, body.in-lobby #helpBtn,
 body.in-lobby #joy, body.in-lobby #hopBtn, body.in-lobby #tags, body.in-lobby #bubble, body.in-lobby #readBtn,
 body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.in-lobby #ctxBtn, body.in-lobby #soundPanel, body.in-lobby #helpBtn, body.in-lobby #stagePanel, body.in-lobby #stageTv { display: none !important; }
@@ -357,6 +359,11 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   width: min(300px, calc(100vw - 32px)); box-sizing: border-box; padding: 10px 12px 12px;
   display: flex; flex-direction: column; gap: 8px;
 }
+#stagePanel .spHead { display: flex; align-items: center; justify-content: space-between; }
+#stageMin { width: 26px; height: 26px; }
+#stagePanel.mini { width: auto; padding: 6px 8px 6px 12px; }
+#stagePanel.mini .row { display: none; }
+#stagePanel.mini .spHead { gap: 10px; }
 #stagePanel h3 { margin: 0; font: 700 1rem var(--font-display); color: var(--plank); font-variation-settings: "SOFT" 100, "WONK" 1; }
 #stagePanel .row { display: flex; gap: 6px; align-items: center; }
 #stagePanel button { font: 800 .8rem var(--font-body); border: 0; border-radius: 10px; padding: 7px 10px; cursor: pointer; background: var(--tan); color: var(--ink); white-space: nowrap; }
@@ -483,11 +490,11 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn the camera</span>
   <span class="key-only"><kbd>Space</kbd> at the mic: start / finish reading</span>
   <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
-  <span class="key-only"><kbd>F</kbd> dig by a rock / swing your net</span>
+  <span class="key-only"><kbd>F</kbd> dig by a rock / swing your net / cast your rod</span>
   <span class="key-only"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ask for a hug, cheek kiss or high five</span>
   <span class="key-only"><kbd>C</kbd> applaud</span>
   <span class="key-only"><kbd>B</kbd> your bag · <kbd>Enter</kbd> chat · <kbd>H</kbd> this help</span>
-  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to dig, read at the mic, or hug someone nearby.</span>
+  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to dig, fish, read at the mic, or hug someone nearby.</span>
 </div>
 
 <div id="dock" hidden>
@@ -535,7 +542,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 </section>
 <button id="ctxBtn" type="button" hidden></button>
 <section id="stagePanel" class="sign" hidden aria-label="Stage music">
-  <h3>Stage music</h3>
+  <div class="spHead"><h3>Stage music</h3><button id="stageMin" class="minBtn" type="button" aria-expanded="true" title="Hide stage music" aria-label="Hide stage music"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>
   <div class="row"><button id="pickSong" type="button">Play a song file</button><input id="songFile" type="file" accept="audio/*" hidden></div>
   <form id="ytForm" class="row" autocomplete="off"><input id="ytUrl" type="text" inputmode="url" placeholder="or paste a YouTube link" aria-label="YouTube link"><button type="submit">Play</button></form>
   <div class="row now"><span id="stageNow">Nothing playing</span><button id="stopSong" type="button" hidden>Stop</button></div>
@@ -583,6 +590,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
     </div>
     <button id="enterBtn" type="submit">Wash ashore</button>
     <div class="online"><i></i><span class="onlineText">Connecting…</span></div>
+    <p class="legal">© 2026 Poetry and Places. All rights reserved. <a href="https://github.com/PoetryandPlaces/open-mic-island/blob/main/LICENSE" target="_blank" rel="noopener">License</a></p>
   </form>
 </div>
 
@@ -1858,7 +1866,7 @@ function applyPresence(c, pr) {
   c.mic = pr.mic === 1;
   if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
-  c.net = pr.nt === 1; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
+  c.net = pr.nt === 1; c.rod = pr.fr === 1; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
   if (typeof pr.n === 'string') c.n = cleanName(pr.n);
   if (typeof pr.k === 'string' && KINDS[pr.k]) c.set(pr.k);
   if (c.fresh && c.hasPos) {
@@ -1885,7 +1893,7 @@ function sendPresence(force, target) {
     x: Math.round(pos.x * 100) / 100, y: Math.round(pos.y * 100) / 100, z: Math.round(pos.z * 100) / 100,
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
-    h: me.hat || '', nt: me.net ? 1 : 0, rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
+    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -2456,20 +2464,23 @@ function tickFlies() {
 /* --- the bag: treasure you dig up, things you wear, fireflies in a jar --- */
 const ITEMS = {
   net: { name: 'Bug net', slot: 'hand', color: '#c9b48a' },
+  rod: { name: 'Fishing rod', slot: 'hand', color: '#c99260' },
   bow: { name: 'Ribbon bow', slot: 'head', color: '#f2b3c8' },
   partyhat: { name: 'Party hat', slot: 'head', color: '#6878a1' },
   crown: { name: 'Flower crown', slot: 'head', color: '#f7b2c4' },
   beret: { name: 'Poet’s beret', slot: 'head', color: '#7a68a1' }
 };
-const LOOT = [['net', 24], ['bow', 20], ['partyhat', 20], ['crown', 18], ['beret', 18]];
+const LOOT = [['net', 20], ['rod', 22], ['bow', 16], ['partyhat', 16], ['crown', 13], ['beret', 13]];
 const bag = (() => {
-  const b = { items: {}, head: '', hand: false, flies: 0 };
+  const b = { items: {}, head: '', hand: '', flies: 0, fish: {} };
   try {
     const s = JSON.parse(store.get('cove-bag') || '{}');
     if (s && typeof s === 'object') {
       for (const k of Object.keys(ITEMS)) if (s.items && s.items[k]) b.items[k] = 1;
       if (ITEMS[s.head] && b.items[s.head]) b.head = s.head;
-      b.hand = !!(s.hand && b.items.net);
+      if (s.hand === true && b.items.net) b.hand = 'net';                          // older saves stored true/false
+      else if (ITEMS[s.hand] && ITEMS[s.hand].slot === 'hand' && b.items[s.hand]) b.hand = s.hand;
+      if (s.fish && typeof s.fish === 'object') for (const k of ['perch', 'minnow', 'trout', 'koi']) if (isInt(s.fish[k], 1, 999)) b.fish[k] = s.fish[k];
       b.flies = isInt(s.flies, 0, 20) ? s.flies : 0;
     }
   } catch (e) {}
@@ -2513,14 +2524,15 @@ function makeNet() {
 }
 const bumpMat = mat(0xe8584a);
 function updateGear(c, dt = 1 / 60) {
-  const kind = c.kind || 'cat', hat = c.hat || '', net = !!c.net, stung = !!c.stung;
-  const key = kind + '|' + hat + '|' + net + '|' + stung;
+  const kind = c.kind || 'cat', hat = c.hat || '', net = !!c.net, rod = !net && !!c.rod, stung = !!c.stung;
+  const key = kind + '|' + hat + '|' + net + '|' + rod + '|' + stung;
   if (c.gearKey !== key) {
     c.gearKey = key;
     if (c.gear) c.rig.remove(c.gear);
     const g = new THREE.Group(), h = HEAD[kind] || HEAD.cat;
     if (hat && ITEMS[hat]) { const hm = makeHat(hat); hm.position.add(new V(h[0], h[1], h[2])); g.add(hm); }
     if (net) { c.netMesh = makeNet(); g.add(c.netMesh); } else c.netMesh = null;
+    if (rod) { c.rodMesh = makeRod(); g.add(c.rodMesh); } else c.rodMesh = null;
     if (stung) { c.bump = put(new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), bumpMat), 0.13, h[1] - 0.12, h[2] + 0.22, g, false); } else c.bump = null;
     c.gear = g; c.rig.add(g);
   }
@@ -2531,14 +2543,19 @@ function updateGear(c, dt = 1 / 60) {
     c.netMesh.userData.pivot.rotation.x = -0.35 + sw * 1.6;
     c.netMesh.userData.pivot.rotation.z = sw * 0.6;
   }
+  if (c.rodMesh) {                                    // flick the rod back and forward when casting or reeling
+    c.castT = Math.max(0, (c.castT || 0) - dt);
+    const k = c.castT > 0 ? 1 - c.castT / 0.45 : 1;
+    c.rodMesh.userData.pivot.rotation.x = c.castT > 0 ? (k < 0.35 ? -0.6 + k / 0.35 * 1.0 : 0.4 - (k - 0.35) / 0.65 * 1.0) : -0.6;
+  }
 }
 function wearItem(id) {
   const it = ITEMS[id]; if (!it || !bag.items[id]) return;
-  if (it.slot === 'hand') bag.hand = !bag.hand;
+  if (it.slot === 'hand') bag.hand = bag.hand === id ? '' : id;
   else bag.head = bag.head === id ? '' : id;
   saveBag(); syncMyGear(); renderBag(); sendPresence(true);
 }
-function syncMyGear() { me.hat = bag.head; me.net = bag.hand; }
+function syncMyGear() { me.hat = bag.head; me.net = bag.hand === 'net'; me.rod = bag.hand === 'rod'; }
 syncMyGear();
 
 /* --- digging under rocks --- */
@@ -2613,6 +2630,167 @@ function releaseFlies() {
   popAt(pos.x, pos.y + 2.3, pos.z, 'Fly free!', 'good');
 }
 
+/* --- fishing: fish swim in the shallows; dig up a rod, face the water and press F ---
+   Built for instant gratification: the line lands, a fish bites within about a second, and it
+   leaps out of the water with a splash. */
+const FISH = [
+  { id: 'perch', name: 'Sunny Perch', color: 0xf2b35a, w: 40 },
+  { id: 'minnow', name: 'Lilac Minnow', color: 0xb4a6d6, w: 30 },
+  { id: 'trout', name: 'Poet’s Trout', color: 0x6f9fc8, w: 22 },
+  { id: 'koi', name: 'Golden Koi', color: 0xffd36b, w: 8 }
+];
+const FISH_BY_ID = Object.fromEntries(FISH.map(f => [f.id, f]));
+function rollFish() {
+  let n = Math.random() * FISH.reduce((s, f) => s + f.w, 0);
+  for (const f of FISH) { n -= f.w; if (n <= 0) return f; }
+  return FISH[0];
+}
+const fishBodyGeo = new THREE.SphereGeometry(0.18, 9, 7), fishTailGeo = new THREE.ConeGeometry(0.12, 0.2, 4), fishEyeGeo = new THREE.SphereGeometry(0.025, 5, 4);
+function makeFishMesh(color) {
+  const g = new THREE.Group(), m = mat(color);
+  const b = put(new THREE.Mesh(fishBodyGeo, m), 0, 0, 0, g, false); b.scale.set(0.55, 0.7, 1.3);
+  const tail = new THREE.Group(); tail.position.z = -0.22; g.add(tail);
+  const tl = put(new THREE.Mesh(fishTailGeo, m), 0, 0, -0.08, tail, false); tl.rotation.x = Math.PI / 2; tl.scale.x = 0.3;
+  for (const s of [-1, 1]) put(new THREE.Mesh(fishEyeGeo, flat(0x2a1c14)), 0.08 * s, 0.04, 0.16, g, false);
+  g.userData.tail = tail;
+  return g;
+}
+// fish swimming in the shallows, now and then leaping out of the water
+const swimmers = [];
+for (let i = 0; i < 14; i++) {
+  const f = rollFish(), m = makeFishMesh(f.color); scene.add(m);
+  swimmers.push({ m, r: 25 + Math.random() * 7, a: Math.random() * Math.PI * 2, sp: (0.08 + Math.random() * 0.1) * (Math.random() < 0.5 ? -1 : 1), ph: Math.random() * 6, jumpT: 0, nextJump: 4 + Math.random() * 14 });
+}
+function tickSwimmers(dt) {
+  for (const s of swimmers) {
+    s.a += s.sp * dt;
+    const x = Math.cos(s.a) * s.r, z = Math.sin(s.a) * s.r;
+    if (inRect(DOCK, x, z)) s.r += 0.5 * dt;                  // swim around the dock
+    let y = waterY(x, z) - 0.06 + Math.sin(t * 2 + s.ph) * 0.03;
+    s.nextJump -= dt;
+    if (s.nextJump <= 0 && s.jumpT <= 0) { s.jumpT = 0.9; splash(x, waterY(x, z), z, 8, 0.6); }
+    if (s.jumpT > 0) {
+      s.jumpT -= dt;
+      y += Math.sin((1 - s.jumpT / 0.9) * Math.PI) * 1.1;
+      s.m.rotation.x = -Math.cos((1 - s.jumpT / 0.9) * Math.PI) * 0.8;
+      if (s.jumpT <= 0) { s.nextJump = 6 + Math.random() * 16; splash(x, waterY(x, z), z, 10, 0.7); ripple(x, z, 1); if (Math.hypot(x - pos.x, z - pos.z) < 10) splashSound(0.25, false); s.m.rotation.x = 0; }
+    }
+    s.m.position.set(x, y, z);
+    s.m.rotation.y = Math.atan2(-Math.sin(s.a) * Math.sign(s.sp), Math.cos(s.a) * Math.sign(s.sp));
+    s.m.userData.tail.rotation.y = Math.sin(t * 9 + s.ph) * 0.5;
+  }
+}
+// the rod you hold
+function makeRod() {
+  const g = new THREE.Group(), pivot = new THREE.Group(); g.add(pivot);
+  put(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.35, 6), mat(0x6e4526)), 0, 0.17, 0, pivot);
+  put(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 1.15, 5), mat(0xc99260)), 0, 0.9, 0, pivot);
+  const reel = put(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 8), mat(0x7a68a1)), 0.05, 0.3, 0, pivot, false); reel.rotation.z = Math.PI / 2;
+  g.position.set(0.4, 0.35, 0.1); pivot.rotation.x = -0.6;
+  g.userData.pivot = pivot;
+  return g;
+}
+// bobber + line + the fish that flies out
+const bobber = new THREE.Group();
+put(new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), flat(0xe8584a)), 0, 0.03, 0, bobber, false);
+put(new THREE.Mesh(new THREE.SphereGeometry(0.068, 8, 6), flat(0xffffff)), 0, -0.02, 0, bobber, false);
+bobber.visible = false; scene.add(bobber);
+const fishLine = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 1, 3), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 }));
+fishLine.visible = false; scene.add(fishLine);
+const lineDir = new V(), tipV = new V();
+function placeLine(a, b) {
+  const len = a.distanceTo(b);
+  lineDir.copy(a).sub(b).normalize();
+  fishLine.quaternion.setFromUnitVectors(UP, lineDir);
+  fishLine.position.copy(a).add(b).multiplyScalar(0.5);
+  fishLine.scale.set(1, len, 1);
+  fishLine.visible = true;
+}
+function rodTip(c) {
+  const p = c.root.position, a = c.root.rotation.y;
+  return tipV.set(p.x + Math.sin(a) * 0.75 + Math.cos(a) * 0.4, p.y + 1.45, p.z + Math.cos(a) * 0.75 - Math.sin(a) * 0.4);
+}
+function waterAhead() {
+  const a = me.root.rotation.y;
+  for (const d of [3.4, 2.6, 4.3, 1.8]) {
+    const x = pos.x + Math.sin(a) * d, z = pos.z + Math.cos(a) * d;
+    if (Math.hypot(x, z) > 24.5 && !inRect(DOCK, x, z)) return { x, z };
+  }
+  return null;
+}
+let fishing = null;
+const flyers = [];        // caught fish arcing out of the water to whoever caught them
+function fishLeap(x, z, who, f) {
+  const m = makeFishMesh(f.color); scene.add(m);
+  const wy = waterY(x, z);
+  m.position.set(x, wy, z);
+  flyers.push({ m, from: new V(x, wy, z), who, t: 0 });
+  splash(x, wy, z, 26, 1.2); ripple(x, z, 1.4);
+}
+function castLine() {
+  if (!me.rod || fishing || !joined || lobbyOpen || digT > 0) return false;
+  const tgt = waterAhead();
+  if (!tgt) { popAt(pos.x, pos.y + 2.3, pos.z, 'Face the water to cast', ''); return true; }
+  fishing = { phase: 'cast', t: 0, x: tgt.x, z: tgt.z, start: rodTip(me).clone(), wait: 0.35 + Math.random() * 0.55 };
+  me.castT = 0.45;
+  noiseBurst(0.22, 'bandpass', 1200, 0.1);
+  return true;
+}
+function tickFishing(dt) {
+  tickSwimmers(dt);
+  for (let i = flyers.length - 1; i >= 0; i--) {
+    const fl = flyers[i]; fl.t += dt;
+    const k = Math.min(1, fl.t / 0.55), to = fl.who.root.position;
+    fl.m.position.set(fl.from.x + (to.x - fl.from.x) * k, fl.from.y + (to.y + 1.2 - fl.from.y) * k + Math.sin(k * Math.PI) * 1.6, fl.from.z + (to.z - fl.from.z) * k);
+    fl.m.rotation.x += dt * 9; fl.m.userData.tail.rotation.y = Math.sin(t * 30) * 0.7;
+    if (k >= 1) { burst(to.x, to.y + 1.2, to.z, 10, sparkMat, 1, 2.5); scene.remove(fl.m); flyers.splice(i, 1); }
+  }
+  if (fishing && (!me.rod || lobbyOpen)) fishing = null;
+  if (!fishing) { bobber.visible = false; fishLine.visible = false; return; }
+  const f = fishing; f.t += dt;
+  const wy = waterY(f.x, f.z), tip = rodTip(me);
+  if (f.phase === 'cast') {
+    const k = Math.min(1, f.t / 0.4);
+    bobber.position.set(tip.x + (f.x - tip.x) * k, tip.y + (wy - tip.y) * k + Math.sin(k * Math.PI) * 1.4, tip.z + (f.z - tip.z) * k);
+    if (k >= 1) { f.phase = 'wait'; f.t = 0; splash(f.x, wy, f.z, 5, 0.4); ripple(f.x, f.z, 0.7); splashSound(0.35, false); }
+  } else if (f.phase === 'wait') {
+    bobber.position.set(f.x, wy + 0.02 + Math.sin(f.t * 7) * 0.025, f.z);
+    if (f.t > f.wait) {                                        // a bite! straight into the catch
+      const fish = rollFish();
+      fishLeap(f.x, f.z, me, fish);
+      splashSound(1, true);
+      bag.fish[fish.id] = Math.min(999, (bag.fish[fish.id] || 0) + 1); saveBag(); renderBag();
+      popAt(pos.x, pos.y + 2.4, pos.z, (fish.id === 'koi' ? 'Wow! ' : '') + 'Caught a ' + fish.name + '!', 'good');
+      if (fish.id === 'koi') sfx.find(); else chimeNotes([660, 880], 0.07, 'triangle', 0.08);
+      if (actWorld) actWorld.send({ e: 'fish', x: Math.round(f.x * 100) / 100, z: Math.round(f.z * 100) / 100, s: fish.id }).catch(() => {});
+      me.castT = 0.45;
+      fishing = null; bobber.visible = false; fishLine.visible = false;
+      return;
+    }
+  }
+  bobber.visible = true;
+  placeLine(tip, bobber.position);
+}
+function remoteCatch(c, data) {
+  const fish = FISH_BY_ID[data.s]; if (!fish) return;
+  const x = num(data.x, -40, 40), z = num(data.z, -40, 40);
+  if (x === null || z === null || Math.hypot(x - c.root.position.x, z - c.root.position.z) > 8) return;
+  c.castT = 0.45;
+  fishLeap(x, z, c, fish);
+  const d = Math.hypot(x - pos.x, z - pos.z);
+  if (d < 16) splashSound(Math.max(0.2, 1 - d / 16) * 0.7, true);
+  const p = c.root.position;
+  popAt(p.x, p.y + 2.4, p.z, nameOf(c) + ' caught a ' + fish.name + '!', 'good');
+}
+function releaseFish() {
+  const n = Object.values(bag.fish).reduce((s, v) => s + v, 0); if (!n) return;
+  bag.fish = {}; saveBag(); renderBag();
+  const a = me.root.rotation.y;
+  for (let i = 0; i < Math.min(5, n); i++) setTimeout(() => splash(pos.x + Math.sin(a) * 2 + (Math.random() - 0.5), Math.max(pos.y, waterY(pos.x, pos.z)), pos.z + Math.cos(a) * 2 + (Math.random() - 0.5), 8, 0.6), i * 120);
+  splashSound(0.6, true);
+  popAt(pos.x, pos.y + 2.3, pos.z, 'Back to the sea!', 'good');
+}
+
 /* --- bag panel --- */
 const bagBtn = document.getElementById('bagBtn'), bagPanel = document.getElementById('bagPanel'), bagList = document.getElementById('bagList');
 function renderBag() {
@@ -2620,14 +2798,14 @@ function renderBag() {
   const owned = Object.keys(ITEMS).filter(k => bag.items[k]);
   if (!owned.length) {
     const p = document.createElement('p'); p.className = 'bagEmpty';
-    p.textContent = 'Your bag is empty. Walk up to a rock on the grass and press F (or tap Dig) to dig for treasure.';
+    p.textContent = 'Your bag is empty. Walk up to a rock on the grass and press F (or tap Dig) to dig for treasure, like a fishing rod or a party hat.';
     bagList.append(p);
   }
   for (const id of owned) {
     const it = ITEMS[id], row = document.createElement('div'); row.className = 'bagRow';
     const dot = document.createElement('i'); dot.style.background = it.color;
     const name = document.createElement('span'); name.textContent = it.name;
-    const on = it.slot === 'hand' ? bag.hand : bag.head === id;
+    const on = it.slot === 'hand' ? bag.hand === id : bag.head === id;
     const btn = document.createElement('button'); btn.type = 'button';
     btn.textContent = it.slot === 'hand' ? (on ? 'Put away' : 'Hold') : (on ? 'Take off' : 'Wear');
     btn.classList.toggle('on', on);
@@ -2641,6 +2819,20 @@ function renderBag() {
   if (bag.flies) { const rb = document.createElement('button'); rb.type = 'button'; rb.textContent = 'Let them go'; rb.addEventListener('click', releaseFlies); jar.append(rb); }
   else if (bag.items.net) { const hint = document.createElement('small'); hint.textContent = 'Hold the net, then press F near fireflies'; jar.append(hint); }
   bagList.append(jar);
+  const nFish = Object.values(bag.fish).reduce((a, v) => a + v, 0);
+  if (nFish || bag.items.rod) {
+    const row = document.createElement('div'); row.className = 'bagRow jar';
+    const fd = document.createElement('i'); fd.style.background = '#6f9fc8';
+    const fs = document.createElement('span'); fs.textContent = 'Fish caught: ' + nFish;
+    row.append(fd, fs);
+    if (nFish) {
+      const rb = document.createElement('button'); rb.type = 'button'; rb.textContent = 'Let them go'; rb.addEventListener('click', releaseFish); row.append(rb);
+      const detail = document.createElement('small');
+      detail.textContent = FISH.filter(f => bag.fish[f.id]).map(f => f.name + ' ×' + bag.fish[f.id]).join(' · ');
+      row.append(detail);
+    } else { const hint = document.createElement('small'); hint.textContent = 'Hold the rod, face the ocean and press F'; row.append(hint); }
+    bagList.append(row);
+  }
 }
 function toggleBag(open) {
   const show = open === undefined ? bagPanel.hidden : open;
@@ -2852,6 +3044,18 @@ tvTap.addEventListener('click', () => {
   if (tvAudio) tvAudio.play().catch(() => {});
 });
 renderStagePanel();
+const stageMinBtn = document.getElementById('stageMin');
+const MINUS_SVG = stageMinBtn.innerHTML, PLUS_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+function setStageMin(min) {
+  stagePanel.classList.toggle('mini', min);
+  stageMinBtn.innerHTML = min ? PLUS_SVG : MINUS_SVG;
+  stageMinBtn.title = min ? 'Show stage music' : 'Hide stage music';
+  stageMinBtn.setAttribute('aria-label', stageMinBtn.title);
+  stageMinBtn.setAttribute('aria-expanded', String(!min));
+  store.set('cove-stagemin', min ? '1' : '0');
+}
+stageMinBtn.addEventListener('click', () => { setStageMin(!stagePanel.classList.contains('mini')); canvas.focus(); });
+setStageMin(store.get('cove-stagemin') === '1');
 
 /* --- hugs, cheek kisses, high fives (the other person always says yes first) --- */
 const EMOTES = {
@@ -2963,6 +3167,7 @@ function hookWorld(T) {
     } else if (data.e === 'eat' && isInt(data.i, 0, trees.length - 1) && isInt(data.k, 0, 9)) startEat(data.i, data.k, c);
     else if (data.e === 'swing') c.swingT = 0.45;
     else if (data.e === 'yt' || data.e === 'file' || data.e === 'mstop') onStageWorld(c, data);
+    else if (data.e === 'fish') remoteCatch(c, data);
     else if (data.e === 'clap' && nowMs() - (c.lastClap || 0) > 1000) {      // hear the crowd, louder when you're close
       c.lastClap = nowMs();
       const p = c.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
@@ -3013,8 +3218,8 @@ function applaud() {
 /* --- context button (dig / swing net) and the per-frame world tick --- */
 const ctxBtn = document.getElementById('ctxBtn');
 let ctxMode = '';
-ctxBtn.addEventListener('click', () => { if (ctxMode === 'dig') startDig(); else if (ctxMode === 'net') swingNet(); canvas.focus(); });
-function onActionKey() { if (!startDig()) swingNet(); }
+ctxBtn.addEventListener('click', () => { if (ctxMode === 'dig') startDig(); else if (ctxMode === 'net') swingNet(); else if (ctxMode === 'fish') castLine(); canvas.focus(); });
+function onActionKey() { if (startDig()) return; if (me.rod) castLine(); else swingNet(); }
 let crackleT = 0;
 function tickWorld(dt) {
   const active = joined && !lobbyOpen;
@@ -3049,9 +3254,10 @@ function tickWorld(dt) {
   if (askNow && nowMs() > askNow.until) { askNow = null; askCard.hidden = true; showNextAsk(); }
   // dig / net context button
   const rock = active && digT <= 0 ? nearRock() : null;
-  ctxMode = rock ? 'dig' : (active && me.net ? 'net' : '');
+  ctxMode = rock ? 'dig' : (active && me.net ? 'net' : (active && me.rod && !fishing && waterAhead() ? 'fish' : ''));
   ctxBtn.hidden = !ctxMode || digT > 0;
-  if (ctxMode) ctxBtn.textContent = ctxMode === 'dig' ? 'Dig here (F)' : 'Swing net (F)';
+  if (ctxMode) ctxBtn.textContent = ctxMode === 'dig' ? 'Dig here (F)' : ctxMode === 'net' ? 'Swing net (F)' : 'Cast (F)';
+  tickFishing(dt);
 }
 
 /* ---------- loop ---------- */

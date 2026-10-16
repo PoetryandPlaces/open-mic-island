@@ -1,0 +1,30 @@
+Copyright (c) 2026 Poetry and Places. All rights reserved.
+
+Couplet Cove, including its design, artwork, characters (including Rosy the
+Rat), text and code in this repository, is owned by Poetry and Places, a
+501(c)(3) nonprofit organization.
+
+You are welcome to visit and use the island at https://openmic.poetryandplaces.org
+for personal, non-commercial purposes, such as attending meetups and events.
+
+No other rights are granted. You may not copy, modify, distribute, republish,
+host, or create derivative works from any part of this repository without prior
+written permission from Poetry and Places.
+
+To ask for permission, contact Poetry and Places through
+https://poetryandplaces.org.
+
+THIRD-PARTY MATERIAL
+
+Some material used by the island belongs to others and remains under its own
+license. Poetry and Places claims no ownership of it:
+
+- three.js (https://threejs.org), loaded from a CDN: MIT License,
+  Copyright (c) 2010-2026 three.js authors.
+- Trystero (https://github.com/dmotz/trystero), loaded from a CDN: MIT License,
+  Copyright (c) Dan Motzenbecker.
+- Sound effects in the sounds/ folder: from Pixabay, used under the Pixabay
+  Content License. Credits are listed in sounds/README.md.
+- music.mp3: background music used under its creator's terms.
+- YouTube videos played at the stage are streamed from YouTube under YouTube's
+  terms and are not part of this repository.
