@@ -72,16 +72,33 @@ html, body { height: 100%; margin: 0; overflow: hidden; background: #c98a8a; col
 }
 button:focus-visible, input:focus-visible { outline: 3px solid var(--sea); outline-offset: 2px; }
 
-#hint {
-  position: fixed;
+#helpBtn {
+  position: fixed; z-index: 6;
   left: calc(14px + env(safe-area-inset-left, 0px));
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  padding: 8px 14px;
-  font-size: .82rem; font-weight: 600;
-  display: flex; flex-wrap: wrap; gap: 6px 14px;
-  max-width: min(440px, calc(100vw - 360px));
+  width: 60px; height: 60px; padding: 0; border-radius: 50%;
+  border: 3px solid var(--plank-dark); background: radial-gradient(circle at 50% 40%, #ffe3c4, #e58fa0);
+  box-shadow: 0 4px 0 var(--plank-dark), 0 8px 18px rgba(46, 42, 69, .25);
+  cursor: pointer; overflow: visible;
 }
-#hint span { white-space: nowrap; }
+#helpBtn img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+#helpBtn img:not([src]) { visibility: hidden; }
+#helpBtn .q {
+  position: absolute; right: -4px; bottom: -4px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--plank-dark); color: var(--paper); font: 800 .8rem/22px var(--font-body); text-align: center;
+  border: 2px solid var(--paper);
+}
+#helpBtn .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+#helpBtn[aria-expanded="true"] { box-shadow: 0 2px 0 var(--plank-dark); transform: translateY(2px); }
+#hint {
+  position: fixed; z-index: 6;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 14px 12px; max-width: min(320px, calc(100vw - 28px)); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: .82rem; font-weight: 600;
+}
+#hint h3 { margin: 0 0 2px; font: 700 1.05rem var(--font-display); color: var(--plank); font-variation-settings: "SOFT" 100, "WONK" 1; }
 kbd {
   font: 800 .74rem var(--font-body);
   background: var(--tan); border: 2px solid var(--plank-dark); border-bottom-width: 3px;
@@ -181,6 +198,7 @@ kbd {
 }
 .tag.mine { background: rgba(122, 104, 161, .95); }
 
+#readBtn.busy { background: #9a93ad; box-shadow: 0 3px 0 #77708a; cursor: default; }
 #readBtn {
   position: fixed; left: 0; top: 0;
   transform: translate(-50%, -100%);
@@ -266,18 +284,16 @@ kbd {
 }
 #enterBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4f5d82; }
 #lobby .online { justify-content: center; margin: 0; }
-body.in-lobby #title, body.in-lobby #meSign, body.in-lobby #hint, body.in-lobby #chat,
+body.in-lobby #title, body.in-lobby #meSign, body.in-lobby #hint, body.in-lobby #chat, body.in-lobby #helpBtn,
 body.in-lobby #joy, body.in-lobby #hopBtn, body.in-lobby #tags, body.in-lobby #bubble, body.in-lobby #readBtn,
-body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.in-lobby #ctxBtn { display: none !important; }
+body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.in-lobby #ctxBtn, body.in-lobby #soundPanel, body.in-lobby #helpBtn { display: none !important; }
 
-@media (max-width: 760px) {
-  #hint { display: none; }
-}
+
 @media (pointer: coarse) {
   .touch-only { display: block; }
   span.touch-only { display: inline; }
   .key-only { display: none !important; }
-  #hint { display: flex; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 28px); width: max-content; }
+  #joy { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
   #chat { top: calc(130px + env(safe-area-inset-top, 0px)); bottom: auto; width: min(260px, calc(100vw - 28px)); }
   #chatLog { height: 96px; }
 }
@@ -321,8 +337,20 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   font: 800 .84rem var(--font-body); color: var(--ink); background: var(--tan);
   border: 0; border-radius: 12px; padding: 0 12px; cursor: pointer; flex: none;
 }
+#roomTag { margin-top: 2px; font-size: .74rem; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#roomWhere { margin-bottom: 8px; font-size: .9rem; }
+#roomWhere b { color: var(--plank-dark); }
+#roomWhere span { color: var(--muted); font-weight: 600; }
+#roomSwitch { display: flex; gap: 14px; flex-wrap: wrap; }
+#lobbyRoomBtn { font: 700 .84rem var(--font-body); background: none; border: 0; padding: 4px 0; margin-top: 4px; color: var(--muted); text-decoration: underline; cursor: pointer; }
 #newRoomBtn { background: none; padding: 4px 0; margin-top: 4px; align-self: flex-start; color: var(--muted); text-decoration: underline; font-weight: 700; }
 .audio-sink { display: none; }
+#soundPanel { position: fixed; z-index: 16; width: 220px; box-sizing: border-box; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+#soundPanel .sRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 800 .82rem var(--font-body); color: var(--ink); }
+#soundPanel .sRow.col { flex-direction: column; align-items: stretch; gap: 4px; }
+#soundPanel input[type=range] { width: 100%; accent-color: var(--plank-dark); }
+#musicToggle { font: 800 .8rem var(--font-body); border: 0; border-radius: 999px; padding: 5px 14px; cursor: pointer; background: var(--tan); color: var(--ink); }
+#musicToggle.on { background: var(--leaf); color: #fff; }
 #controls button.icon { flex: none; width: 36px; padding: 7px 0; color: var(--ink); background: var(--tan); box-shadow: 0 2px 0 #c4b6e2; position: relative; }
 #musicBtn.on { color: var(--paper); background: var(--plank); box-shadow: 0 2px 0 #574a7a; }
 #bagBtn.new::after { content: ""; position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--blush); }
@@ -375,6 +403,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   <h1>Couplet Cove</h1>
   <p>Hang out, talk, and walk up to the microphone on the wooden stage to read.</p>
   <div class="online"><i></i><span class="onlineText">Connecting…</span></div>
+  <div id="roomTag"></div>
 </header>
 
 <div id="meSign" class="sign">
@@ -382,23 +411,24 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   <button id="changeBtn" type="button">Change</button>
 </div>
 
-<div id="hint" class="sign">
-  <span class="key-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk</span>
-  <span class="key-only"><kbd>Shift</kbd> run</span>
-  <span class="key-only"><kbd>Space</kbd> hop</span>
-  <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn</span>
-  <span class="key-only"><kbd>M</kbd> mute</span>
-  <span class="key-only"><kbd>F</kbd> dig / net</span>
-  <span class="key-only"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> hug · kiss · five</span>
-  <span class="key-only"><kbd>B</kbd> bag</span>
-  <span class="key-only"><kbd>Enter</kbd> chat</span>
-  <span class="touch-only">Drag the pad to walk · swipe the island to look around</span>
+<button id="helpBtn" type="button" aria-expanded="false" aria-controls="hint" title="How to play (H)"><img id="helpFace" alt=""><span class="q" aria-hidden="true">?</span><span class="sr">How to play</span></button>
+<div id="hint" class="sign" hidden>
+  <h3>How to play</h3>
+  <span class="key-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>Shift</kbd> run</span>
+  <span class="key-only"><kbd>Space</kbd> hop (hop into trees to shake them)</span>
+  <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn the camera</span>
+  <span class="key-only"><kbd>Space</kbd> at the mic: start / finish reading</span>
+  <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
+  <span class="key-only"><kbd>F</kbd> dig by a rock / swing your net</span>
+  <span class="key-only"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ask for a hug, cheek kiss or high five</span>
+  <span class="key-only"><kbd>B</kbd> your bag · <kbd>Enter</kbd> chat · <kbd>H</kbd> this help</span>
+  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to dig, read at the mic, or hug someone nearby.</span>
 </div>
 
 <section id="chat" class="sign" aria-label="Island chat">
   <div id="controls">
     <button id="micBtn" type="button" aria-pressed="false"></button>
-    <button id="musicBtn" class="icon" type="button" aria-pressed="false" aria-label="Background music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
+    <button id="musicBtn" class="icon" type="button" aria-expanded="false" aria-controls="soundPanel" aria-label="Music and sound" title="Music and sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
     <button id="bagBtn" class="icon" type="button" aria-label="Your bag (B)" title="Your bag (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
     <button id="inviteBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><span>Invite</span></button>
   </div>
@@ -432,8 +462,13 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   <div id="bagList"></div>
 </section>
 <button id="ctxBtn" type="button" hidden></button>
+<section id="soundPanel" class="sign" hidden aria-label="Music and sound">
+  <div class="sRow"><span>Music</span><button id="musicToggle" type="button" aria-pressed="false">Off</button></div>
+  <label class="sRow col">Music volume <input id="musicVol" type="range" min="0" max="100" step="1"></label>
+  <label class="sRow col">Sound effects <input id="sfxVol" type="range" min="0" max="100" step="1"></label>
+</section>
 <div id="tags"></div>
-<button id="readBtn" type="button" hidden>Read a poem <span class="key-only">(Space)</span></button>
+<button id="readBtn" type="button" hidden><span class="lbl">Start reading</span> <span class="key-only">(Space)</span></button>
 
 <div id="joy" class="touch-only" aria-hidden="true"><div id="knob"></div></div>
 <button id="hopBtn" class="touch-only" type="button">Hop</button>
@@ -441,7 +476,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 <div id="lobby" role="dialog" aria-modal="true" aria-labelledby="lobbyTitle">
   <form id="lobbyCard" class="sign" autocomplete="off">
     <h2 id="lobbyTitle">Couplet Cove</h2>
-    <p class="lead">Pick a critter, write your name on the tag, and wash ashore. Anyone with this island's link lands in the same place.</p>
+    <p class="lead">Pick a critter, write your name on the tag, and wash ashore. The main lobby is open to everyone; private islands are just for people with the link.</p>
     <div id="stageBox"><canvas id="preview" aria-hidden="true"></canvas><div id="pickedName">Cat</div></div>
     <fieldset id="kinds">
       <legend>Your critter</legend>
@@ -458,9 +493,10 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
       <input id="nameInput" type="text" maxlength="20" placeholder="What should your tag say?">
     </div>
     <div id="roomField">
-      <label for="roomLink">Invite link for this island</label>
+      <div id="roomWhere"><b id="roomName">Main lobby</b> <span id="roomDesc"></span></div>
+      <label for="roomLink">Invite link</label>
       <div id="roomRow"><input id="roomLink" type="text" readonly><button id="copyLobbyBtn" type="button">Copy</button></div>
-      <button id="newRoomBtn" type="button">Start a new island instead</button>
+      <div id="roomSwitch"><button id="newRoomBtn" type="button">Make a private island instead</button><button id="lobbyRoomBtn" type="button" hidden>Go to the main lobby</button></div>
     </div>
     <button id="enterBtn" type="submit">Wash ashore</button>
     <div class="online"><i></i><span class="onlineText">Connecting…</span></div>
@@ -660,6 +696,31 @@ const spot = new THREE.SpotLight(0xfff0c8, 0, 18, 0.42, 0.6, 1.2);
 spot.position.set(0, 9, -5.5);
 spot.target.position.set(0, STAGE.h, -9.2);
 scene.add(spot, spot.target);
+const spotBeam = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+const spotPool = new THREE.Mesh(new THREE.CircleGeometry(1.15, 28), new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+spotPool.rotation.x = -Math.PI / 2;
+scene.add(spotBeam, spotPool);
+const UP = new V(0, 1, 0), spotTgt = new V(0, STAGE.h, -9.2), beamDir = new V();
+function tickSpot(dt) {
+  const r = stageReader && stageReader.root && stageReader.root.parent ? stageReader : null;
+  if (stageReader && !r) stageReader = null;
+  const k = Math.min(1, dt * 4);
+  if (r) spotTgt.lerp(r.root.position, k);
+  spot.target.position.copy(spotTgt);
+  spot.position.set(spotTgt.x * 0.4 + Math.sin(t * 0.5) * 1.3, 9.5, -4.2 + Math.cos(t * 0.37) * 0.8);   // a slowly roving stage light
+  spot.intensity += ((r ? 2.8 : 0) - spot.intensity) * Math.min(1, dt * 3);
+  const op = spot.intensity / 2.8;
+  const len = spot.position.distanceTo(spotTgt);
+  beamDir.copy(spot.position).sub(spotTgt).normalize();
+  spotBeam.quaternion.setFromUnitVectors(UP, beamDir);
+  spotBeam.position.copy(spot.position).add(spotTgt).multiplyScalar(0.5);
+  spotBeam.scale.set(1.15, len, 1.15);
+  spotBeam.material.opacity = 0.12 * op;
+  spotBeam.visible = op > 0.01;
+  spotPool.position.set(spotTgt.x, spotTgt.y + 0.03, spotTgt.z);
+  spotPool.material.opacity = 0.4 * op;
+  spotPool.visible = op > 0.01;
+}
 
 /* ---------- audience logs ---------- */
 for (const [x, z] of [[-2.3, -3], [2.3, -3], [-2.3, 0], [2.3, 0]]) {
@@ -922,6 +983,18 @@ function tailTube(parent, pts, radius, material) {
   tail.position.copy(pts[0]).multiplyScalar(-1); tail.castShadow = true; pivot.add(tail);
   return pivot;
 }
+// fluffy fur: little low-poly puffs, the same trick the dog's ruff uses
+function puff(parent, m, x, y, z, r) {
+  const f = put(new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), m), x, y, z, parent);
+  f.rotation.set(x * 7 + y, y * 5 + z, z * 3 + x);
+  return f;
+}
+function fluffRuff(g, mats, y, rx, rz, n = 9, size = 0.16, spread = 1.9) {
+  for (let i = 0; i < n; i++) {
+    const a = -spread + i * (2 * spread / (n - 1));
+    puff(g, mats[i % mats.length], Math.sin(a) * rx, y + Math.abs(Math.sin(a)) * 0.12, Math.cos(a) * rz, size * (0.9 + (i * 37 % 7) / 30));
+  }
+}
 function buildCat() {
   const g = new THREE.Group(), fur = mat(0xf2a65a), cream = mat(0xfff1dc), pink = flat(0xf49aa0), stripe = mat(0xd9813d);
   put(new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.5, 5, 12), fur), 0, 0.67, 0, g);
@@ -937,8 +1010,20 @@ function buildCat() {
   put(new THREE.Mesh(new THREE.SphereGeometry(0.036, 6, 5), pink), 0, 0.9, 0.42, g, false);
   smile(g, 0.86, 0.41, 0.13);
   for (let k = -1; k <= 1; k++) { const st = put(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.05), stripe), k * 0.09, 1.21, 0.33 - Math.abs(k) * 0.02, g, false); st.rotation.x = -0.6; }
-  const wag = tailTube(g, [new V(0, 0.3, -0.36), new V(0.05, 0.4, -0.72), new V(0.1, 0.82, -0.85), new V(0.04, 1.02, -0.7)], 0.075, fur);
-  return { g, anim: tt => { wag.rotation.y = Math.sin(tt * 3.2) * 0.35; } };
+  // fluff: chest ruff, cheek tufts, a forehead tuft, ear fluff and a big plume tail
+  fluffRuff(g, [cream, fur, cream], 0.6, 0.41, 0.37, 9, 0.16);
+  for (const s of [-1, 1]) {
+    puff(g, cream, 0.39 * s, 0.86, 0.12, 0.14);
+    puff(g, fur, 0.42 * s, 0.74, 0.02, 0.12);
+    puff(g, cream, 0.2 * s, 1.27, 0.07, 0.055);
+  }
+  [[-0.07, 1.3, 0.2, 0.08], [0.05, 1.33, 0.18, 0.09], [0, 1.27, 0.27, 0.06]].forEach(([x, y, z, r]) => puff(g, fur, x, y, z, r));
+  puff(g, fur, 0, 0.45, -0.36, 0.22);
+  const wag = new THREE.Group(); wag.position.set(0, 0.36, -0.42); g.add(wag);
+  [[0, 0.02, -0.06, 0.13], [0.03, 0.2, -0.2, 0.15], [0.05, 0.42, -0.25, 0.16], [0.04, 0.62, -0.18, 0.15], [0.02, 0.76, -0.04, 0.12]].forEach(([x, y, z, r], i) => {
+    puff(wag, i === 4 ? cream : fur, x, y, z, r);
+  });
+  return { g, anim: tt => { wag.rotation.y = Math.sin(tt * 3.2) * 0.35; wag.rotation.z = Math.sin(tt * 1.6) * 0.08; } };
 }
 function buildFrog() {
   const g = new THREE.Group(), skin = mat(0x7cc46a), belly = mat(0xe6f3c4);
@@ -972,6 +1057,14 @@ function buildMouse() {
   whiskers(g, 0.33, 0.8, 0.28);
   put(new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), pink), 0, 0.81, 0.41, g, false);
   smile(g, 0.76, 0.395, 0.11);
+  // fluff: a soft lilac ruff, cheek puffs, a little forehead tuft and a round fluffy rump
+  fluffRuff(g, [belly, fur, belly], 0.55, 0.39, 0.35, 9, 0.15);
+  for (const s of [-1, 1]) {
+    puff(g, fur, 0.37 * s, 0.78, 0.1, 0.13);
+    puff(g, belly, 0.3 * s, 0.7, 0.2, 0.08);
+  }
+  puff(g, fur, -0.05, 1.1, 0.3, 0.07); puff(g, fur, 0.05, 1.12, 0.29, 0.065);
+  puff(g, fur, 0, 0.42, -0.34, 0.2);
   // bow, sitting between the ears and tipped forward
   const bow = new THREE.Group(); bow.position.set(0, 1.24, 0.1); bow.rotation.x = -0.35; g.add(bow);
   for (const s of [-1, 1]) {
@@ -1154,7 +1247,7 @@ const lobby = document.getElementById('lobby'), lobbyCard = document.getElementB
 const nameInput = document.getElementById('nameInput'), pickedName = document.getElementById('pickedName');
 const kindBtns = [...document.querySelectorAll('.kind')];
 const pvCanvas = document.getElementById('preview');
-const pvRenderer = new THREE.WebGLRenderer({ canvas: pvCanvas, antialias: true, alpha: true });
+const pvRenderer = new THREE.WebGLRenderer({ canvas: pvCanvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
 pvRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 pvRenderer.shadowMap.enabled = true;
 const pvScene = new THREE.Scene();
@@ -1190,6 +1283,7 @@ nameInput.value = myName;
 chooseKind(savedKind, false);
 
 function openLobby() {
+  stopReading('quiet');
   if (typeof bagPanel !== 'undefined') { bagPanel.hidden = true; }
   lobbyOpen = true;
   document.body.classList.add('in-lobby');
@@ -1206,6 +1300,7 @@ lobbyCard.addEventListener('submit', e => {
   myName = safeName(cleanName(nameInput.value), k) || myName || KIND_INFO[k].who;
   store.set('stanza-name', myName); store.set('stanza-critter', k);
   me.set(k);
+  captureFace();
   me.root.visible = true;
   document.getElementById('meName').textContent = myName;
   document.getElementById('meDot').style.background = KIND_INFO[k].color;
@@ -1219,15 +1314,34 @@ lobbyCard.addEventListener('submit', e => {
     pos.x = (Math.random() - 0.5) * 4; pos.z = 8 + Math.random() * 2;
     camLook.set(pos.x, 1, pos.z);
     me.root.rotation.y = Math.PI;
+    if (!store.get('cove-helped')) { store.set('cove-helped', '1'); setTimeout(() => toggleHelp(true), 600); }
     addLine('', 'Welcome, ' + myName + '. Tap Invite to copy this island’s link for friends, and turn your mic on to talk.', true);
   }
-  wakeAudio();
+  wakeAudio(); loadSounds(); startSurf();
   if (musicOn && music.paused) music.play().catch(() => { musicOn = false; renderMusic(); });
   sendPresence(true);
   updateCount();
   canvas.focus();
 });
 document.getElementById('changeBtn').addEventListener('click', openLobby);
+// the help circle shows your critter's face (a close-up snapshot from the entrance preview)
+const helpBtn = document.getElementById('helpBtn'), helpFace = document.getElementById('helpFace'), hintEl = document.getElementById('hint');
+function captureFace() {
+  try {
+    const oy = pv.root.rotation.y, opy = pv.root.position.y;
+    pv.root.rotation.y = 0; pv.root.position.y = 0.15; pv.rig.scale.set(1, 1, 1);
+    pvCam.position.set(0, 1.12, 2.1); pvCam.lookAt(0, 1.08, 0);
+    pvRenderer.render(pvScene, pvCam);
+    helpFace.src = pvCanvas.toDataURL('image/png');
+    pvCam.position.set(0, 1.55, 4.6); pvCam.lookAt(0, 0.75, 0);
+    pv.root.rotation.y = oy; pv.root.position.y = opy;
+  } catch (e) {}
+}
+function toggleHelp(open) {
+  const show = open === undefined ? hintEl.hidden : open;
+  hintEl.hidden = !show; helpBtn.setAttribute('aria-expanded', String(show));
+}
+helpBtn.addEventListener('click', () => { toggleHelp(); canvas.focus(); });
 
 /* ---------- input ---------- */
 const keys = new Set();
@@ -1250,6 +1364,9 @@ window.addEventListener('keydown', e => {
   if (!e.repeat) {
     if (e.code === 'KeyF') { e.preventDefault(); onActionKey(); return; }
     if (e.code === 'KeyB') { e.preventDefault(); toggleBag(); return; }
+    if (e.code === 'KeyH') { e.preventDefault(); toggleHelp(); return; }
+    if (e.code === 'Escape' && !soundPanel.hidden) { toggleSoundPanel(false); return; }
+    if (e.code === 'Escape' && !hintEl.hidden) { toggleHelp(false); return; }
     if (e.code === 'Escape' && !bagPanel.hidden) { toggleBag(false); return; }
     if (askNow && (e.code === 'KeyY' || e.code === 'KeyN')) { e.preventDefault(); answerAsk(e.code === 'KeyY'); return; }
     const em = { Digit1: 'hug', Digit2: 'kiss', Digit3: 'five' }[e.code];
@@ -1257,7 +1374,7 @@ window.addEventListener('keydown', e => {
   }
   if (!MOVE.includes(e.code)) return;
   e.preventDefault();
-  if (e.code === 'Space' && !e.repeat) { if (nearMic) readPoem(); else wantHop = true; }
+  if (e.code === 'Space' && !e.repeat) { if (stageReader === me || nearMic) toggleReading(); else wantHop = true; }
   if (e.code === 'KeyM' && !e.repeat) { toggleMic(); return; }
   keys.add(e.code);
 });
@@ -1287,36 +1404,61 @@ const joyEnd = e => { if (e.pointerId === joyId) { joyId = null; joy.x = joy.y =
 joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
 document.getElementById('hopBtn').addEventListener('pointerdown', e => { e.preventDefault(); wantHop = true; });
 
-/* ---------- bubbles ---------- */
-const poems = [
-  'The tide keeps the island’s secrets<br>and returns them, one shell at a time.',
-  'Lanterns lean toward the dusk<br>like listeners leaning in.',
-  'I came here on four soft feet.<br>The grass remembers every one.',
-  'Every island is a stanza<br>the ocean keeps rewriting.',
-  'Say it slowly. The sea<br>has nowhere else to be.'
-];
-let poemIdx = 0, nearMic = false, spotT = 0;
+/* ---------- bubbles + the open mic ---------- */
+let nearMic = false;
 const tagsEl = document.getElementById('tags');
 me.bubble = document.getElementById('bubble'); me.bubbleT = 0;
 const myTag = document.createElement('div'); myTag.className = 'tag mine'; tagsEl.append(myTag);
 const myTagState = { tagKey: '' };
-const readBtn = document.getElementById('readBtn');
-function showPoem(c, i) {
-  c.bubble.className = 'bubble poem';
-  c.bubble.innerHTML = poems[i] + '<small>Poem ' + (i + 1) + ' of ' + poems.length + '</small>';
-  c.bubble.hidden = false; c.bubbleT = 7; spotT = 7;
-}
+const readBtn = document.getElementById('readBtn'), readLbl = readBtn.querySelector('.lbl');
 function showSay(c, text) {
   c.bubble.className = 'bubble';
   renderFiltered(c.bubble, text, c.kind);
   c.bubble.hidden = false; c.bubbleT = Math.min(9, 3 + text.length * 0.06);
 }
-function readPoem() {
-  const i = poemIdx; poemIdx = (poemIdx + 1) % poems.length;
-  showPoem(me, i);
-  if (actPoem) actPoem.send({ i }).catch(() => {});
+// Only one reader at a time. A spotlight follows them around the stage until they finish.
+let stageReader = null;
+const STAGE_ZONE = { x0: STAGE.x0 - 0.6, x1: STAGE.x1 + 0.6, z0: STAGE.z0 - 0.6, z1: STAGE.z1 + 1.4 };
+function snaps() { for (let i = 0; i < 6; i++) noiseBurst(0.035, 'highpass', 2600, 0.25, 0.05 + i * (0.09 + Math.random() * 0.06)); }
+function startReading() {
+  if (stageReader && stageReader !== me) {
+    popAt(pos.x, pos.y + 2.3, pos.z, nameOf(stageReader) + ' is reading', '');
+    addLine('', nameOf(stageReader) + ' is at the mic right now. You can read when they finish.', true);
+    return;
+  }
+  if (stageReader === me || !joined) return;
+  stageReader = me; me.reading = true;
+  if (actPoem) actPoem.send({ on: 1 }).catch(() => {});
+  sendPresence(true);
+  addLine('', 'The spotlight is yours. Press Space (or Finish reading) when you’re done.' + (micOn ? '' : ' Turn your mic on so everyone can hear you.'), true);
 }
-readBtn.addEventListener('click', () => { readPoem(); canvas.focus(); });
+function stopReading(why) {
+  if (stageReader !== me) return;
+  stageReader = null; me.reading = false;
+  if (actPoem) actPoem.send({ on: 0 }).catch(() => {});
+  sendPresence(true);
+  if (why === 'quiet') return;
+  addLine('', why === 'left' ? 'You stepped off the stage, so your turn at the mic ended. Snaps!' : 'You finished reading. Snaps!', true);
+  snaps();
+}
+function toggleReading() { if (stageReader === me) stopReading(); else startReading(); }
+function setRemoteReading(c, on) {
+  if (!!c.reading === on) return;
+  c.reading = on;
+  if (on) {
+    if (stageReader === me) {
+      if (c.peer < mySelfId) { stopReading('quiet'); addLine('', nameOf(c) + ' stepped up at the same moment, so they go first.', true); }
+      else return;                                       // I keep the mic; they'll hear back and stop
+    }
+    stageReader = c;
+    addLine('', nameOf(c) + ' stepped up to the mic.', true);
+  } else if (stageReader === c) {
+    stageReader = null;
+    addLine('', 'Snaps for ' + nameOf(c) + '!', true);
+    snaps();
+  }
+}
+readBtn.addEventListener('click', () => { toggleReading(); canvas.focus(); });
 
 /* ---------- chat filter + critter noises ----------
    Bad words are swapped for the speaker's critter noise (a big red MEOW, RIBBIT...).
@@ -1389,11 +1531,37 @@ function renderFiltered(el, text, kind) {
 const safeName = (name, kind) => name && hasBad(name) ? (NOISE[kind] || 'Meow') : name;
 
 // little synthesized critter voices (no audio files needed)
+// Real recordings: drop short clips into a "sounds" folder in the repo with these names and they
+// replace the synthesized voices automatically. Until then the synthesized ones play.
+const SOUND_FILES = { cat: 'sounds/cat.mp3', frog: 'sounds/frog.mp3', mouse: 'sounds/mouse.mp3', fish: 'sounds/fish.mp3', dog: 'sounds/dog.mp3', splash: 'sounds/splash.mp3', waves: 'sounds/waves.mp3', fire: 'sounds/fire.mp3' };
+const soundBufs = {};
+let soundsLoading = false;
+function loadSounds() {
+  const ctx = audioCtx(); if (!ctx || soundsLoading) return;
+  soundsLoading = true;
+  for (const [k, url] of Object.entries(SOUND_FILES)) {
+    fetch(url).then(r => r.ok ? r.arrayBuffer() : Promise.reject(r.status))
+      .then(b => new Promise((ok, bad) => ctx.decodeAudioData(b, ok, bad)))
+      .then(buf => { soundBufs[k] = buf; if (k === 'waves') swapSurfToFile(); if (k === 'fire') startFireLoop(); })
+      .catch(() => {});
+  }
+}
+function playBuf(k, vol, rate = 1) {
+  const ctx = audioCtx(), buf = soundBufs[k];
+  if (!ctx || !buf) return false;
+  try {
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = vol;
+    src.connect(g); g.connect(sfxDest()); src.start();
+    return true;
+  } catch (e) { return false; }
+}
 function critterNoise(kind, vol = 1) {
   const ctx = audioCtx(); if (!ctx) return;
+  if (playBuf(kind, 0.9 * vol, 0.94 + Math.random() * 0.12)) return;
   try {
     const now = ctx.currentTime + 0.01, out = ctx.createGain();
-    out.gain.value = 0.2 * vol; out.connect(ctx.destination);
+    out.gain.value = 0.2 * vol; out.connect(sfxDest());
     const tone = (type, at, dur, f0, f1, f2, filt) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = type; o.frequency.setValueAtTime(f0, at);
@@ -1483,10 +1651,19 @@ function readRoomId() {
   const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash);
   return m ? m[1].toLowerCase() : '';
 }
-let roomId = readRoomId();
-if (!roomId) { roomId = newRoomId(); history.replaceState(null, '', '#room=' + roomId); }
-const inviteUrl = () => location.origin + location.pathname + '#room=' + roomId;
-window.addEventListener('hashchange', () => { if (readRoomId() && readRoomId() !== roomId) location.reload(); });
+// No #room in the link = the main lobby, open to everyone any time. #room=… = a private island.
+const LOBBY = 'lobby';
+let roomId = readRoomId() || LOBBY;
+const isLobby = roomId === LOBBY;
+const inviteUrl = () => location.origin + location.pathname + (isLobby ? '' : '#room=' + roomId);
+window.addEventListener('hashchange', () => { if ((readRoomId() || LOBBY) !== roomId) location.reload(); });
+document.getElementById('roomName').textContent = isLobby ? 'Main lobby' : 'Private island';
+document.getElementById('roomDesc').textContent = isLobby ? 'Open to everyone, any time. Just share the link.' : 'Only people with this link can find it.';
+document.getElementById('roomTag').textContent = isLobby ? 'Main lobby' : 'Private island · ' + roomId;
+document.getElementById('newRoomBtn').textContent = isLobby ? 'Make a private island instead' : 'Make a new private island';
+const lobbyRoomBtn = document.getElementById('lobbyRoomBtn');
+lobbyRoomBtn.hidden = isLobby;
+lobbyRoomBtn.addEventListener('click', () => { location.href = location.origin + location.pathname; });
 
 const roomLink = document.getElementById('roomLink');
 roomLink.value = inviteUrl();
@@ -1543,6 +1720,7 @@ function dropRemote(id, silent) {
   if (!silent && c.hasPos) addLine('', nameOf(c) + ' sailed off.', true);
   if (c.audio) { c.audio.srcObject = null; c.audio.remove(); }
   if (c.meter) c.meter.close();
+  if (stageReader === c) stageReader = null;
   scene.remove(c.root); c.tag.remove(); c.bubble.remove(); remotes.delete(id);
   updateCount();
 }
@@ -1555,6 +1733,7 @@ function applyPresence(c, pr) {
   c.m = pr.m === 1 ? 1 : 0; c.run = pr.r === 1 ? 1 : 0;
   c.wt = num(pr.w, 0, 1) || 0;
   c.mic = pr.mic === 1;
+  if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
   c.net = pr.nt === 1; c.stung = pr.st === 1; c.digging = pr.dg === 1;
   if (typeof pr.n === 'string') c.n = cleanName(pr.n);
@@ -1583,7 +1762,7 @@ function sendPresence(force, target) {
     x: Math.round(pos.x * 100) / 100, y: Math.round(pos.y * 100) / 100, z: Math.round(pos.z * 100) / 100,
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
-    h: me.hat || '', nt: me.net ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
+    h: me.hat || '', nt: me.net ? 1 : 0, rd: stageReader === me ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -1684,7 +1863,7 @@ async function connect() {
   roomReadyAt = performance.now();
   actPres = room.makeAction('pres');
   actChat = room.makeAction('chat');
-  actPoem = room.makeAction('poem');
+  actPoem = room.makeAction('stage');
   hookWorld(T);
   room.onPeerJoin = id => {
     ensureRemote(id);
@@ -1713,12 +1892,9 @@ async function connect() {
     if (c.hasPos) { showSay(c, text); critterSpeaks(c); }
   };
   actPoem.onMessage = (data, meta) => {
-    const id = meta && meta.peerId; if (!id) return;
-    const i = data && Number.isInteger(data.i) && data.i >= 0 && data.i < poems.length ? data.i : -1;
-    const c = remotes.get(id);
-    if (i < 0 || !c || !c.hasPos) return;
-    showPoem(c, i);
-    addLine('', nameOf(c) + ' is reading at the mic.', true);
+    const c = meta && remotes.get(meta.peerId);
+    if (!c || !c.hasPos || !data) return;
+    setRemoteReading(c, data.on === 1);
   };
   setChatEnabled(true, 'Say something nice…');
   updateCount();
@@ -1793,9 +1969,10 @@ function applyWet(c, w) {
 }
 function critterFx(c, dt, x, y, z, moving, landed) {
   const inW = inWaterAt(x, z);
-  if (inW && !c.wasIn) { splash(x, waterY(x, z), z, 24, 1.15); ripple(x, z, 1.5); }
-  else if (!inW && c.wasIn) splash(x, y + 0.3, z, 8, 0.6);
-  else if (inW && landed) { splash(x, waterY(x, z), z, 18, 1.05); ripple(x, z, 1.3); }
+  if (inW && !c.wasIn) { splash(x, waterY(x, z), z, 24, 1.15); ripple(x, z, 1.5); splashSound(soundNear(c), true); }
+  else if (!inW && c.wasIn) { splash(x, y + 0.3, z, 8, 0.6); splashSound(soundNear(c) * 0.6, false); }
+  else if (inW && landed) { splash(x, waterY(x, z), z, 18, 1.05); ripple(x, z, 1.3); splashSound(soundNear(c), true); }
+  if (inW && moving) { c.strokeT = (c.strokeT || 0) - dt; if (c.strokeT <= 0) { c.strokeT = 0.42 + Math.random() * 0.1; splashSound(soundNear(c) * 0.5, false); } }
   c.wasIn = inW;
   c.ripT = (c.ripT || 0) - dt;
   if (inW && moving) {
@@ -1821,7 +1998,79 @@ let actWorld = null, actAsk = null, actReply = null, actEmote = null, mySelfId =
 const nowMs = () => performance.now();
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 
-/* --- little sound kit (all synthesized) --- */
+/* --- volume settings: music and sound effects --- */
+const pct = (k, d) => { const v = parseFloat(store.get(k)); return isFinite(v) ? Math.max(0, Math.min(100, v)) : d; };
+let sfxPct = pct('cove-svol', 70), musicPct = pct('cove-mvol', 45);
+let sfxGain = null;
+function sfxDest() {
+  const ctx = audioCtx();
+  if (!sfxGain || sfxGain.context !== ctx) { sfxGain = ctx.createGain(); sfxGain.connect(ctx.destination); }
+  sfxGain.gain.value = sfxPct / 70;
+  return sfxGain;
+}
+
+/* --- ocean sounds: waves that swell with the visible surf, louder near the shore --- */
+let surf = null;
+function startSurf() {
+  const ctx = audioCtx(); if (!ctx || surf) return;
+  try {
+    const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }   // brown noise
+    const src = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf; src.loop = true; lp.type = 'lowpass'; lp.frequency.value = 600; g.gain.value = 0;
+    src.connect(lp); lp.connect(g); g.connect(sfxDest()); src.start();
+    surf = { src, lp, g, file: false };
+  } catch (e) {}
+}
+let fireLoop = null;
+function startFireLoop() {
+  const ctx = audioCtx(), buf = soundBufs.fire; if (!ctx || !buf || fireLoop) return;
+  try {
+    const src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = buf; src.loop = true; src.loopStart = 0.06; src.loopEnd = buf.duration - 0.06;
+    g.gain.value = 0; src.connect(g); g.connect(sfxDest()); src.start();
+    fireLoop = { src, g };
+  } catch (e) {}
+}
+function tickFireSound() {
+  if (!fireLoop || !actx) return;
+  const d = Math.hypot(pos.x - FIRE.x, pos.z - FIRE.z);
+  const v = joined ? Math.pow(Math.max(0, 1 - d / 9), 1.6) * 0.75 : 0;        // only when you're close
+  fireLoop.g.gain.setTargetAtTime(v, actx.currentTime, 0.25);
+}
+function swapSurfToFile() {
+  const ctx = audioCtx(); if (!surf || surf.file || !soundBufs.waves) return;
+  try {
+    const src = ctx.createBufferSource(); src.buffer = soundBufs.waves; src.loop = true;
+    src.loopStart = 0.06; src.loopEnd = soundBufs.waves.duration - 0.06;   // skip the mp3 padding so the loop is seamless
+    src.connect(surf.lp); src.start(); surf.src.stop(); surf.src = src; surf.file = true; surf.lp.frequency.value = 6000;
+  } catch (e) {}
+}
+function tickSurf() {
+  if (!surf || !actx) return;
+  const r = Math.hypot(pos.x, pos.z);
+  const near = Math.max(0, 1 - Math.abs(r - 24.5) / 13);           // silent in the middle of the island, full at the shore
+  const swell = 0.5 + 0.5 * Math.sin(r * 0.35 + t * 1.6);           // same rhythm as the waves you see
+  const under = inWaterAt(pos.x, pos.z) ? 1.4 : 1;
+  const target = joined ? 0.2 * near * (surf.file ? 1 : 0.45 + 0.55 * swell) * under : 0;
+  surf.g.gain.setTargetAtTime(target, actx.currentTime, 0.2);
+  if (!surf.file) surf.lp.frequency.setTargetAtTime(350 + 650 * swell * near, actx.currentTime, 0.2);
+}
+function splashSound(v, big) {
+  if (v <= 0.02) return;
+  if (big && playBuf('splash', 0.8 * v, 0.9 + Math.random() * 0.2)) return;
+  noiseBurst(big ? 0.5 : 0.22, 'lowpass', big ? 1300 : 900, (big ? 0.35 : 0.12) * v);
+  noiseBurst(big ? 0.25 : 0.12, 'bandpass', 2400, (big ? 0.15 : 0.06) * v, 0.04);
+  if (big) chimeNotes([520 + Math.random() * 200, 760 + Math.random() * 200], 0.03 * v, 'sine', 0.07);
+}
+function soundNear(c) {
+  if (c === me) return 1;
+  const p = c.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
+  return Math.max(0, 1 - d / 12) * 0.6;
+}
+
+/* --- little sound kit (synthesized) --- */
 let noiseBuf = null;
 function noiseBurst(dur, type, freq, vol, at = 0, q = 1) {
   const ctx = audioCtx(); if (!ctx || !joined) return;
@@ -1833,7 +2082,7 @@ function noiseBurst(dur, type, freq, vol, at = 0, q = 1) {
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), t0 = ctx.currentTime + at;
     s.buffer = noiseBuf; f.type = type; f.frequency.value = freq; f.Q.value = q;
     g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    s.connect(f); f.connect(g); g.connect(ctx.destination);
+    s.connect(f); f.connect(g); g.connect(sfxDest());
     s.start(t0, Math.random() * 0.5, dur + 0.05);
   } catch (e) {}
 }
@@ -1844,7 +2093,7 @@ function chimeNotes(notes, vol = 0.09, type = 'triangle', gap = 0.08) {
       const o = ctx.createOscillator(), g = ctx.createGain(), at = ctx.currentTime + 0.01 + i * gap;
       o.type = type; o.frequency.value = f;
       g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(vol, at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.35);
-      o.connect(g); g.connect(ctx.destination); o.start(at); o.stop(at + 0.4);
+      o.connect(g); g.connect(sfxDest()); o.start(at); o.stop(at + 0.4);
     });
   } catch (e) {}
 }
@@ -1853,7 +2102,7 @@ const sfx = {
   crunch: v => { noiseBurst(0.07, 'bandpass', 2300, 0.22 * v, 0, 0.7); noiseBurst(0.05, 'bandpass', 3400, 0.12 * v, 0.05, 0.9); },
   scratch: () => noiseBurst(0.14, 'lowpass', 900, 0.1),
   clap: () => { noiseBurst(0.06, 'bandpass', 1700, 0.35, 0, 0.6); noiseBurst(0.05, 'bandpass', 2600, 0.2, 0.01, 0.8); },
-  kiss: () => { const ctx = audioCtx(); if (!ctx) return; try { const o = ctx.createOscillator(), g = ctx.createGain(), at = ctx.currentTime + 0.01; o.type = 'sine'; o.frequency.setValueAtTime(1500, at); o.frequency.exponentialRampToValueAtTime(500, at + 0.09); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.14, at + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.1); o.connect(g); g.connect(ctx.destination); o.start(at); o.stop(at + 0.12); } catch (e) {} },
+  kiss: () => { const ctx = audioCtx(); if (!ctx) return; try { const o = ctx.createOscillator(), g = ctx.createGain(), at = ctx.currentTime + 0.01; o.type = 'sine'; o.frequency.setValueAtTime(1500, at); o.frequency.exponentialRampToValueAtTime(500, at + 0.09); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.14, at + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.1); o.connect(g); g.connect(sfxDest()); o.start(at); o.stop(at + 0.12); } catch (e) {} },
   find: () => chimeNotes([784, 988, 1175, 1568], 0.08),
   hug: () => chimeNotes([523, 659, 784], 0.06, 'sine', 0.12),
   ouch: () => chimeNotes([660, 440], 0.1, 'square', 0.1),
@@ -1988,7 +2237,7 @@ function startSwarm(tr, who) {
       const o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), f = ctx.createBiquadFilter(), g = ctx.createGain();
       o.type = 'sawtooth'; o.frequency.value = 230; lfo.frequency.value = 26; lg.gain.value = 18;
       lfo.connect(lg); lg.connect(o.frequency); f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 1.2;
-      g.gain.value = 0; o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(); lfo.start();
+      g.gain.value = 0; o.connect(f); f.connect(g); g.connect(sfxDest()); o.start(); lfo.start();
       s.buzz = { o, lfo, g };
     } catch (e) {}
   }
@@ -2265,22 +2514,47 @@ bagBtn.addEventListener('click', () => toggleBag());
 document.getElementById('bagClose').addEventListener('click', () => toggleBag(false));
 renderBag();
 
-/* --- music --- */
-const musicBtn = document.getElementById('musicBtn');
+/* --- music + sound settings panel --- */
+const musicBtn = document.getElementById('musicBtn'), soundPanel = document.getElementById('soundPanel');
+const musicToggle = document.getElementById('musicToggle'), musicVol = document.getElementById('musicVol'), sfxVol = document.getElementById('sfxVol');
 const music = new Audio('music.mp3');
-music.loop = true; music.volume = 0.28; music.preload = 'none';
+music.loop = true; music.preload = 'none';
+const applyMusicVol = () => { music.volume = Math.min(1, musicPct / 100 * 0.6); };
+applyMusicVol();
 let musicOn = store.get('cove-music') === '1';
 function renderMusic() {
   musicBtn.classList.toggle('on', musicOn);
-  musicBtn.setAttribute('aria-pressed', String(musicOn));
-  musicBtn.title = musicOn ? 'Turn music off' : 'Turn music on';
+  musicToggle.textContent = musicOn ? 'On' : 'Off';
+  musicToggle.classList.toggle('on', musicOn);
+  musicToggle.setAttribute('aria-pressed', String(musicOn));
 }
 function setMusic(on) {
   musicOn = on; store.set('cove-music', on ? '1' : '0'); renderMusic();
-  if (on) music.play().catch(() => { musicOn = false; renderMusic(); addLine('', 'The music couldn’t start. Tap the music button to try again.', true); });
+  if (on) music.play().catch(() => { musicOn = false; renderMusic(); addLine('', 'The music couldn’t start. Try the On button again.', true); });
   else music.pause();
 }
-musicBtn.addEventListener('click', () => { setMusic(!musicOn); canvas.focus(); });
+musicVol.value = musicPct; sfxVol.value = sfxPct;
+musicVol.addEventListener('input', () => { musicPct = +musicVol.value; store.set('cove-mvol', String(musicPct)); applyMusicVol(); });
+sfxVol.addEventListener('input', () => { sfxPct = +sfxVol.value; store.set('cove-svol', String(sfxPct)); if (sfxGain) sfxGain.gain.value = sfxPct / 70; });
+sfxVol.addEventListener('change', () => critterNoise(me.kind, 0.8));
+musicToggle.addEventListener('click', () => setMusic(!musicOn));
+function placeSoundPanel() {
+  const r = musicBtn.getBoundingClientRect(), w = soundPanel.offsetWidth, h = soundPanel.offsetHeight;
+  const left = Math.max(10, Math.min(window.innerWidth - w - 10, r.left + r.width / 2 - w / 2));
+  const top = r.top - h - 10 > 10 ? r.top - h - 10 : r.bottom + 10;
+  soundPanel.style.left = left + 'px'; soundPanel.style.top = top + 'px';
+}
+function toggleSoundPanel(open) {
+  const show = open === undefined ? soundPanel.hidden : open;
+  soundPanel.hidden = !show;
+  musicBtn.setAttribute('aria-expanded', String(show));
+  if (show) placeSoundPanel();
+}
+musicBtn.addEventListener('click', () => toggleSoundPanel());
+document.addEventListener('pointerdown', e => {
+  if (!soundPanel.hidden && !soundPanel.contains(e.target) && !musicBtn.contains(e.target)) toggleSoundPanel(false);
+});
+window.addEventListener('resize', () => { if (!soundPanel.hidden) placeSoundPanel(); });
 renderMusic();
 
 /* --- hugs, cheek kisses, high fives (the other person always says yes first) --- */
@@ -2414,12 +2688,12 @@ function onActionKey() { if (!startDig()) swingNet(); }
 let crackleT = 0;
 function tickWorld(dt) {
   const active = joined && !lobbyOpen;
-  tickPrints(dt); tickApples(dt); tickSwarms(dt); tickFlies(); tickFire(dt); tickDig(dt);
+  tickPrints(dt); tickApples(dt); tickSwarms(dt); tickFlies(); tickFire(dt); tickDig(dt); tickSurf(); tickFireSound();
   if (stungT > 0) { stungT -= dt; if (stungT <= 0) { stungT = 0; sendPresence(true); addLine('', 'The bee sting feels better now.', true); } }
   me.stung = stungT > 0; me.digging = digT > 0;
   // campfire crackle when you're close
   crackleT -= dt;
-  if (crackleT <= 0 && active) {
+  if (crackleT <= 0 && active && !fireLoop) {
     crackleT = 0.06 + Math.random() * 0.3;
     const d = Math.hypot(pos.x - FIRE.x, pos.z - FIRE.z);
     if (d < 10) noiseBurst(0.03 + Math.random() * 0.04, 'bandpass', 1800 + Math.random() * 2400, 0.05 * (1 - d / 10) * (0.4 + Math.random()), 0, 1.5);
@@ -2607,16 +2881,20 @@ function update(dt) {
   bulbs.forEach((b, i) => b.material.color.setHSL(0.11, 1, 0.72 + 0.1 * Math.sin(t * 2 + i * 0.9) * amp));
 
   nearMic = active && pos.y > 0.6 && Math.hypot(pos.x, pos.z + 9.2) < 2.3;
-  if (spotT > 0) spotT -= dt;
-  spot.intensity += ((spotT > 0 ? 1.6 : 0) - spot.intensity) * Math.min(1, dt * 3);
+  if (stageReader === me && (!active || !inRect(STAGE_ZONE, pos.x, pos.z))) stopReading(active ? 'left' : 'quiet');
+  tickSpot(dt);
   if (joined) {
     paintTag(myTag, myName, micOn, meTalking, myTagState);
     place(myTag, new V(pos.x, pos.y + 1.75, pos.z));
     tickBubble(me, dt, 1.9);
   }
-  const reading = me.bubbleT > 0;
-  readBtn.hidden = !nearMic || reading;
-  if (nearMic && !reading) place(readBtn, micHead);
+  const mine = stageReader === me, showRead = active && (mine || nearMic);
+  readBtn.hidden = !showRead;
+  if (showRead) {
+    readLbl.textContent = mine ? 'Finish reading' : stageReader ? nameOf(stageReader) + ' is reading' : 'Start reading';
+    readBtn.classList.toggle('busy', !mine && !!stageReader);
+    place(readBtn, mine ? new V(pos.x, pos.y + 2.6, pos.z) : micHead);
+  }
 }
 
 // entrance preview: a full 360 spin with a little hop whenever you pick a critter

@@ -1,12 +1,12 @@
 # Couplet Cove
 
-A cozy low-poly island cove for meeting up online, made by Poetry and Places. Pick a critter, wash ashore, walk around with WASD, talk on mic, type in chat, and read poems at the open mic on the wooden stage.
+A cozy low-poly island cove for meeting up online, made by Poetry and Places. Pick a critter, wash ashore, walk around with WASD, talk on mic, type in chat, and read at the open mic on the wooden stage.
 
 ## How to meet up
 
-1. Open the site. A fresh island link is made for you (it ends in `#room=…`).
-2. Click **Copy** (or **Invite** once you're in) and send that link to friends.
-3. Everyone who opens the same link lands on the same island.
+1. Open the site. Without anything after the address you land in the **main lobby**, open to everyone at any time.
+2. For a private meetup, click **Make a private island** on the entrance card. That link ends in `#room=…`, and only people with it can find that island.
+3. Click **Copy** (or **Invite** once you're in) and send the link to friends. Everyone who opens the same link lands on the same island.
 4. Press **Turn on mic** (or `M`) to talk, and again to mute. Press `Enter` to chat.
 
 ## How it works
@@ -20,12 +20,14 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 ## Known limits
 
 - Some strict networks (certain school, office or mobile networks) block direct WebRTC connections. If two people can see the island but not each other, add a TURN server to the `TURN` list near the top of the networking code in `index.html`.
-- There are no accounts. Anyone with a room link can join that room, so share links only with people you want there.
+- There are no accounts. Anyone can walk into the main lobby, and anyone with a private island link can join that island, so share private links only with people you want there.
+- Voice and positions go directly between browsers, so a very busy main lobby (more than about 10 to 12 people) can get choppy. For bigger events, use a private island per group.
 
 ## Files
 
 - `index.html`: the whole island.
-- `music.mp3`: the background bossa nova (players turn it on or off with the music button).
+- `music.mp3`: the background bossa nova. The music button opens a small panel to turn it on or off and set the music and sound-effect volumes.
+- `sounds/`: recordings for critter voices, splashes, ocean waves and the campfire (see `sounds/README.md` for names and credits).
 - `CNAME`: tells GitHub Pages to serve the site at openmic.poetryandplaces.org. Don't delete it.
 
 ## Things to do on the island
@@ -35,3 +37,5 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - Hold the bug net and press F near fireflies to catch them.
 - Stand next to someone and press 1, 2 or 3 to ask for a hug, a cheek kiss or a high five. They have to accept first.
 - Chat makes your critter's sound, and bad words are replaced with it in big red letters.
+- Walk up to the microphone on the stage and press Space to take the mic. A spotlight follows you until you press Space again or step off the stage. Only one person can read at a time.
+- The round button in the bottom-left corner (with your critter's face) shows how to play. Press H to open it.
