@@ -19,7 +19,8 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 
 ## Known limits
 
-- Some strict networks (certain school, office or mobile networks) block direct WebRTC connections. If two people can see the island but not each other, add a TURN server to the `TURN` list near the top of the networking code in `index.html`.
+- Some strict networks (certain school, office or mobile networks) block direct WebRTC connections. The island includes a Metered TURN credential (the `TURN` list in `index.html`) so those players connect through a relay instead. Manage or rotate it in the Metered dashboard under TURN Server → Credentials; if you rotate it, paste the new username and credential into the `TURN` list.
+- Players find each other through the Nostr relays in the `RELAYS` list. If several of them go offline someday, swap in other public relays.
 - There are no accounts. Anyone can walk into the main lobby, and anyone with a private island link can join that island, so share private links only with people you want there.
 - Voice and positions go directly between browsers, so a very busy main lobby (more than about 10 to 12 people) can get choppy. For bigger events, use a private island per group.
 

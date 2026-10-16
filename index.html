@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Couplet Cove: a cozy low-poly island cove where friends meet up, talk on mic, chat, and read poems at the open mic.">
 <title>Couplet Cove</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/trystero@0.25.4/+esm" crossorigin>
+<script>window.__trystero = import("https://cdn.jsdelivr.net/npm/trystero@0.25.4/+esm").catch(() => null);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..800,0..100,0..1;1,9..144,400..800,0..100,0..1&family=Lexend:wght@400;600;700&display=swap">
@@ -1704,11 +1707,20 @@ chatForm.addEventListener('submit', e => {
    Everyone who opens the same #room= link joins one room. Trystero finds peers over public
    Nostr relays, then all position, chat and voice travel directly between browsers over WebRTC.
    No server to run, so it works from a plain GitHub Pages site. */
-const TRYSTERO_URL = 'https://esm.run/trystero@0.25.4';
+const TRYSTERO_URL = 'https://cdn.jsdelivr.net/npm/trystero@0.25.4/+esm';   // direct link (no redirect); the page starts fetching it in <head>
 const APP_ID = 'stanza-island-meetup-v1';
 // Optional: add a TURN server here if some friends can't hear each other on strict networks
 // (school, office, some mobile carriers). Example: [{ urls: 'turn:turn.example.com:3478', username: 'u', credential: 'p' }]
-const TURN = [];
+const TURN = [
+  // Poetry and Places' Metered TURN credential (made for this site, meant to be public in page code).
+  // Only used when a player's network blocks direct connections. Rotate it in the Metered dashboard if it's ever abused.
+  { urls: ['turn:global.relay.metered.ca:80', 'turns:global.relay.metered.ca:443?transport=tcp'],   // two is enough and connects faster
+    username: 'f2cd928aada82c58a3d61b62', credential: 'I7WsgmEABn8sl6gY' }
+];
+// Nostr relays used to find each other. Trystero's random default picks included several offline relays,
+// so the island uses its own tested list (the last two keep it compatible with older copies of the page).
+const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://nostr-pub.wellorder.net', 'wss://offchain.pub', 'wss://relay.snort.social',
+  'wss://nostr.oxtr.dev', 'wss://purplerelay.com', 'wss://relay.primal.net', 'wss://top.testrelay.top', 'wss://relay.sigit.io'];
 
 const WORDS_A = ['mossy', 'sunny', 'velvet', 'amber', 'misty', 'lilac', 'cozy', 'salty', 'quiet', 'golden', 'dewy', 'starry', 'breezy', 'honey', 'sandy', 'mellow'];
 const WORDS_B = ['lantern', 'tide', 'stanza', 'harbor', 'meadow', 'shell', 'verse', 'cove', 'pebble', 'willow', 'dune', 'sonnet', 'reef', 'clover', 'haiku', 'lagoon'];
@@ -1874,7 +1886,7 @@ function makeMeter(stream) {
         if (m.level > 0.035) m.hold = 0.35; else m.hold -= dt;
         m.talking = m.hold > 0;
       },
-      close() { try { src.disconnect(); } catch (e) {} }
+      src, close() { try { src.disconnect(); } catch (e) {} }
     };
     return m;
   } catch (e) { return null; }
@@ -1914,6 +1926,17 @@ function attachAudio(id, stream) {
   a.play().catch(() => {});
   c.audio = a;
   c.meter = makeMeter(stream);
+  // a light stage echo for whoever is reading: delay + soft feedback, mixed in quietly (off unless they have the mic)
+  c.echo = null;
+  const ctx = audioCtx();
+  if (ctx && c.meter && c.meter.src) {
+    try {
+      const d = ctx.createDelay(1), fb = ctx.createGain(), tone = ctx.createBiquadFilter(), wet = ctx.createGain();
+      d.delayTime.value = 0.17; fb.gain.value = 0.32; tone.type = 'lowpass'; tone.frequency.value = 2600; wet.gain.value = 0;
+      c.meter.src.connect(d); d.connect(tone); tone.connect(fb); fb.connect(d); tone.connect(wet); wet.connect(ctx.destination);
+      c.echo = { wet };
+    } catch (e) { c.echo = null; }
+  }
 }
 // browsers only allow sound after a tap or keypress, so retry playback on any interaction
 function wakeAudio() {
@@ -1928,10 +1951,10 @@ async function connect() {
   setOnline(false, 'Connecting…');
   setChatEnabled(false, 'Connecting…');
   let T;
-  try { T = await import(TRYSTERO_URL); }
+  try { T = (window.__trystero && await window.__trystero) || await import(TRYSTERO_URL); }
   catch (e) { goSolo('Couldn’t reach the meetup network. Check your connection and refresh to try again.'); return; }
   try {
-    room = T.joinRoom(Object.assign({ appId: APP_ID, password: 'stanza:' + roomId }, TURN.length ? { turnConfig: TURN } : {}), roomId);
+    room = T.joinRoom(Object.assign({ appId: APP_ID, password: 'stanza:' + roomId, relayConfig: { urls: RELAYS } }, TURN.length ? { turnConfig: TURN } : {}), roomId);
   } catch (e) { goSolo('Couldn’t open this island. Refresh to try again.'); return; }
   roomReadyAt = performance.now();
   actPres = room.makeAction('pres');
@@ -2915,6 +2938,11 @@ function update(dt) {
     c.w += (c.wt - c.w) * Math.min(1, dt * 2);
     critterFx(c, dt, p.x, p.y, p.z, c.m === 1, false);
     if (c.meter) c.meter.tick(dt);
+    if (c.audio) {                                   // open mic mix: the reader up front, everyone else softer
+      const want = stageReader ? (stageReader === c ? 1 : 0.28) : 0.85;
+      c.audio.volume = Math.max(0, Math.min(1, c.audio.volume + (want - c.audio.volume) * Math.min(1, dt * 4)));
+    }
+    if (c.echo && actx) c.echo.wet.gain.setTargetAtTime(stageReader === c ? 0.3 : 0, actx.currentTime, 0.25);
     paintTag(c.tag, nameOf(c), c.mic, c.mic && c.meter && c.meter.talking, c);
     place(c.tag, new V(p.x, p.y + 1.75, p.z));
     tickBubble(c, dt, 2.0);
