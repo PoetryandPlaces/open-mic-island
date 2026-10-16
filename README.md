@@ -37,13 +37,19 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - Hop (Space) into a tree to shake it. Apple trees drop apples you can walk over to eat; they grow back. Trees with a beehive let out bees, so run!
 - Press F next to a rock on the grass to dig for treasure (nets, bows, party hats, flower crowns, berets). Press B to open your bag and wear things.
 - Hold the bug net and press F near fireflies to catch them.
-- Dig up a fishing rod, hold it, face the ocean and press F to cast. A fish bites in about a second and leaps out with a splash. There are four kinds to catch, including a rare Golden Koi.
+- Dig up a fishing rod, hold it, face the ocean and press F to cast. Wait for the bite (pressing early scares the fish), press F when the bobber dips, then press F again to stop the needle in the green zone. Rarer fish are faster with smaller zones. There are four kinds, including a rare Golden Koi.
+- Rocks also hide s'mores makings (marshmallows, graham crackers, chocolate). At the campfire, press F to roast a fish or toast a s'more on a stick, then eat it by the fire.
+- Open your bag and press Look to watch the fireflies glowing in your jar.
 - Stand next to someone and press 1, 2 or 3 to ask for a hug, a cheek kiss or a high five. They have to accept first.
 - Press C to applaud. Your critter claps and everyone on the island hears it (louder the closer they are).
 - Chat makes your critter's sound, and bad words are replaced with it in big red letters.
-- Walk up to the microphone on the stage and press Space to take the mic. A spotlight follows you until you press Space again or step off the stage. Only one person can read at a time.
+- Walk up to the microphone on the stage and press Space to take the mic. A spotlight casting the Poetry and Places logo follows you until you press Space again or step off the stage. Only one person can read at a time.
 - While you have the mic, a **Stage music** panel lets you play a song file from your computer (it streams to everyone) or paste a YouTube link (everyone's island opens the same video in a small player, started at the same point). Listeners can mute it for themselves, the reader can hide the panel with its minus button, and it stops when you finish reading. Some YouTube videos don't allow playing on other sites; those show a message instead.
 - The round button in the bottom-left corner (with your critter's face) shows how to play. Press H to open it.
+
+## Metrics
+
+Visits and anonymous activity (joins, private islands created, readings, fish caught, how long people stay, how many were on together, and more) go to a private GoatCounter dashboard once `GOATCOUNTER` near the top of the script in `index.html` holds your site code. Nothing personal is sent: no names, chat text or room codes. Ad blockers may hide some visits from the count.
 
 ## Copyright
 
