@@ -27,7 +27,7 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 ## Files
 
 - `index.html`: the whole island.
-- `music.mp3`: the background bossa nova. `cafe-music.mp3` is the Cozy Cafe's lofi theme ("Rose Water" by massobeats). The music button opens a small panel to turn it on or off and set the music and sound-effect volumes.
+- `music.mp3`: the background bossa nova. `cafe-music.mp3` is the Cozy Cafe's lofi theme ("Rose Water" by massobeats), and `castle-music.mp3` is the Cloudy Castle's fairy-tale theme. The music button opens a small panel to turn it on or off and set the music and sound-effect volumes.
 - `sounds/`: recordings for critter voices, splashes, ocean waves and the campfire (see `sounds/README.md` for names and credits).
 - `LICENSE`: the island is © 2026 Poetry and Places, all rights reserved (third-party parts keep their own licenses).
 - `CNAME`: tells GitHub Pages to serve the site at openmic.poetryandplaces.org. Don't delete it.
@@ -39,7 +39,8 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - Hold the bug net and press F near fireflies to catch them.
 - Dig up a fishing rod, hold it, face the ocean and press F to cast. Wait for the bite (pressing early scares the fish), press F when the bobber dips, then press F again to stop the needle in the green zone. Rarer fish are faster with smaller zones. There are four kinds, including a rare Golden Koi.
 - Rocks also hide s'mores makings (marshmallows, graham crackers, chocolate). At the campfire, press F to roast a fish or toast a s'more on a stick, then eat it by the fire.
-- Open your bag and press Look to watch the fireflies glowing in your jar.
+- Open your bag and press Look to watch the fireflies glowing in your jar. Press Let them go to open the jar: your critter holds it up and the fireflies drift out for everyone to see. Letting fish go tips a little pail, and the fish leap back into the sea.
+- Drag the bag by its title bar to move it out of the way.
 - Stand next to someone and press 1, 2 or 3 to ask for a hug, a cheek kiss or a high five. They have to accept first.
 - Press C to applaud. Your critter claps and everyone on the island hears it (louder the closer they are).
 - Chat makes your critter's sound, and bad words are replaced with it in big red letters.
@@ -64,7 +65,9 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - Press F by a cloud tuft outside to dig for a magic wand or a feather quill.
 - With a wand, press F at one of the two long tables to make a feast for everyone. Press F again to eat.
 - With a quill, press L (or use the bag) to write a little "roses are red" letter to someone in the room. Letters are picked from a set of friendly verses, so nothing else can be sent.
+- Tiny glowing fairies flit around the castle. Cloud tufts sometimes hide a bug net: hold it and press F near a fairy to catch it, then look at them in your jar or let them go.
 - Step off the edge of the cloud and you slide down a rainbow into a pot of gold, which pops you back up to the castle.
+- The castle has its own dreamy theme song (`castle-music.mp3`).
 - A castle link starts with `castle-`.
 
 ## Metrics

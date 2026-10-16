@@ -522,9 +522,13 @@ body.in-lobby #bookView { display: none !important; }
 body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard { display: none !important; }
 #stagePanel .now small { font-weight: 600; }
 #bagPanel {
-  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 14;
-  width: min(340px, calc(100vw - 32px)); box-sizing: border-box; padding: 14px 16px 16px;
+  position: fixed; left: 16px; top: 168px; z-index: 14;                       /* off to the side so you can watch your critter; drag the title to move it */
+  width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 190px); overflow-y: auto; box-sizing: border-box; padding: 14px 16px 16px;
 }
+@media (max-width: 760px) { #bagPanel { left: 50%; top: 84px; transform: translateX(-50%); max-height: 46vh; } }
+#bagPanel .bagHead { cursor: grab; touch-action: none; user-select: none; }
+#bagPanel.dragging, #bagPanel.dragging .bagHead { cursor: grabbing; }
+#bagPanel .bagHead h2::before { content: "⠿"; font-size: .9rem; color: var(--muted); margin-right: 8px; vertical-align: middle; }
 .bagHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 #bagPanel h2 { margin: 0; font: 700 1.4rem var(--font-display); color: var(--plank); font-variation-settings: "SOFT" 100, "WONK" 1; }
 #bagClose { font: 800 1rem var(--font-body); background: var(--tan); border: 0; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; color: var(--ink); }
@@ -580,6 +584,7 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
   <span class="key-only castle-only"><kbd>F</kbd> by a cloud tuft: dig for wands and quills</span>
   <span class="key-only castle-only"><kbd>F</kbd> at a long table: wave your wand for a feast, then eat</span>
   <span class="key-only castle-only"><kbd>L</kbd> write a letter with your quill</span>
+  <span class="key-only castle-only"><kbd>F</kbd> holding the bug net: catch a tiny fairy</span>
   <span class="key-only"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ask for a hug, cheek kiss or high five</span>
   <span class="key-only island-only"><kbd>F</kbd> at the campfire: roast a fish or make a s’more</span>
   <span class="key-only"><kbd>C</kbd> applaud</span>
@@ -656,7 +661,7 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
   <button id="cookSmore" type="button">Make a s’more</button>
 </section>
 <section id="jarView" class="sign" hidden aria-label="Your firefly jar">
-  <div class="cmHead"><h3>Your firefly jar</h3><button id="jarClose" type="button" aria-label="Close">✕</button></div>
+  <div class="cmHead"><h3 id="jarTitle">Your firefly jar</h3><button id="jarClose" type="button" aria-label="Close">✕</button></div>
   <canvas id="jarCanvas" width="220" height="270"></canvas>
   <p id="jarLabel"></p>
 </section>
@@ -3268,6 +3273,54 @@ function tickFlies() {
   }
 }
 
+/* --- fairies (Cloudy Castle): tiny glowing fairies flit around the castle; catch them with the bug net --- */
+const FAIRY_COLS = [0xf7b2c4, 0xc9a7f2, 0x9fd6ff, 0xffe08a, 0xb8f0c8];
+const fairyWingGeo = new THREE.CircleGeometry(0.075, 7), fairyHeadGeo = new THREE.SphereGeometry(0.036, 7, 5), fairyDressGeo = new THREE.ConeGeometry(0.04, 0.1, 7);
+const fairyWingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false });
+const fairyHeadMat = new THREE.MeshBasicMaterial({ color: 0xfff1e2 });
+function makeFairy(col) {
+  const g = new THREE.Group();
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: col, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }));
+  glow.scale.setScalar(0.55); g.add(glow);
+  put(new THREE.Mesh(fairyHeadGeo, fairyHeadMat), 0, 0.06, 0, g, false);
+  put(new THREE.Mesh(fairyDressGeo, new THREE.MeshBasicMaterial({ color: col })), 0, -0.01, 0, g, false);
+  const wings = [];
+  for (const s of [-1, 1]) {
+    const pivot = new THREE.Group(); pivot.position.set(0.012 * s, 0.03, -0.015); g.add(pivot);
+    const w = new THREE.Mesh(fairyWingGeo, fairyWingMat); w.position.x = 0.06 * s; w.scale.set(1, 1.45, 1); pivot.add(w);
+    wings.push({ pivot, s });
+  }
+  g.userData.wings = wings; g.userData.glow = glow;
+  return g;
+}
+function flapFairy(m, ph) {
+  for (const w of m.userData.wings) w.pivot.rotation.y = w.s * (0.25 + Math.sin(t * 32 + ph) * 0.75);
+  m.userData.glow.material.opacity = 0.55 + 0.35 * Math.sin(t * 3 + ph);
+}
+const fairies = [];
+if (CASTLE) {
+  for (let i = 0; i < 18; i++) {
+    const m = makeFairy(FAIRY_COLS[i % FAIRY_COLS.length]); scene.add(m);
+    let hx, hz;
+    if (i < 7) { hx = -9.5 + Math.random() * 19; hz = -12 + Math.random() * 14; }             // inside the castle
+    else { do { const a = Math.random() * Math.PI * 2, r = 7 + Math.random() * 12; hx = Math.cos(a) * r; hz = Math.sin(a) * r; } while (hx > -13.5 && hx < 13.5 && hz > -18 && hz < 5.5); }
+    fairies.push({ m, hx, hy: 0.9 + Math.random() * 1.6, hz, ph: Math.random() * 6, sp: 0.7 + Math.random() * 0.8, caughtUntil: 0 });
+  }
+}
+function tickFairies() {
+  const amp = reduceMotion ? 0.25 : 1, n = nowMs();
+  for (const f of fairies) {
+    if (n < f.caughtUntil) { f.m.visible = false; continue; }
+    f.m.visible = true;
+    f.m.position.set(
+      f.hx + (Math.sin(t * 0.45 * f.sp + f.ph) * 1.8 + Math.sin(t * 2.3 + f.ph * 3) * 0.25) * amp,
+      f.hy + (Math.sin(t * 1.1 + f.ph) * 0.4 + Math.sin(t * 4.1 + f.ph) * 0.06) * amp,
+      f.hz + (Math.cos(t * 0.38 * f.sp + f.ph) * 1.8) * amp);
+    f.m.rotation.y = Math.cos(t * 0.45 * f.sp + f.ph) > 0 ? 0.6 : -2.5;
+    flapFairy(f.m, f.ph);
+  }
+}
+
 /* --- the bag: treasure you dig up, things you wear, fireflies in a jar --- */
 const ITEMS = {
   net: { name: 'Bug net', slot: 'hand', color: '#c9b48a' },
@@ -3279,7 +3332,7 @@ const ITEMS = {
 };
 const LOOT = [['net', 20], ['rod', 22], ['bow', 16], ['partyhat', 16], ['crown', 13], ['beret', 13]];
 const bag = (() => {
-  const b = { items: {}, head: '', hand: '', flies: 0, fish: {}, snacks: {}, tools: {} };
+  const b = { items: {}, head: '', hand: '', flies: 0, fairies: 0, fish: {}, snacks: {}, tools: {} };
   try {
     const s = JSON.parse(store.get('cove-bag') || '{}');
     if (s && typeof s === 'object') {
@@ -3290,6 +3343,7 @@ const bag = (() => {
       if (s.fish && typeof s.fish === 'object') for (const k of ['perch', 'minnow', 'trout', 'koi']) if (isInt(s.fish[k], 1, 999)) b.fish[k] = s.fish[k];
       if (s.snacks && typeof s.snacks === 'object') for (const k of ['marsh', 'cracker', 'choc']) if (isInt(s.snacks[k], 1, 99)) b.snacks[k] = s.snacks[k];
       b.flies = isInt(s.flies, 0, 20) ? s.flies : 0;
+      b.fairies = isInt(s.fairies, 0, 12) ? s.fairies : 0;
       if (s.tools && typeof s.tools === 'object') for (const k of ['scoop', 'whisk', 'knife', 'wand', 'quill']) if (s.tools[k] === 1) b.tools[k] = 1;
     }
   } catch (e) {}
@@ -3438,6 +3492,18 @@ function swingNet() {
     const p = f.s.position;
     if (Math.hypot(p.x - cx, p.z - cz) < 1.3 && Math.abs(p.y - cy) < 1.2) { f.caughtUntil = nowMs() + 30000; caught++; }
   }
+  let fc = 0;
+  for (const f of fairies) {
+    if (nowMs() < f.caughtUntil || bag.fairies + fc >= 12) continue;
+    const p = f.m.position;
+    if (Math.hypot(p.x - cx, p.z - cz) < 1.3 && Math.abs(p.y - cy) < 1.2) { f.caughtUntil = nowMs() + 30000; fc++; }
+  }
+  if (fc) {
+    track('fairies/caught');
+    bag.fairies += fc; saveBag(); renderBag(); chimeNotes([1568, 2093, 2637], 0.06, 'sine', 0.06);
+    popAt(pos.x, pos.y + 2.3, pos.z, fc === 1 ? 'Caught a fairy!' : 'Caught ' + fc + ' fairies!', 'good');
+    if (!store.get('cove-fairyhint')) { store.set('cove-fairyhint', '1'); addLine('', 'The fairy is safe in your jar. Open your bag (B) to look at it or let it go.', true); }
+  }
   if (caught) {
     track('fireflies/caught');
     bag.flies += caught; saveBag(); renderBag(); sfx.catchFly();
@@ -3445,13 +3511,30 @@ function swingNet() {
   }
 }
 function releaseFlies() {
-  let n = bag.flies; if (!n) return;
-  for (const f of flies) {
-    if (!n) break;
-    if (nowMs() < f.caughtUntil) { f.caughtUntil = 0; f.hx = pos.x + (Math.random() - 0.5) * 2; f.hz = pos.z + (Math.random() - 0.5) * 2; f.hy = pos.y + 1 + Math.random(); n--; }
+  const n = bag.flies; if (!n) return;
+  let k = n;
+  for (const f of flies) {                                          // the real fireflies come back to the island a little later
+    if (!k) break;
+    if (nowMs() < f.caughtUntil) { const a = Math.random() * Math.PI * 2, r = 3 + Math.random() * 16; f.hx = Math.cos(a) * r; f.hz = Math.sin(a) * r; f.caughtUntil = nowMs() + 7000; k--; }
   }
-  bag.flies = 0; saveBag(); renderBag(); sfx.catchFly();
-  popAt(pos.x, pos.y + 2.3, pos.z, 'Fly free!', 'good');
+  bag.flies = 0; saveBag(); renderBag();
+  holdProp('jar'); releaseShow(me, 'flies', n);
+  if (actWorld) actWorld.send({ e: 'free', k: 'flies', n: Math.min(20, n) }).catch(() => {});
+  popAt(pos.x, pos.y + 2.4, pos.z, 'Fly free!', 'good');
+  track('fireflies/released');
+}
+function releaseFairies() {
+  const n = bag.fairies; if (!n) return;
+  let k = n;
+  for (const f of fairies) {
+    if (!k) break;
+    if (nowMs() < f.caughtUntil) { f.caughtUntil = nowMs() + 7000; k--; }
+  }
+  bag.fairies = 0; saveBag(); renderBag();
+  holdProp('jar'); releaseShow(me, 'fairies', n);
+  if (actWorld) actWorld.send({ e: 'free', k: 'fairies', n: Math.min(20, n) }).catch(() => {});
+  popAt(pos.x, pos.y + 2.4, pos.z, 'Bye bye, fairies!', 'good');
+  track('fairies/released');
 }
 
 /* --- fishing: fish swim in the shallows; dig up a rod, face the water and press F ---
@@ -3655,12 +3738,91 @@ function remoteCatch(c, data) {
   popAt(p.x, p.y + 2.4, p.z, nameOf(c) + ' caught a ' + fish.name + '!', 'good');
 }
 function releaseFish() {
-  const n = Object.values(bag.fish).reduce((s, v) => s + v, 0); if (!n) return;
+  const cols = [];
+  for (const f of FISH) for (let i = 0; i < (bag.fish[f.id] || 0); i++) cols.push(f.color);
+  if (!cols.length) return;
+  const n = cols.length;
   bag.fish = {}; saveBag(); renderBag();
-  const a = me.root.rotation.y;
-  for (let i = 0; i < Math.min(5, n); i++) setTimeout(() => splash(pos.x + Math.sin(a) * 2 + (Math.random() - 0.5), Math.max(pos.y, waterY(pos.x, pos.z)), pos.z + Math.cos(a) * 2 + (Math.random() - 0.5), 8, 0.6), i * 120);
-  splashSound(0.6, true);
-  popAt(pos.x, pos.y + 2.3, pos.z, 'Back to the sea!', 'good');
+  holdProp('pail'); releaseShow(me, 'fish', n, cols.sort(() => Math.random() - 0.5));
+  if (actWorld) actWorld.send({ e: 'free', k: 'fish', n: Math.min(8, n) }).catch(() => {});
+  popAt(pos.x, pos.y + 2.4, pos.z, ISLAND ? 'Back to the sea!' : 'Swim free!', 'good');
+  track('fishing/released');
+}
+
+/* --- letting things go: open the jar and fireflies or fairies drift out; tip the pail and fish leap
+   back into the sea. Everyone nearby sees it too. --- */
+const freeFx = [];
+let fireflyGlowMat = null;
+function holdProp(type) {
+  if (typeof book !== 'undefined' && book) returnBook(true);
+  if (typeof holding !== 'undefined') holding = null;
+  me.cook = type; me.propT = 3.2; me.gearKey = ''; sendPresence(true);
+}
+function handPoint(c) {
+  const p = c.root.position, a = c.root.rotation.y;
+  return new V(p.x + Math.sin(a) * 0.45 + Math.cos(a) * 0.3, p.y + 1.15, p.z + Math.cos(a) * 0.45 - Math.sin(a) * 0.3);
+}
+function releaseShow(c, kind, n, cols) {
+  const from = handPoint(c), near = soundNear(c);
+  n = Math.min(kind === 'fish' ? 8 : 20, n);
+  if (near > 0.02) noiseBurst(0.12, 'lowpass', 700, 0.12 * near);                     // the lid pops / the pail tips
+  for (let i = 0; i < n; i++) {
+    const delay = 0.35 + i * (kind === 'fish' ? 0.22 : 0.12);
+    if (kind === 'fish') {
+      const col = cols && cols[i] ? cols[i] : FISH[Math.floor(Math.random() * FISH.length)].color, m = makeFishMesh(col);
+      m.visible = false; scene.add(m);
+      let to;
+      if (ISLAND) {                                                  // back to the nearest bit of sea
+        const r = Math.hypot(from.x, from.z) || 1, ux = from.x / r, uz = from.z / r, sp = (Math.random() - 0.5) * 0.25;
+        const tr = Math.max(r + 2.5, 26 + Math.random() * 2.5), ca = Math.cos(sp), sa = Math.sin(sp);
+        to = new V((ux * ca - uz * sa) * tr, 0, (ux * sa + uz * ca) * tr); to.y = waterY(to.x, to.z);
+      } else {
+        const a = c.root.rotation.y + (Math.random() - 0.5) * 1.2, d = 2.5 + Math.random() * 1.5;
+        to = new V(from.x + Math.sin(a) * d, c.root.position.y + 0.2, from.z + Math.cos(a) * d);
+      }
+      const dist = from.distanceTo(to);
+      freeFx.push({ kind, m, from: from.clone(), to, t: -delay, dur: Math.max(0.7, Math.min(2.2, dist / 13)), h: 1.6 + dist * 0.12, near });
+    } else {
+      const m = kind === 'fairies' ? makeFairy(FAIRY_COLS[i % FAIRY_COLS.length]) : new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xeaff9a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+      if (kind === 'flies') m.scale.setScalar(0.38);
+      m.visible = false; m.position.copy(from); scene.add(m);
+      const a = Math.random() * Math.PI * 2;
+      freeFx.push({ kind, m, from: from.clone(), t: -delay, dur: 5 + Math.random() * 1.5, a, out: 3 + Math.random() * 5, up: 2.5 + Math.random() * 3, spin: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 2), ph: Math.random() * 6, near });
+    }
+  }
+  if (kind !== 'fish' && near > 0.02) setTimeout(() => chimeNotes(kind === 'fairies' ? [1568, 1976, 2349, 2637] : [1319, 1568, 1760], 0.05 * near, 'sine', 0.09), 350);
+}
+function tickFree(dt) {
+  if (me.propT > 0) { me.propT -= dt; if (me.propT <= 0 && (me.cook === 'jar' || me.cook === 'pail')) { me.cook = ''; sendPresence(true); } }
+  for (let i = freeFx.length - 1; i >= 0; i--) {
+    const f = freeFx[i]; f.t += dt;
+    if (f.t < 0) continue;
+    f.m.visible = true;
+    const k = Math.min(1, f.t / f.dur);
+    if (f.kind === 'fish') {
+      f.m.position.set(f.from.x + (f.to.x - f.from.x) * k, f.from.y + (f.to.y - f.from.y) * k + Math.sin(k * Math.PI) * f.h, f.from.z + (f.to.z - f.from.z) * k);
+      f.m.rotation.y = Math.atan2(f.to.x - f.from.x, f.to.z - f.from.z);
+      f.m.rotation.x = -Math.cos(k * Math.PI) * 0.9;
+      f.m.userData.tail.rotation.y = Math.sin(t * 30) * 0.7;
+      if (k >= 1) {
+        if (ISLAND) { splash(f.to.x, f.to.y, f.to.z, 14, 0.9); ripple(f.to.x, f.to.z, 1.2); splashSound(Math.max(0.15, f.near) * 0.7, true); }
+        else { burst(f.to.x, f.to.y + 0.3, f.to.z, 10, sparkMat, 0.9, 2.4); if (f.near > 0.02) chimeNotes([880 + Math.random() * 300], 0.04 * f.near, 'sine', 0.05); }
+        scene.remove(f.m); freeFx.splice(i, 1);
+      }
+    } else {
+      const e = 1 - Math.pow(1 - k, 2), ang = f.a + f.t * f.spin * 0.35;
+      f.m.position.set(f.from.x + Math.cos(ang) * f.out * e + Math.sin(t * 3 + f.ph) * 0.15, f.from.y + f.up * e + Math.sin(t * 2 + f.ph) * 0.2, f.from.z + Math.sin(ang) * f.out * e);
+      const fade = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
+      if (f.kind === 'flies') f.m.material.opacity = fade * (0.35 + 0.65 * Math.max(0, Math.sin(t * 4 + f.ph)) ** 2);
+      else { flapFairy(f.m, f.ph); f.m.userData.glow.material.opacity *= fade; f.m.scale.setScalar(Math.max(0.01, fade)); }
+      if (k >= 1) { scene.remove(f.m); freeFx.splice(i, 1); }
+    }
+  }
+}
+function remoteFree(c, k, n) {
+  if (c.lastFree && nowMs() - c.lastFree < 2000) return;
+  c.lastFree = nowMs();
+  releaseShow(c, k, n);
 }
 
 /* --- campfire cooking: roast a fish or toast a s'more on a stick, then eat it by the fire --- */
@@ -3738,7 +3900,7 @@ function tickStick(c) {
   const food = c.stickMesh.userData.food;
   if (c.stickMesh.userData.held) {                       // a cup or sandwich: bob along, lift it up for a sip now and then
     c.sipT = Math.max(0, (c.sipT || 0) - 1 / 60);
-    const sip = c.cook === 'book' ? 0 : c === me ? Math.sin(Math.min(1, c.sipT / 0.7) * Math.PI) : Math.max(0, Math.sin((t + c.stickMesh.userData.ph) * 2.6)) ** 8;
+    const sip = c.cook === 'book' || c.cook === 'jar' || c.cook === 'pail' ? 0 : c === me ? Math.sin(Math.min(1, c.sipT / 0.7) * Math.PI) : Math.max(0, Math.sin((t + c.stickMesh.userData.ph) * 2.6)) ** 8;
     food.position.set(0.3 - sip * 0.18, 0.78 + sip * 0.38 + Math.sin(t * 3) * 0.015, 0.38 + sip * 0.1);
     food.rotation.x = -sip * 0.6;
     return;
@@ -3755,10 +3917,13 @@ document.getElementById('cookClose').addEventListener('click', () => { toggleCoo
 /* --- the firefly jar: look at the fireflies you've caught --- */
 const jarView = document.getElementById('jarView'), jarCanvas = document.getElementById('jarCanvas'), jarLabel = document.getElementById('jarLabel');
 let jarRAF = 0, jarBugs = [];
-function openJar() {
+function openJar(kind = 'flies') {
+  const fairy = kind === 'fairies', count = fairy ? bag.fairies : bag.flies;
   bagPanel.hidden = true; jarView.hidden = false;
-  jarLabel.textContent = bag.flies ? bag.flies + (bag.flies === 1 ? ' firefly' : ' fireflies') + ' glowing in your jar' : 'Your jar is empty. Hold the net and press F near fireflies.';
-  jarBugs = Array.from({ length: bag.flies }, () => ({ x: 70 + Math.random() * 80, y: 110 + Math.random() * 110, a: Math.random() * 6, s: 0.6 + Math.random() * 0.8, ph: Math.random() * 6 }));
+  document.getElementById('jarTitle').textContent = fairy ? 'Your fairy jar' : 'Your firefly jar';
+  jarLabel.textContent = fairy ? count + (count === 1 ? ' fairy' : ' fairies') + ' twinkling in your jar' : bag.flies ? bag.flies + (bag.flies === 1 ? ' firefly' : ' fireflies') + ' glowing in your jar' : 'Your jar is empty. Hold the net and press F near fireflies.';
+  const pal = ['247,178,196', '201,167,242', '159,214,255', '255,224,138', '184,240,200'];
+  jarBugs = Array.from({ length: count }, (_, i) => ({ col: fairy ? pal[i % pal.length] : '', x: 70 + Math.random() * 80, y: 110 + Math.random() * 110, a: Math.random() * 6, s: 0.6 + Math.random() * 0.8, ph: Math.random() * 6 }));
   const c = jarCanvas.getContext('2d');
   const draw = now => {
     const tt = now / 1000;
@@ -3770,6 +3935,17 @@ function openJar() {
       if (b.x < 56 || b.x > 164) b.a = Math.PI - b.a; if (b.y < 66 || b.y > 236) b.a = -b.a;
       b.x = Math.max(56, Math.min(164, b.x)); b.y = Math.max(66, Math.min(236, b.y));
       const glow = 0.35 + 0.65 * Math.max(0, Math.sin(tt * 2.4 + b.ph)) ** 2;
+      if (b.col) {                                                 // a fairy: a soft colored glow, a head, a dress and fluttering wings
+        const fg = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 20);
+        fg.addColorStop(0, 'rgba(' + b.col + ',' + (0.5 + glow * 0.4) + ')'); fg.addColorStop(1, 'rgba(' + b.col + ',0)');
+        c.fillStyle = fg; c.beginPath(); c.arc(b.x, b.y, 20, 0, Math.PI * 2); c.fill();
+        const flap = 0.5 + 0.5 * Math.abs(Math.sin(tt * 18 + b.ph));
+        c.fillStyle = 'rgba(255,255,255,0.75)';
+        for (const s of [-1, 1]) { c.beginPath(); c.ellipse(b.x + s * 6 * flap, b.y - 2, 5 * flap, 8, s * 0.4, 0, Math.PI * 2); c.fill(); }
+        c.fillStyle = 'rgb(' + b.col + ')'; c.beginPath(); c.moveTo(b.x, b.y - 2); c.lineTo(b.x - 4, b.y + 7); c.lineTo(b.x + 4, b.y + 7); c.closePath(); c.fill();
+        c.fillStyle = '#fff1e2'; c.beginPath(); c.arc(b.x, b.y - 4, 2.6, 0, Math.PI * 2); c.fill();
+        continue;
+      }
       const g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 16);
       g.addColorStop(0, 'rgba(240,255,170,' + glow + ')'); g.addColorStop(1, 'rgba(200,255,100,0)');
       c.fillStyle = g; c.beginPath(); c.arc(b.x, b.y, 16, 0, Math.PI * 2); c.fill();
@@ -3949,10 +4125,20 @@ function tickCafe(dt) {
   }
 }
 // what you're holding: a cup of coffee, a matcha latte or a sandwich
-const HELD = { coffee: 1, matcha: 1, sandwich: 1, book: 1 };
+const HELD = { coffee: 1, matcha: 1, sandwich: 1, book: 1, jar: 1, pail: 1 };
 function makeHeld(type, owner) {
   const g = new THREE.Group(), item = new THREE.Group();
-  if (type === 'book') {                                          // an open book held up to read
+  if (type === 'jar') {                                           // a glass jar held up with its lid off
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.24, 12), mat(0xdff0f7, { transparent: true, opacity: 0.45, depthWrite: false })), 0, 0, 0, item, false);
+    put(new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.015, 4, 12), mat(0xd9b26a)), 0, 0.12, 0, item, false).rotation.x = Math.PI / 2;
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 12), mat(0x9a6a40)), 0.16, 0.2, 0, item, false).rotation.z = -0.9;   // the lid, popped open
+    item.rotation.z = 0.35;
+  } else if (type === 'pail') {                                   // a little pail of water, tipped forward
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.11, 0.22, 12), mat(0x6878a1)), 0, 0, 0, item, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.02, 12), mat(0x8fc4e6)), 0, 0.09, 0, item, false);
+    put(new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.012, 4, 12, Math.PI), mat(0xc9c3cf)), 0, 0.1, 0, item, false);
+    item.rotation.x = 0.6;
+  } else if (type === 'book') {                                   // an open book held up to read
     const cov = mat(owner && owner.bookCol ? parseInt(owner.bookCol.slice(1), 16) : 0x7a68a1), paper = mat(0xfffaf0);
     for (const s of [-1, 1]) {
       const c = put(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.28), cov), 0.1 * s, 0, 0, item, false); c.rotation.z = -0.25 * s;
@@ -4195,6 +4381,14 @@ const goldMat = new THREE.MeshBasicMaterial({ color: 0xffd36b });
 const CASTLE_FINDS = { wand: { name: 'magic wand', color: '#c9a7f2' }, quill: { name: 'feather quill', color: '#eee7f8' } };
 let slide = null, lastFeastBite = 0, letterTo = '', letterVerse = 0, lastLetterSent = 0;
 function castleLoot() {
+  if (!bag.items.net && Math.random() < 0.25) {                    // a bug net, for catching fairies
+    bag.items.net = 1; saveBag(); renderBag(); bagBtn.classList.add('new');
+    sfx.find(); burst(pos.x, pos.y + 0.8, pos.z, 14, sparkMat, 1.2, 3.5);
+    popAt(pos.x, pos.y + 2.3, pos.z, 'Found a bug net!', 'good');
+    addLine('', 'You found a bug net! Open your bag (B), hold it, then press F near the little fairies to catch one.', true);
+    track('castle/found-net');
+    return;
+  }
   const r = Math.random(), id = r < 0.42 ? 'wand' : r < 0.84 ? 'quill' : '';
   if (!id) {
     popAt(pos.x, pos.y + 2.3, pos.z, 'Just fluff and sparkles', '');
@@ -4457,12 +4651,24 @@ function renderBag() {
     btn.addEventListener('click', () => wearItem(id));
     row.append(dot, name, btn); bagList.append(row);
   }
+  if (CASTLE || bag.fairies) {
+    const fr = document.createElement('div'); fr.className = 'bagRow jar';
+    const fd = document.createElement('i'); fd.style.background = '#f7b2c4';
+    const fs = document.createElement('span'); fs.textContent = 'Fairies in your jar: ' + bag.fairies;
+    fr.append(fd, fs);
+    if (bag.fairies) {
+      const lb = document.createElement('button'); lb.type = 'button'; lb.textContent = 'Look'; lb.addEventListener('click', () => openJar('fairies')); fr.append(lb);
+      const rb = document.createElement('button'); rb.type = 'button'; rb.textContent = 'Let them go'; rb.addEventListener('click', releaseFairies); fr.append(rb);
+    } else { const hint = document.createElement('small'); hint.textContent = bag.items.net ? 'Hold the net, then press F near a fairy' : 'Dig in the cloud tufts for a bug net, then catch a fairy'; fr.append(hint); }
+    bagList.append(fr);
+  }
   const jar = document.createElement('div'); jar.className = 'bagRow jar';
+  if (!ISLAND && !bag.flies) jar.hidden = true;
   const jd = document.createElement('i'); jd.style.background = '#eaff9a';
   const js = document.createElement('span'); js.textContent = 'Fireflies in your jar: ' + bag.flies;
   jar.append(jd, js);
   if (bag.flies) {
-    const lb = document.createElement('button'); lb.type = 'button'; lb.textContent = 'Look'; lb.addEventListener('click', openJar); jar.append(lb);
+    const lb = document.createElement('button'); lb.type = 'button'; lb.textContent = 'Look'; lb.addEventListener('click', () => openJar('flies')); jar.append(lb);
     const rb = document.createElement('button'); rb.type = 'button'; rb.textContent = 'Let them go'; rb.addEventListener('click', releaseFlies); jar.append(rb);
   }
   else if (bag.items.net) { const hint = document.createElement('small'); hint.textContent = 'Hold the net, then press F near fireflies'; jar.append(hint); }
@@ -4511,10 +4717,31 @@ function renderBag() {
     bagList.append(row);
   }
 }
+// the bag can be dragged by its title bar, so you can move it aside and watch your critter
+function makeDraggable(panel, handle, key) {
+  let drag = null;
+  const place = (x, y) => {
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    x = Math.max(8, Math.min(window.innerWidth - w - 8, x)); y = Math.max(8, Math.min(window.innerHeight - Math.min(h, 70), y));
+    panel.style.left = x + 'px'; panel.style.top = y + 'px'; panel.style.transform = 'none';
+  };
+  handle.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    const r = panel.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    try { handle.setPointerCapture(e.pointerId); } catch (er) {}
+    panel.classList.add('dragging'); e.preventDefault();
+  });
+  handle.addEventListener('pointermove', e => { if (drag) place(e.clientX - drag.dx, e.clientY - drag.dy); });
+  const end = () => { if (!drag) return; drag = null; panel.classList.remove('dragging'); store.set(key, JSON.stringify({ x: parseFloat(panel.style.left), y: parseFloat(panel.style.top) })); };
+  handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
+  return () => { try { const s = JSON.parse(store.get(key) || 'null'); if (s && isFinite(s.x) && isFinite(s.y)) place(s.x, s.y); } catch (er) {} };
+}
+const restoreBagPos = makeDraggable(bagPanel, bagPanel.querySelector('.bagHead'), 'cove-bagpos');
+window.addEventListener('resize', () => { if (!bagPanel.hidden) restoreBagPos(); });
 function toggleBag(open) {
   const show = open === undefined ? bagPanel.hidden : open;
   bagPanel.hidden = !show;
-  if (show) { renderBag(); bagBtn.classList.remove('new'); }
+  if (show) { renderBag(); bagBtn.classList.remove('new'); restoreBagPos(); }
   else canvas.focus();
 }
 bagBtn.addEventListener('click', () => toggleBag());
@@ -4524,7 +4751,7 @@ renderBag();
 /* --- music + sound settings panel --- */
 const musicBtn = document.getElementById('musicBtn'), soundPanel = document.getElementById('soundPanel');
 const musicToggle = document.getElementById('musicToggle'), musicVol = document.getElementById('musicVol'), sfxVol = document.getElementById('sfxVol');
-const music = new Audio(CAFE ? 'cafe-music.mp3' : 'music.mp3');   // the cafe has its own lofi theme
+const music = new Audio(CAFE ? 'cafe-music.mp3' : CASTLE ? 'castle-music.mp3' : 'music.mp3');   // the cafe and the castle each have their own theme
 music.loop = true; music.preload = 'none';
 let duckMusic = false;                                   // background music dips while someone plays stage music
 const applyMusicVol = () => { music.volume = Math.min(1, musicPct / 100 * 0.6) * (duckMusic ? 0.2 : 1); };
@@ -4846,6 +5073,7 @@ function hookWorld(T) {
     else if (data.e === 'swing') c.swingT = 0.45;
     else if (data.e === 'yt' || data.e === 'file' || data.e === 'mstop') onStageWorld(c, data);
     else if (data.e === 'fish') remoteCatch(c, data);
+    else if (data.e === 'free' && (data.k === 'flies' || data.k === 'fairies' || data.k === 'fish') && isInt(data.n, 1, 20)) remoteFree(c, data.k, data.n);
     else if (data.e === 'peek' && CAFE && isInt(data.i, 0, cafeFrames.length - 1)) remotePeek(c, data.i);
     else if (data.e === 'brew' && CAFE && isInt(data.i, 0, cafeStations.length - 1)) remoteBrew(c, data.i);
     else if (data.e === 'feast' && CASTLE && isInt(data.i, 0, castleTables.length - 1)) remoteFeast(c, data.i);
@@ -4913,7 +5141,7 @@ function onActionKey() { if (cafeAction() || castleAction()) return; if (fishing
 let crackleT = 0;
 function tickWorld(dt) {
   const active = joined && !lobbyOpen;
-  tickPrints(dt); tickApples(dt); tickSwarms(dt); tickFlies(); tickFire(dt); tickDig(dt); tickSurf(); tickFireSound(); tickCooking(dt); tickCafe(dt); tickCastle(dt);
+  tickPrints(dt); tickApples(dt); tickSwarms(dt); tickFlies(); tickFire(dt); tickDig(dt); tickSurf(); tickFireSound(); tickCooking(dt); tickCafe(dt); tickCastle(dt); tickFairies(); tickFree(dt);
   if (stungT > 0) { stungT -= dt; if (stungT <= 0) { stungT = 0; sendPresence(true); addLine('', 'The bee sting feels better now.', true); } }
   me.stung = stungT > 0; me.digging = digT > 0;
   // campfire crackle when you're close
