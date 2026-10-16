@@ -515,6 +515,8 @@ body.in-lobby #bookView { display: none !important; }
 .lpTo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: .86rem; margin: 2px 0 10px; }
 .lpTo select { flex: 1; font: 700 .9rem var(--font-body); padding: 6px 8px; border-radius: 10px; border: 2px solid #c4b6e2; background: #f4f0fb; color: var(--ink); }
 .lpRow { display: flex; gap: 8px; margin-top: 10px; }
+.lpRow button:disabled { opacity: .45; cursor: default; }
+.lpAlone { margin: 10px 0 0; font-size: .8rem; font-weight: 700; color: var(--muted); line-height: 1.35; }
 .lpRow button, #letterOk { flex: 1; font: 800 .86rem var(--font-body); border: 0; border-radius: 10px; padding: 9px 10px; cursor: pointer; background: var(--tan); color: var(--ink); }
 .lpRow button.go, #letterOk { background: var(--plank-dark); color: var(--paper); }
 #letterCard { gap: 10px; }
@@ -539,6 +541,12 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
 .bagRow button.on { background: var(--plank-dark); color: var(--paper); }
 .bagRow small { flex-basis: 100%; color: var(--muted); font-weight: 600; font-size: .76rem; padding-left: 22px; }
 .bagEmpty { margin: 0 0 8px; font-size: .9rem; font-weight: 600; color: var(--muted); }
+#copyMark {
+  position: fixed; left: 50%; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 4;
+  font: 700 .66rem var(--font-body); letter-spacing: .02em; color: #fff; opacity: .55; white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(46, 42, 69, .6); pointer-events: none; user-select: none;
+}
+body.in-lobby #copyMark { display: none; }
 #ctxBtn {
   position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 5;
   font: 800 .95rem var(--font-body); color: var(--paper); background: var(--plank-dark);
@@ -648,6 +656,7 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
   <div class="bagHead"><h2 id="letterTitle">Write a letter</h2><button id="letterClose" type="button" aria-label="Close">✕</button></div>
   <label class="lpTo">To <select id="letterTo"></select></label>
   <pre id="letterPreview" class="paper"></pre>
+  <p id="letterAlone" class="lpAlone" hidden>You’re the only one in this castle right now. Tap Invite to copy the link for a friend, then send them a letter when they float up.</p>
   <div class="lpRow"><button id="letterShuffle" type="button">Another verse</button><button id="letterSend" type="button" class="go">Send</button></div>
 </section>
 <section id="letterCard" class="sign" hidden aria-live="polite">
@@ -684,6 +693,7 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
   <label class="sRow col">Sound effects <input id="sfxVol" type="range" min="0" max="100" step="1"></label>
 </section>
 <div id="tags"></div>
+<div id="copyMark" aria-hidden="true">© 2026 Poetry and Places. All rights reserved.</div>
 <button id="readBtn" type="button" hidden><span class="lbl">Start reading</span> <span class="key-only">(Space)</span></button>
 
 <div id="joy" class="touch-only" aria-hidden="true"><div id="knob"></div></div>
@@ -4628,11 +4638,19 @@ function renderLetter() {
 }
 function openLetter() {
   if (!CASTLE || !joined || lobbyOpen) return;
-  if (!bag.tools.quill) { addLine('', 'You need a feather quill to write letters. Quills are hidden in the cloud tufts outside the castle.', true); return; }
+  if (!bag.tools.quill) {
+    popAt(pos.x, pos.y + 2.3, pos.z, 'You need a feather quill', '');
+    addLine('', 'You need a feather quill to write letters. Quills are hidden in the cloud tufts outside the castle.', true);
+    return;
+  }
+  // the panel always opens (so it's clear the quill works); with no one else here, Send waits for a friend
   const people = [...remotes.entries()].filter(([, c]) => c.hasPos);
-  if (!people.length) { addLine('', 'No one else is here yet. Tap Invite to copy the castle’s link, then write them a letter when they arrive.', true); return; }
   letterSel.textContent = '';
   for (const [id, c] of people) { const o = document.createElement('option'); o.value = id; o.textContent = nameOf(c); letterSel.append(o); }
+  if (!people.length) { const o = document.createElement('option'); o.value = ''; o.textContent = 'No one else is here yet'; letterSel.append(o); }
+  letterSel.disabled = !people.length;
+  document.getElementById('letterSend').disabled = !people.length;
+  document.getElementById('letterAlone').hidden = !!people.length;
   if (letterTo && remotes.has(letterTo)) letterSel.value = letterTo;
   letterVerse = Math.floor(Math.random() * VERSES.length);
   renderLetter();
