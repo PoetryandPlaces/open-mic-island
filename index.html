@@ -115,15 +115,18 @@ kbd {
   display: flex; flex-direction: column;
   overflow: hidden;
 }
+#chatBar { display: flex; align-items: center; gap: 4px; background: var(--tan); border-bottom: 2px solid #cfc3e8; padding-right: 6px; }
 #chatHead {
+  flex: 1; min-width: 0;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font: 800 .95rem var(--font-display); color: var(--plank-dark);
-  background: var(--tan); border: 0; border-bottom: 2px solid #cfc3e8;
-  padding: 6px 12px; cursor: pointer; text-align: left;
+  background: none; border: 0;
+  padding: 6px 8px 6px 12px; cursor: pointer; text-align: left;
 }
+#chatMin { width: 26px; height: 26px; flex: none; background: #cfc3e8; }
 #chatHead .unread { display: none; width: 9px; height: 9px; border-radius: 50%; background: var(--blush); }
 #chat.closed #chatHead .unread.on { display: inline-block; }
-#chat.closed #chatHead { border-bottom: 0; }
+#chat.closed #chatBar { border-bottom: 0; }
 #chat.closed #chatBody { display: none; }
 #chatHead .chev { transition: transform .2s; }
 #chat.closed #chatHead .chev { transform: rotate(180deg); }
@@ -346,14 +349,16 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 #newRoomBtn { background: none; padding: 4px 0; margin-top: 4px; align-self: flex-start; color: var(--muted); text-decoration: underline; font-weight: 700; }
 .audio-sink { display: none; }
 .minBtn {
-  font: 800 1rem/1 var(--font-body) !important; color: var(--ink); background: var(--tan); border: 0; border-radius: 8px; cursor: pointer;
+  display: grid !important; place-items: center; padding: 0 !important;
+  color: var(--ink); background: var(--tan); border: 0; border-radius: 8px; cursor: pointer;
 }
+.minBtn svg { width: 14px; height: 14px; display: block; }
 #title { padding-right: 44px; }
-#titleMin { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; }
+#titleMin { position: absolute; top: 50%; right: 9px; transform: translateY(-50%); width: 28px; height: 28px; }
+#title:not(.mini) #titleMin { top: 10px; transform: none; }
 #title.mini { padding: 8px 44px 8px 14px; }
 #title.mini #titleMore { display: none; }
 #title.mini h1 { font-size: 1.25rem; }
-#controls #chatMin { width: 30px; flex: none; padding: 7px 0; box-shadow: 0 2px 0 #c4b6e2; }
 #dock {
   position: fixed; z-index: 5; display: flex; gap: 10px;
   right: calc(14px + env(safe-area-inset-right, 0px));
@@ -427,7 +432,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 <canvas id="scene" tabindex="0" aria-label="3D island scene. Use W A S D to walk."></canvas>
 
 <header id="title" class="sign">
-  <button id="titleMin" class="minBtn" type="button" aria-expanded="true" aria-controls="titleMore" title="Minimize">–</button>
+  <button id="titleMin" class="minBtn" type="button" aria-expanded="true" aria-controls="titleMore" title="Minimize" aria-label="Minimize"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
   <h1>Couplet Cove</h1>
   <div id="titleMore">
   <p>Hang out, talk, and walk up to the microphone on the wooden stage to read.</p>
@@ -465,11 +470,13 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
     <button id="musicBtn" class="icon" type="button" aria-expanded="false" aria-controls="soundPanel" aria-label="Music and sound" title="Music and sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
     <button id="bagBtn" class="icon" type="button" aria-label="Your bag (B)" title="Your bag (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
     <button id="inviteBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><span>Invite</span></button>
-    <button id="chatMin" class="icon minBtn" type="button" title="Minimize chat" aria-label="Minimize chat">–</button>
   </div>
+  <div id="chatBar">
   <button id="chatHead" type="button" aria-expanded="true" aria-controls="chatBody">
     <span>Island chat <span class="unread"></span></span><span class="chev" aria-hidden="true">▾</span>
   </button>
+    <button id="chatMin" class="minBtn" type="button" title="Minimize chat" aria-label="Minimize chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+  </div>
   <div id="chatBody">
     <ul id="chatLog" aria-live="polite"></ul>
     <form id="chatForm" autocomplete="off">
@@ -1652,8 +1659,9 @@ function openChat() { setChatMin(false); chatEl.classList.remove('closed'); chat
 const titleEl = document.getElementById('title'), titleMin = document.getElementById('titleMin');
 function setTitleMin(min) {
   titleEl.classList.toggle('mini', min);
-  titleMin.textContent = min ? '+' : '–';
+  titleMin.innerHTML = min ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
   titleMin.title = min ? 'Show more' : 'Minimize';
+  titleMin.setAttribute('aria-label', min ? 'Show more' : 'Minimize');
   titleMin.setAttribute('aria-expanded', String(!min));
   store.set('cove-titlemin', min ? '1' : '0');
 }
