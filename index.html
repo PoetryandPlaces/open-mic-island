@@ -101,6 +101,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--sea); outli
   display: flex; flex-direction: column; gap: 6px;
   font-size: .82rem; font-weight: 600;
 }
+.hintHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#hintClose { font: 800 .9rem var(--font-body); background: var(--tan); border: 0; border-radius: 8px; width: 30px; height: 30px; flex: none; cursor: pointer; color: var(--ink); }
 #hint h3 { margin: 0 0 2px; font: 700 1.05rem var(--font-display); color: var(--plank); font-variation-settings: "SOFT" 100, "WONK" 1; }
 kbd {
   font: 800 .74rem var(--font-body);
@@ -302,6 +304,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   span.touch-only { display: inline; }
   .key-only { display: none !important; }
   #joy { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+  #hint { bottom: calc(232px + env(safe-area-inset-bottom, 0px)); max-width: min(300px, calc(100vw - 28px)); }
   #chat { top: calc(150px + env(safe-area-inset-top, 0px)); bottom: auto; width: min(280px, calc(100vw - 28px)); }
   #chatLog { height: 96px; }
 }
@@ -579,7 +582,7 @@ body.in-lobby #copyMark { display: none; }
 
 <button id="helpBtn" type="button" aria-expanded="false" aria-controls="hint" title="How to play (H)"><img id="helpFace" alt=""><span class="q" aria-hidden="true">?</span><span class="sr">How to play</span></button>
 <div id="hint" class="sign" hidden>
-  <h3>How to play</h3>
+  <div class="hintHead"><h3>How to play</h3><button id="hintClose" type="button" aria-label="Close how to play">✕</button></div>
   <span class="key-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>Shift</kbd> run</span>
   <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them)</span>
   <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair or bean bag to sit)</span>
@@ -2222,10 +2225,16 @@ function captureFace() {
     pv.root.rotation.y = oy; pv.root.position.y = opy;
   } catch (e) {}
 }
+let hintTimer = 0;
 function toggleHelp(open) {
   const show = open === undefined ? hintEl.hidden : open;
   hintEl.hidden = !show; helpBtn.setAttribute('aria-expanded', String(show));
+  clearTimeout(hintTimer);
+  if (show && matchMedia('(pointer: coarse)').matches) hintTimer = setTimeout(() => toggleHelp(false), 12000);   // on phones it tucks itself away
 }
+document.getElementById('hintClose').addEventListener('click', () => { toggleHelp(false); canvas.focus(); });
+// tapping or clicking anywhere outside the help card closes it
+document.addEventListener('pointerdown', e => { if (!hintEl.hidden && !hintEl.contains(e.target) && !helpBtn.contains(e.target)) toggleHelp(false); });
 helpBtn.addEventListener('click', () => { toggleHelp(); canvas.focus(); });
 
 /* ---------- input ---------- */
