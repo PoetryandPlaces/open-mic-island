@@ -5,7 +5,7 @@ A cozy low-poly island cove for meeting up online, made by Poetry and Places. Pi
 ## How to meet up
 
 1. Open the site. Without anything after the address you land in the **main lobby**, open to everyone at any time.
-2. For a private meetup, click **Make a private island** on the entrance card. That link ends in `#room=…`, and only people with it can find that island.
+2. For a private meetup, pick a world under **Make a private room** on the entrance card: **Island** or **Cozy Cafe** (**Cloudy Castle** is coming soon). That link ends in `#room=…`, and only people with it can find that room. The main lobby is always the island; the other worlds only exist as private rooms.
 3. Click **Copy** (or **Invite** once you're in) and send the link to friends. Everyone who opens the same link lands on the same island.
 4. Press **Turn on mic** (or `M`) to talk, and again to mute. Press `Enter` to chat.
 
@@ -47,9 +47,17 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - While you have the mic, a **Stage music** panel lets you play a song file from your computer (it streams to everyone) or paste a YouTube link (everyone's island opens the same video in a small player, started at the same point). Listeners can mute it for themselves, the reader can hide the panel with its minus button, and it stops when you finish reading. Some YouTube videos don't allow playing on other sites; those show a message instead.
 - The round button in the bottom-left corner (with your critter's face) shows how to play. Press H to open it.
 
+## The Cozy Cafe (private rooms only)
+
+- An autumn Paris-style cafe with bistro tables (hop onto a chair to sit), a counter with a cashier, and the same open mic stage, dressed in black, with the Poetry and Places sign and spotlight.
+- Three pictures on the left wall hide tools: a coffee scoop, a bamboo whisk and a bread knife. Press F by a picture to peek behind it. Tools stay in your bag.
+- At the counter, press F at the espresso machine, the matcha station or the sandwich board to make coffee, a matcha latte or a sandwich, then sip or munch it.
+- You can step outside onto the street, but the autumn wind is strong and blows you back in through the door.
+- A cafe link starts with `cafe-` (for example `#room=cafe-mossy-lantern-k3x9`), which is how everyone with the link lands in the cafe.
+
 ## Metrics
 
-Visits and anonymous activity (joins, private islands created, readings, fish caught, how long people stay, how many were on together, and more) go to a private GoatCounter dashboard once `GOATCOUNTER` near the top of the script in `index.html` holds your site code. Nothing personal is sent: no names, chat text or room codes. Ad blockers may hide some visits from the count.
+Visits and anonymous activity (joins, private rooms created per world, cafe tools found and drinks made, readings, fish caught, how long people stay, how many were on together, and more) go to a private GoatCounter dashboard once `GOATCOUNTER` near the top of the script in `index.html` holds your site code. Nothing personal is sent: no names, chat text or room codes. Ad blockers may hide some visits from the count.
 
 ## Copyright
 

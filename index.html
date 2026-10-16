@@ -341,7 +341,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   flex: 1; min-width: 0; font: 600 .86rem var(--font-body); color: var(--ink);
   background: #f4f0fb; border: 2px solid #c4b6e2; border-radius: 12px; padding: 8px 10px;
 }
-#copyLobbyBtn, #newRoomBtn {
+#copyLobbyBtn {
   font: 800 .84rem var(--font-body); color: var(--ink); background: var(--tan);
   border: 0; border-radius: 12px; padding: 0 12px; cursor: pointer; flex: none;
 }
@@ -349,9 +349,16 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 #roomWhere { margin-bottom: 8px; font-size: .9rem; }
 #roomWhere b { color: var(--plank-dark); }
 #roomWhere span { color: var(--muted); font-weight: 600; }
-#roomSwitch { display: flex; gap: 14px; flex-wrap: wrap; }
-#lobbyRoomBtn { font: 700 .84rem var(--font-body); background: none; border: 0; padding: 4px 0; margin-top: 4px; color: var(--muted); text-decoration: underline; cursor: pointer; }
-#newRoomBtn { background: none; padding: 4px 0; margin-top: 4px; align-self: flex-start; color: var(--muted); text-decoration: underline; font-weight: 700; }
+#roomSwitch { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+#newRoomLbl { font-size: .8rem; font-weight: 800; color: var(--muted); }
+#worldPick { display: flex; gap: 6px; flex-wrap: wrap; }
+.worldBtn { display: inline-flex; align-items: center; gap: 6px; font: 800 .8rem var(--font-body); color: var(--ink); background: #f4f0fb; border: 2px solid #c4b6e2; border-radius: 999px; padding: 5px 11px; cursor: pointer; }
+.worldBtn:hover:not(:disabled) { background: #e9e1f7; }
+.worldBtn i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink); flex: none; }
+.worldBtn:disabled { opacity: .55; cursor: default; }
+.worldBtn small { font-weight: 700; color: var(--muted); }
+body[data-world="cafe"] .island-only, body:not([data-world="cafe"]) .cafe-only { display: none !important; }
+#lobbyRoomBtn { font: 700 .84rem var(--font-body); background: none; border: 0; padding: 2px 0; align-self: flex-start; color: var(--muted); text-decoration: underline; cursor: pointer; }
 .audio-sink { display: none; }
 #cookMenu, #jarView { position: fixed; left: 50%; transform: translateX(-50%); z-index: 14; box-sizing: border-box; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
 #cookMenu { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(280px, calc(100vw - 32px)); }
@@ -505,16 +512,19 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 <div id="hint" class="sign" hidden>
   <h3>How to play</h3>
   <span class="key-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>Shift</kbd> run</span>
-  <span class="key-only"><kbd>Space</kbd> hop (hop into trees to shake them)</span>
+  <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them)</span>
+  <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair to sit)</span>
   <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn the camera</span>
   <span class="key-only"><kbd>Space</kbd> at the mic: start / finish reading</span>
   <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
-  <span class="key-only"><kbd>F</kbd> dig by a rock / swing your net / fish (cast, then F on the bite and in the green)</span>
+  <span class="key-only island-only"><kbd>F</kbd> dig by a rock / swing your net / fish (cast, then F on the bite and in the green)</span>
+  <span class="key-only cafe-only"><kbd>F</kbd> by a picture: peek behind it for hidden tools</span>
+  <span class="key-only cafe-only"><kbd>F</kbd> at the counter: make coffee, matcha or a sandwich</span>
   <span class="key-only"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> ask for a hug, cheek kiss or high five</span>
-  <span class="key-only"><kbd>F</kbd> at the campfire: roast a fish or make a s’more</span>
+  <span class="key-only island-only"><kbd>F</kbd> at the campfire: roast a fish or make a s’more</span>
   <span class="key-only"><kbd>C</kbd> applaud</span>
   <span class="key-only"><kbd>B</kbd> your bag · <kbd>Enter</kbd> chat · <kbd>H</kbd> this help</span>
-  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to dig, fish, read at the mic, or hug someone nearby.</span>
+  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to <span class="island-only">dig, fish,</span><span class="cafe-only">peek behind pictures, make coffee,</span> read at the mic, or hug someone nearby.</span>
 </div>
 
 <div id="dock" hidden>
@@ -617,7 +627,15 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
       <div id="roomWhere"><b id="roomName">Main lobby</b> <span id="roomDesc"></span></div>
       <label for="roomLink">Invite link</label>
       <div id="roomRow"><input id="roomLink" type="text" readonly><button id="copyLobbyBtn" type="button">Copy</button></div>
-      <div id="roomSwitch"><button id="newRoomBtn" type="button">Make a private island instead</button><button id="lobbyRoomBtn" type="button" hidden>Go to the main lobby</button></div>
+      <div id="roomSwitch">
+        <span id="newRoomLbl">Or make a private room:</span>
+        <div id="worldPick">
+          <button type="button" class="worldBtn" data-world="island"><i style="background:#7cc05a"></i>Island</button>
+          <button type="button" class="worldBtn" data-world="cafe"><i style="background:#c98a5a"></i>Cozy Cafe</button>
+          <button type="button" class="worldBtn" data-world="castle" disabled title="Coming soon"><i style="background:#c9b8f0"></i>Cloudy Castle <small>soon</small></button>
+        </div>
+        <button id="lobbyRoomBtn" type="button" hidden>Go to the main lobby</button>
+      </div>
     </div>
     <button id="enterBtn" type="submit">Wash ashore</button>
     <div class="online"><i></i><span class="onlineText">Connecting…</span></div>
@@ -631,6 +649,11 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 const V = THREE.Vector3;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 document.body.classList.add('in-lobby');
+// Which world this room is. The main lobby and plain private links are the island; private rooms made
+// as a cafe carry it at the front of their link (#room=cafe-…), so everyone with the link lands in the same world.
+const WORLD = (() => { const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash); return m && /^cafe-/i.test(m[1]) ? 'cafe' : 'island'; })();
+const ISLAND = WORLD === 'island', CAFE = WORLD === 'cafe';
+document.body.dataset.world = WORLD;
 
 /* ---------- renderer, scene, camera ---------- */
 const canvas = document.getElementById('scene');
@@ -697,9 +720,11 @@ scene.add(sun);
 
 /* ---------- island ---------- */
 const GRASS_R = 19.6, SAND_TOP = -0.4, WALK_R = 23;
-put(new THREE.Mesh(new THREE.CylinderGeometry(20, 21.6, 2.2, 18), mat(0x7cc05a)), 0, -1.1, 0, scene, false);
-put(new THREE.Mesh(new THREE.CylinderGeometry(24, 25.6, 1.4, 20), mat(0xf0d9a4)), 0, -1.1, 0, scene, false);
-put(new THREE.Mesh(new THREE.CylinderGeometry(25.6, 27, 2, 20), mat(0xd9bf87)), 0, -2.8, 0, scene, false);
+if (ISLAND) {
+  put(new THREE.Mesh(new THREE.CylinderGeometry(20, 21.6, 2.2, 18), mat(0x7cc05a)), 0, -1.1, 0, scene, false);
+  put(new THREE.Mesh(new THREE.CylinderGeometry(24, 25.6, 1.4, 20), mat(0xf0d9a4)), 0, -1.1, 0, scene, false);
+  put(new THREE.Mesh(new THREE.CylinderGeometry(25.6, 27, 2, 20), mat(0xd9bf87)), 0, -2.8, 0, scene, false);
+}
 
 /* ---------- ocean ---------- */
 const waterGeo = new THREE.PlaneGeometry(320, 320, 72, 72);
@@ -726,6 +751,7 @@ for (let i = 0; i < 16; i++) {
   mesh.rotation.x = -Math.PI / 2; scene.add(mesh);
   const c = { mesh }; resetCrest(c, 25 + Math.random() * 22); crests.push(c);
 }
+if (!ISLAND) { scene.remove(water, shallow, foam, foam2); crests.forEach(c => scene.remove(c.mesh)); }
 const smooth = (a, b, x) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
 /* ---------- collision data ---------- */
@@ -753,7 +779,7 @@ function drawLogo(c, cx, cy, h, opts = {}) {
 /* ---------- stage ---------- */
 const STAGE = { x0: -5, x1: 5, z0: -13, z1: -7, h: 0.75 };
 const STEPS = { x0: -1.6, x1: 1.6, z0: -7, z1: -5.9, h: 0.38 };
-const wood = mat(0xb27a48), woodDark = mat(0x84552f), woodLight = mat(0xc99260);
+const wood = mat(CAFE ? 0x2c2932 : 0xb27a48), woodDark = mat(CAFE ? 0x1d1b22 : 0x84552f), woodLight = mat(CAFE ? 0x37333e : 0xc99260);   // black stage in the cafe
 const bulbs = [];
 {
   put(new THREE.Mesh(new THREE.BoxGeometry(10, 0.7, 6), woodDark), 0, 0.35, -10);
@@ -773,10 +799,10 @@ const bulbs = [];
   const ctx = c.getContext('2d');
   const tex = new THREE.CanvasTexture(c);
   const drawSign = () => {
-    ctx.fillStyle = '#8a5730'; ctx.fillRect(0, 0, 1024, 180);                     // warm dark wood board
-    ctx.fillStyle = '#7a4c29';
+    ctx.fillStyle = CAFE ? '#24212b' : '#8a5730'; ctx.fillRect(0, 0, 1024, 180);   // warm dark wood board (black in the cafe)
+    ctx.fillStyle = CAFE ? '#1b1920' : '#7a4c29';
     for (let y = 44; y < 180; y += 46) ctx.fillRect(0, y, 1024, 4);                // plank seams
-    ctx.strokeStyle = '#c99260'; ctx.lineWidth = 6; ctx.setLineDash([18, 12]);
+    ctx.strokeStyle = CAFE ? '#c9a7f2' : '#c99260'; ctx.lineWidth = 6; ctx.setLineDash([18, 12]);
     ctx.strokeRect(14, 14, 996, 152); ctx.setLineDash([]);
     const flower = (x, y, r, col) => {                                             // painted five-petal flowers
       ctx.fillStyle = col;
@@ -789,9 +815,8 @@ const bulbs = [];
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const label = 'Poetry and Places';
     let size = 100; ctx.font = '700 ' + size + 'px "Fraunces", "Times New Roman", serif';
-    while (ctx.measureText(label).width > 730 && size > 50) { size -= 4; ctx.font = '700 ' + size + 'px "Fraunces", "Times New Roman", serif'; }
-    ctx.fillText(label, 572, 94);
-    drawLogo(ctx, 122, 90, 84, { blue: '#b9c3e0', dot: '#c9b8f0', glow: 'rgba(30,20,10,0.35)' });   // logo colors, lifted a little so they read on dark wood
+    while (ctx.measureText(label).width > 820 && size > 50) { size -= 4; ctx.font = '700 ' + size + 'px "Fraunces", "Times New Roman", serif'; }
+    ctx.fillText(label, 512, 94);
     tex.needsUpdate = true;
   };
   drawSign();
@@ -903,6 +928,7 @@ function tickSpot(dt) {
 }
 
 /* ---------- audience logs ---------- */
+const islandMark = { kids: scene.children.length, circles: circles.length, boxes: boxes.length };   // everything from here to the campfire is island-only
 for (const [x, z] of [[-2.3, -3], [2.3, -3], [-2.3, 0], [2.3, 0]]) {
   const log = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 3.2, 7), mat(0x9a6a40));
   log.rotation.z = Math.PI / 2; put(log, x, 0.32, z);
@@ -1086,7 +1112,15 @@ const fire = { flames: [], light: null, embers: [] };
     circles.push({ x, z, r: 0.42, top: 0.46 });       // top: hop up and sit by the fire
   }
 }
+if (!ISLAND) {
+  for (const o of scene.children.slice(islandMark.kids)) scene.remove(o);
+  circles.length = islandMark.circles; boxes.length = islandMark.boxes;
+  trees.length = 0; digRocks.length = 0; sway.length = 0;
+  fire.flames.length = 0; fire.embers.length = 0; fire.light = null;
+  FIRE.x = FIRE.z = 999;                                   // no campfire here
+}
 function tickFire(dt) {
+  if (!fire.light) return;
   const fl = 0.85 + Math.sin(t * 17) * 0.06 + Math.sin(t * 7.3) * 0.08 + Math.random() * 0.06;
   fire.light.intensity = 1.8 * fl;
   for (const f of fire.flames) {
@@ -1106,6 +1140,320 @@ function tickFire(dt) {
     e.m.position.z += e.vz * dt;
     e.m.position.y += (0.9 + e.life * 0.3) * dt;
     e.m.scale.setScalar(Math.min(1, e.life));
+  }
+}
+
+/* ---------- Cozy Cafe (private rooms made as a cafe) ----------
+   An autumn Paris-style cafe: the same open mic stage (dressed in black, with the Poetry and Places
+   sign and spotlight), a counter with coffee, matcha and sandwich stations and a cashier, bistro
+   tables, and three pictures on the wall that hide the tools you need. Out front, a windy autumn
+   street blows you back in through the door. */
+const CAFE_IN = { x0: -10.5, x1: 10.5, z0: -13.6, z1: 7.3 };   // walkable inside
+const CAFE_OUT = { x0: -14, x1: 14, z0: 6.9, z1: 18.6 };       // the street out front
+const CAFE_DOOR = { x: 0, z: 7.1, half: 1.5 };
+const cafeWalls = [];      // { mats, behind(cam), op } walls fade when the camera is behind them
+const cafeFrames = [];     // pictures on the left wall, each hiding a tool
+const cafeStations = [];   // where you make things at the counter
+const cafeLeaves = [];     // leaves blowing down the street
+const TOOLS = {
+  scoop: { name: 'coffee scoop', color: '#c9c3cf' },
+  whisk: { name: 'bamboo whisk', color: '#d9c48a' },
+  knife: { name: 'bread knife', color: '#b9c3e0' }
+};
+if (CAFE) {
+  const cream = 0xf3e3c8, trim = 0x6e4232, brass = 0xd9b26a;
+  // ground: autumn lawn all around, a cobbled street out front, a wooden floor inside
+  put(new THREE.Mesh(new THREE.BoxGeometry(240, 1, 240), mat(0xa59a55)), 0, -0.5, 0, scene, false);
+  put(new THREE.Mesh(new THREE.BoxGeometry(46, 0.06, 15), mat(0x9b918a)), 0, 0.0, 14.2, scene, false);
+  for (let i = 0; i < 70; i++) {                                     // cobbles
+    const c = put(new THREE.Mesh(new THREE.CylinderGeometry(0.28 + rand() * 0.18, 0.32, 0.05, 6), mat(rand() < 0.5 ? 0xb3aaa1 : 0x8a817a)), -15 + rand() * 30, 0.04, 8 + rand() * 10.5, scene, false);
+    c.rotation.y = rand() * 3;
+  }
+  for (let i = 0; i < 15; i++) put(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 21.4), mat(i % 2 ? 0xb07f52 : 0xbf8d5e)), -11.25 + i * 1.5 + 0.75, 0.025, -3.4, scene, false);
+  const rug = put(new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.02, 28), mat(0xc9b8f0)), 0, 0.06, -3.2, scene, false);
+  rug.scale.z = 0.75;
+  put(new THREE.Mesh(new THREE.CylinderGeometry(2.8, 2.8, 0.02, 28), mat(0xeee7f8)), 0, 0.07, -3.2, scene, false).scale.z = 0.75;
+
+  // walls: cream plaster over a dark wood wainscot; they fade when the camera swings behind them
+  const wallSide = (pieces, behind) => {
+    const w = { mats: [], behind, op: 1 };
+    for (const [x0, x1, y0, y1, z0, z1, col, o] of pieces) {
+      const m = mat(col, Object.assign({ transparent: true, opacity: o || 1 }, o ? { depthWrite: false } : {}));
+      m.userData.base = o || 1;
+      put(new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m), (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, scene, false);
+      w.mats.push(m);
+    }
+    cafeWalls.push(w);
+  };
+  const H = 6.2;
+  wallSide([[-11.4, 11.4, 0, H, -14.4, -14.0, cream], [-11, 11, 0, 1.2, -14.05, -13.9, trim], [-11.4, 11.4, H, H + 0.3, -14.5, -13.9, trim]], c => c.z < -14);
+  wallSide([[-11.4, -11.0, 0, H, -14.4, 7.4, cream], [-11.05, -10.92, 0, 1.2, -14, 7, trim], [-11.5, -10.9, H, H + 0.3, -14.4, 7.4, trim]], c => c.x < -11);
+  wallSide([[11.0, 11.4, 0, H, -14.4, 7.4, cream], [10.92, 11.05, 0, 1.2, -14, 7, trim], [10.9, 11.5, H, H + 0.3, -14.4, 7.4, trim]], c => c.x > 11);
+  // shop front: a low wood base, big windows, a header with the cafe's name, and the open door in the middle
+  const front = [];
+  for (const [x0, x1] of [[-11.4, -CAFE_DOOR.half], [CAFE_DOOR.half, 11.4]]) {
+    front.push([x0, x1, 0, 0.9, 7.0, 7.4, trim], [x0, x1, 0.9, 3.6, 7.15, 7.25, 0xbfe0ef, 0.22]);
+    for (let x = x0; x <= x1 + 0.01; x += (x1 - x0) / 4) front.push([x - 0.07, x + 0.07, 0.9, 3.6, 7.1, 7.3, trim]);
+    front.push([x0, x1, 2.2, 2.3, 7.1, 7.3, trim]);
+    boxes.push({ x0, x1, z0: 6.95, z1: 7.45 });
+  }
+  front.push([-11.4, 11.4, 3.6, 4.6, 7.0, 7.4, trim], [-11.4, 11.4, 4.6, H, 7.0, 7.4, cream], [-11.5, 11.5, H, H + 0.3, 6.9, 7.5, trim]);
+  wallSide(front, c => c.z > 7.4 && pos.z < 7);
+  // name board over the door (outside) and a striped awning
+  {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 96;
+    const g = c.getContext('2d'), tex = new THREE.CanvasTexture(c);
+    const draw = () => {
+      g.fillStyle = '#2e2a45'; g.fillRect(0, 0, 512, 96);
+      g.strokeStyle = '#d9b26a'; g.lineWidth = 4; g.strokeRect(8, 8, 496, 80);
+      g.fillStyle = '#eee7f8'; g.font = '700 54px "Fraunces", "Times New Roman", serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText('Cozy Cafe', 256, 52); tex.needsUpdate = true;
+    };
+    draw(); if (document.fonts) document.fonts.ready.then(draw);
+    const sm = mat(0x2e2a45);
+    put(new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.8, 0.1), [sm, sm, sm, sm, new THREE.MeshStandardMaterial({ map: tex, roughness: 1 }), sm]), 0, 4.25, 7.48, scene, false);
+    for (let i = 0; i < 16; i++) {
+      const s = put(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 1.5), mat(i % 2 ? 0xeee7f8 : 0x7a68a1)), -10.5 + i * 1.4, 3.45, 8.05, scene, false);
+      s.rotation.x = 0.42;
+    }
+  }
+  // the door frame
+  for (const s of [-1, 1]) put(new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.3, 0.5), mat(trim)), CAFE_DOOR.half * s, 1.65, 7.2, scene, false);
+  put(new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.25, 0.5), mat(trim)), 0, 3.4, 7.2, scene, false);
+  put(new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.03, 1.2), mat(0x7a68a1)), 0, 0.05, 6.2, scene, false);
+
+  // the counter, with the cashier, espresso machine, matcha station, sandwich board and pastry case
+  const C = { x0: 7.3, x1: 10.9, z0: -5.2, z1: 3.2, h: 1.1 };
+  put(new THREE.Mesh(new THREE.BoxGeometry(C.x1 - C.x0, C.h, C.z1 - C.z0), mat(trim)), (C.x0 + C.x1) / 2, C.h / 2, (C.z0 + C.z1) / 2);
+  put(new THREE.Mesh(new THREE.BoxGeometry(C.x1 - C.x0 + 0.2, 0.08, C.z1 - C.z0 + 0.2), mat(0xf4ede4)), (C.x0 + C.x1) / 2, C.h + 0.04, (C.z0 + C.z1) / 2);
+  for (let z = C.z0 + 0.5; z < C.z1; z += 1.05) put(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.62), mat(0x8a5a44)), C.x0 - 0.02, 0.55, z, scene, false);
+  put(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, C.z1 - C.z0), mat(0xc9a7f2)), C.x0 - 0.03, 0.98, (C.z0 + C.z1) / 2, scene, false);
+  boxes.push({ x0: C.x0, x1: C.x1, z0: C.z0, z1: C.z1 });
+  const top = C.h + 0.08, steamAt = [];
+  // cashier: register with a little screen, a tip jar and a bell
+  {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.6), mat(0x4a4458)), 8.5, top + 0.18, 2.5);
+    const sc = put(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.5), mat(0x9fd6a8, { emissive: 0x5aa86a, emissiveIntensity: 0.5 })), 8.2, top + 0.52, 2.5);
+    sc.rotation.z = 0.35;
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.28, 10), mat(0xbfe0ef, { transparent: true, opacity: 0.5 })), 7.8, top + 0.14, 1.95, scene, false);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), mat(brass)), 7.8, top, 2.95, scene, false);
+  }
+  // espresso machine
+  {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.65, 0.95), mat(0xc9c3cf)), 8.4, top + 0.33, 1.1);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.77, 0.12, 0.97), mat(0x7a68a1)), 8.4, top + 0.7, 1.1, scene, false);
+    for (const dz of [-0.22, 0.22]) {
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.12, 8), mat(0x55505f)), 7.98, top + 0.42, 1.1 + dz, scene, false);
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.12, 8), mat(0xffffff)), 7.95, top + 0.06, 1.1 + dz, scene, false);
+    }
+    for (let i = 0; i < 3; i++) put(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.14, 8), mat([0xf2b3c8, 0xeee7f8, 0xc9a7f2][i])), 8.9, top + 0.78 + 0.0, 0.8 + i * 0.25, scene, false);
+    steamAt.push([7.95, top + 0.4, 1.1]);
+  }
+  // matcha station: bamboo mat, tea bowl, green tin
+  {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.03, 0.8), mat(0xd9c48a)), 8.2, top + 0.015, -1.0, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.13, 0.16, 12), mat(0xe8dccb)), 8.1, top + 0.1, -1.0, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 12), mat(0x8fbf5a)), 8.1, top + 0.17, -1.0, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.3, 10), mat(0x5aa651)), 8.6, top + 0.15, -0.7, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.04, 10), mat(brass)), 8.6, top + 0.32, -0.7, scene, false);
+    steamAt.push([8.1, top + 0.25, -1.0]);
+  }
+  // sandwich board: a loaf, tomato, lettuce and cheese
+  {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.05, 0.6), mat(0xc99260)), 8.2, top + 0.025, -3.0, scene, false);
+    const loaf = put(new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.4, 3, 8), mat(0xd9a05a)), 8.25, top + 0.17, -3.05, scene, false);
+    loaf.rotation.z = Math.PI / 2;
+    for (let i = 0; i < 3; i++) put(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.02, 8), mat(0xe8584a)), 7.95 + i * 0.12, top + 0.06, -2.8, scene, false);
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 0), mat(0x86c862)), 8.6, top + 0.1, -2.82, scene, false);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.14), mat(0xffd36b)), 8.6, top + 0.07, -3.2, scene, false);
+    steamAt.push([8.1, top + 0.2, -3.0]);
+  }
+  // pastry case
+  {
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.55, 0.9), mat(0xdff0f7, { transparent: true, opacity: 0.3, depthWrite: false })), 8.4, top + 0.28, -4.5, scene, false);
+    for (let i = 0; i < 6; i++) {
+      const p = put(new THREE.Mesh(i % 2 ? new THREE.TorusGeometry(0.07, 0.04, 5, 10) : new THREE.SphereGeometry(0.08, 7, 5), mat([0xd9a05a, 0xf2b3c8, 0xc9a7f2, 0xffd36b][i % 4])), 8.1 + (i % 3) * 0.28, top + 0.12 + Math.floor(i / 3) * 0.24, -4.5, scene, false);
+      p.rotation.x = Math.PI / 2;
+    }
+  }
+  // stations you can use: walk up to the front of the counter
+  [['coffee', 1.1, 'scoop'], ['matcha', -1.0, 'whisk'], ['sandwich', -3.0, 'knife']].forEach(([type, z, tool], i) => cafeStations.push({ type, tool, x: C.x0 - 0.8, z, steam: steamAt[i] }));
+  // shelves and a chalkboard menu on the wall behind the counter
+  for (const y of [2.0, 2.9]) {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 7.6), mat(0x8a5a44)), 10.7, y, -1.0, scene, false);
+    for (let i = 0; i < 9; i++) {
+      const col = [0xf2b3c8, 0xeee7f8, 0x8fbf5a, 0xd9a05a, 0xc9a7f2, 0xffd36b][(i + (y > 2.5 ? 3 : 0)) % 6];
+      put(new THREE.Mesh(i % 3 ? new THREE.CylinderGeometry(0.12, 0.12, 0.34, 8) : new THREE.BoxGeometry(0.22, 0.4, 0.22), mat(col)), 10.65, y + 0.2, -4.4 + i * 0.85, scene, false);
+    }
+  }
+  {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 300;
+    const g = c.getContext('2d'), tex = new THREE.CanvasTexture(c);
+    const draw = () => {
+      g.fillStyle = '#2f3a33'; g.fillRect(0, 0, 512, 300);
+      g.strokeStyle = '#c99260'; g.lineWidth = 14; g.strokeRect(7, 7, 498, 286);
+      g.fillStyle = '#f4efe6'; g.textAlign = 'center';
+      g.font = '700 50px "Fraunces", "Times New Roman", serif'; g.fillText('Menu', 256, 72);
+      g.font = '600 36px "Nunito", "Trebuchet MS", sans-serif';
+      ['Coffee ♥', 'Matcha latte', 'Sandwich du jour'].forEach((l, i) => g.fillText(l, 256, 134 + i * 52));
+      tex.needsUpdate = true;
+    };
+    draw(); if (document.fonts) document.fonts.ready.then(draw);
+    const board = put(new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.75), new THREE.MeshStandardMaterial({ map: tex, roughness: 1 })), 10.95, 4.4, -1.0, scene, false);
+    board.rotation.y = -Math.PI / 2;
+  }
+
+  // Paris-style bistro tables, each with two bentwood chairs you can hop up and sit on
+  const ironMat = mat(0x2e2a45), seatMat = mat(0xb07f52), topMat = mat(0xf4ede4);
+  for (const [x, z] of [[-7.4, -4.2], [-3.9, -1.2], [3.9, -1.2], [-7.4, 1.4], [-3.6, 4.0], [3.6, 4.0], [-7.6, -9.8], [-7.6, 5.3]]) {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.06, 14), topMat), x, 0.92, z);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.03, 14), ironMat), x, 0.88, z, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.88, 6), ironMat), x, 0.44, z, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.04, 10), ironMat), x, 0.02, z, scene, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.22, 8), mat(0xeee7f8)), x, 1.06, z, scene, false);   // tiny vase
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.08, 0), mat(pick([0xf7b2c4, 0xc9a7f2, 0xffd36b]))), x, 1.22, z, scene, false);
+    circles.push({ x, z, r: 0.6 });
+    for (const s of [-1, 1]) {
+      const cx = x + 1.0 * s, g = new THREE.Group(); g.position.set(cx, 0, z); g.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.06, 12), seatMat), 0, 0.48, 0, g);
+      for (const [lx, lz] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]]) put(new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.48, 4), ironMat), lx, 0.24, lz, g, false);
+      const back = put(new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.03, 4, 10, Math.PI), ironMat), 0, 0.72, -0.24, g, false);
+      for (const bx of [-0.22, 0.22]) put(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 4), ironMat), bx, 0.62, -0.24, g, false);
+      back.rotation.z = 0;
+      circles.push({ x: cx, z, r: 0.3, top: 0.52 });        // top: hop up and sit
+    }
+  }
+  // potted plants in the corners
+  for (const [x, z] of [[-10.2, -13.2], [10.2, -13.2], [-10.2, 6.5], [10.2, 6.5], [6.4, -13.2], [-6.4, -13.2]]) {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.3, 0.6, 8), mat(0xd9825b)), x, 0.3, z);
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 0), mat(0x5aa651)), x, 1.0, z);
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.38, 0), mat(0x7cc05a)), x + 0.2, 1.4, z + 0.1);
+    circles.push({ x, z, r: 0.45 });
+  }
+  // pendant lamps and string lights (the string bulbs twinkle with the stage bulbs)
+  for (const [x, z] of [[-5.5, -1.5], [0, 2.5], [5, -1.5], [8.6, -1.0]]) {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.6, 3), mat(0x2e2a45)), x, 5.4, z, scene, false);
+    put(new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.38, 10, 1, true), mat(0x7a68a1, { side: THREE.DoubleSide })), x, 4.5, z, scene, false);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe2a8 })), x, 4.32, z, scene, false);
+  }
+  for (const [x, z] of [[-4.5, 0.5], [4.5, 0.5], [8.6, -1.0]]) { const pl = new THREE.PointLight(0xffc98a, 0.9, 13, 1.6); pl.position.set(x, 4.1, z); scene.add(pl); }
+  for (let row = 0; row < 3; row++) {
+    const z = -5 + row * 4.5;
+    for (let i = 0; i <= 14; i++) {
+      const x = -10.8 + i * (21.6 / 14), y = 5.7 - 0.5 * (1 - (x / 10.8) ** 2);
+      const b = put(new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffd98a })), x, y, z, scene, false);
+      bulbs.push(b);
+    }
+  }
+
+  // three pictures on the left wall; each swings open on a hinge to show a hidden tool
+  const paint = (kind) => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 200;
+    const g = c.getContext('2d');
+    if (kind === 0) {                                  // a sunset over the sea, with a little island
+      const gr = g.createLinearGradient(0, 0, 0, 200); gr.addColorStop(0, '#2f2f6b'); gr.addColorStop(0.5, '#e58fa0'); gr.addColorStop(0.62, '#ffad6b'); gr.addColorStop(0.63, '#3f6f9f'); gr.addColorStop(1, '#2d5580');
+      g.fillStyle = gr; g.fillRect(0, 0, 256, 200);
+      g.fillStyle = '#ffe0a8'; g.beginPath(); g.arc(150, 122, 22, Math.PI, 0); g.fill();
+      g.fillStyle = '#7cc05a'; g.beginPath(); g.ellipse(80, 132, 40, 10, 0, Math.PI, 0); g.fill();
+    } else if (kind === 1) {                           // a cup of coffee with heart-shaped steam
+      g.fillStyle = '#f7e9d7'; g.fillRect(0, 0, 256, 200);
+      g.fillStyle = '#c9a7f2'; g.beginPath(); g.ellipse(128, 168, 70, 14, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(80, 100); g.lineTo(176, 100); g.lineTo(166, 160); g.lineTo(90, 160); g.closePath(); g.fill();
+      g.strokeStyle = '#ffffff'; g.lineWidth = 9; g.beginPath(); g.arc(180, 122, 15, -1.3, 1.3); g.stroke();
+      g.fillStyle = '#8a5a3a'; g.beginPath(); g.ellipse(128, 102, 46, 7, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#f2b3c8';
+      const heart = (x, y, s) => { g.beginPath(); g.moveTo(x, y + s * 0.3); g.bezierCurveTo(x, y, x - s / 2, y, x - s / 2, y + s * 0.3); g.bezierCurveTo(x - s / 2, y + s * 0.6, x, y + s * 0.8, x, y + s); g.bezierCurveTo(x, y + s * 0.8, x + s / 2, y + s * 0.6, x + s / 2, y + s * 0.3); g.bezierCurveTo(x + s / 2, y, x, y, x, y + s * 0.3); g.fill(); };
+      heart(116, 30, 30); heart(146, 52, 22);
+    } else {                                           // a vase of lavender and pink flowers
+      g.fillStyle = '#e9e1f7'; g.fillRect(0, 0, 256, 200);
+      g.fillStyle = '#6878a1'; g.beginPath(); g.moveTo(104, 190); g.lineTo(152, 190); g.lineTo(162, 128); g.lineTo(94, 128); g.closePath(); g.fill();
+      g.strokeStyle = '#5aa651'; g.lineWidth = 4;
+      [[90, 50], [128, 30], [166, 52], [110, 70], [150, 74]].forEach(([x, y], i) => {
+        g.beginPath(); g.moveTo(128, 130); g.lineTo(x, y); g.stroke();
+        g.fillStyle = ['#f7b2c4', '#c9a7f2', '#ffd36b', '#ffffff', '#f2b3c8'][i];
+        for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; g.beginPath(); g.arc(x + Math.cos(a) * 9, y + Math.sin(a) * 9, 8, 0, Math.PI * 2); g.fill(); }
+      });
+    }
+    return new THREE.CanvasTexture(c);
+  };
+  const frameMat = mat(brass), nookMat = mat(0x3a2a24);
+  [[-8.6, 'whisk'], [-2.0, 'scoop'], [3.6, 'knife']].forEach(([z, tool], i) => {
+    const y = 2.3, wx = -10.92;
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.0, 1.25), nookMat), wx - 0.03, y, z, scene, false);   // the little nook behind the picture
+    const toolMesh = new THREE.Group(); toolMesh.position.set(wx + 0.07, y - 0.15, z); scene.add(toolMesh);
+    if (tool === 'scoop') {
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.36, 5), mat(0xc9c3cf)), 0, 0.1, 0, toolMesh, false).rotation.x = 1.2;
+      put(new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xc9c3cf, { side: THREE.DoubleSide })), 0, 0.02, 0.2, toolMesh, false).rotation.x = Math.PI;
+    } else if (tool === 'whisk') {
+      put(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 6), mat(0xc99260)), 0, 0.22, 0, toolMesh, false);
+      put(new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.24, 10, 1, true), mat(0xe6d6a0, { side: THREE.DoubleSide })), 0, 0.0, 0, toolMesh, false).rotation.x = Math.PI;
+    } else {
+      put(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.4), mat(0xdfe3ea)), 0, 0.1, 0.12, toolMesh, false);
+      put(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.18), mat(0x6e4232)), 0, 0.1, -0.16, toolMesh, false);
+    }
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff2a8, transparent: true, opacity: 0.25, depthWrite: false })), 0, 0.1, 0, toolMesh, false);  // a little twinkle
+    const pivot = new THREE.Group(); pivot.position.set(wx - 0.05, y, z - 0.7); scene.add(pivot);      // hinged at the wall
+    const art = new THREE.Group(); art.position.set(0.15, 0, 0.7); pivot.add(art);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.15, 1.4), frameMat), 0, 0, 0, art);                // a deep frame: the tool hides inside it
+    const pic = put(new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.94), new THREE.MeshStandardMaterial({ map: paint(i), roughness: 1 })), 0.155, 0, 0, art, false);
+    pic.rotation.y = Math.PI / 2;
+    cafeFrames.push({ x: wx, z, y, tool, pivot, toolMesh, openT: 0, ang: 0 });
+  });
+
+  // outside: lamp posts, autumn trees, a bench, a low hedge and a row of houses across the street
+  for (const [x, z] of [[-6, 9.6], [6, 9.6], [-12.5, 16], [12.5, 16]]) {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 3.2, 6), mat(0x2e2a45)), x, 1.6, z);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.4), new THREE.MeshStandardMaterial({ color: 0xffd38a, emissive: 0xffb04a, emissiveIntensity: 0.9, flatShading: true })), x, 3.4, z, scene, false);
+    put(new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.3, 4), mat(0x2e2a45)), x, 3.8, z).rotation.y = Math.PI / 4;
+    circles.push({ x, z, r: 0.25 });
+  }
+  const fall = [0xe0823a, 0xd9622f, 0xf2b04a, 0xc4532c, 0xe8a23a];
+  const autumnTree = (x, z, solid) => {
+    const g = new THREE.Group(), h = 1.4 + rand() * 0.6, s = 1.1 + rand() * 0.5, fol = mat(pick(fall));
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.26, h, 6), mat(0x6e4526)), 0, h / 2, 0, g);
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), fol), 0, h + s * 0.7, 0, g);
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(s * 0.7, 0), mat(pick(fall))), s * 0.5, h + s * 0.35, s * 0.25, g);
+    g.position.set(x, 0, z); g.rotation.y = rand() * 6; scene.add(g);
+    sway.push({ g, ph: rand() * 6 });
+    if (solid) circles.push({ x, z, r: 0.5 });
+  };
+  for (const [x, z] of [[-10.5, 11], [10.5, 11.5], [-13.4, 13.5], [13.3, 9], [-3.8, 17.9], [4.2, 17.6], [-9, 17.8], [9.5, 17.9]]) autumnTree(x, z, true);
+  for (let i = 0; i < 30; i++) {
+    const a = rand() * Math.PI * 2, r = 30 + rand() * 30, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    if (z > 20 && z < 34 && Math.abs(x) < 26) continue;              // keep the houses clear
+    autumnTree(x, z, false);
+  }
+  put(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.55), mat(0x9a6a40)), -7.5, 0.5, 13.5);
+  put(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.5, 0.08), mat(0x9a6a40)), -7.5, 0.8, 13.78, scene, false);
+  for (const s of [-1, 1]) put(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.5), mat(0x2e2a45)), -7.5 + 0.8 * s, 0.25, 13.5, scene, false);
+  boxes.push({ x0: -8.4, x1: -6.6, z0: 13.2, z1: 13.8, top: 0.55 });
+  for (let x = -14; x <= 14; x += 1.4) put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 0), mat(rand() < 0.5 ? 0x6f8a3c : 0x8a8a3c)), x, 0.4, 19.4, scene, false);
+  const houseCols = [0xf3e3c8, 0xeadbd2, 0xf0d9b5, 0xe2d6ea, 0xf4ede4];
+  for (let i = 0; i < 6; i++) {
+    const x = -22 + i * 8.8, h = 6 + rand() * 3, z = 26;
+    put(new THREE.Mesh(new THREE.BoxGeometry(8.2, h, 6), mat(houseCols[i % houseCols.length])), x, h / 2, z, scene, false);
+    const roof = put(new THREE.Mesh(new THREE.CylinderGeometry(0, 4.6, 2.2, 4, 1), mat(0x6878a1)), x, h + 1.1, z, scene, false);
+    roof.rotation.y = Math.PI / 4; roof.scale.set(1.25, 1, 0.9);
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) {
+      put(new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, 0.06), new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffb860, emissiveIntensity: 0.35, flatShading: true })), x - 2.6 + k * 2.6, 2 + r * 2.4, z - 3.03, scene, false);
+    }
+  }
+  for (const s of [-1, 1]) {                         // neighbours on either side of the cafe
+    put(new THREE.Mesh(new THREE.BoxGeometry(9, 8, 22), mat(s < 0 ? 0xeadbd2 : 0xe2d6ea)), 16 * s, 4, -3.5, scene, false);
+    const roof = put(new THREE.Mesh(new THREE.CylinderGeometry(0, 6.4, 2.4, 4, 1), mat(0x6878a1)), 16 * s, 9.2, -3.5, scene, false);
+    roof.rotation.y = Math.PI / 4; roof.scale.set(0.75, 1, 1.8);
+  }
+  // leaves: a carpet on the street, and more blowing in on the wind
+  for (let i = 0; i < 90; i++) {
+    const l = put(new THREE.Mesh(new THREE.CircleGeometry(0.11, 5), mat(pick(fall), { side: THREE.DoubleSide })), -14 + rand() * 28, 0.07, 7.8 + rand() * 11, scene, false);
+    l.rotation.set(-Math.PI / 2, 0, rand() * 6); l.scale.y = 0.6;
+  }
+  const leafGeo = new THREE.CircleGeometry(0.12, 5);
+  for (let i = 0; i < 46; i++) {
+    const m = new THREE.Mesh(leafGeo, mat(pick(fall), { side: THREE.DoubleSide })); m.scale.y = 0.6; scene.add(m);
+    const lf = { m, x: 0, y: 0, z: 0, vx: 0, vy: 0, ph: Math.random() * 6 };
+    lf.reset = first => { lf.x = -15 + Math.random() * 30; lf.z = first ? 7.6 + Math.random() * 14 : 18 + Math.random() * 8; lf.y = 0.3 + Math.random() * 4; lf.vy = -0.2 - Math.random() * 0.3; lf.vx = (Math.random() - 0.5) * 0.6; };
+    lf.reset(true); cafeLeaves.push(lf);
   }
 }
 
@@ -1367,6 +1715,7 @@ function groundAt(x, z) {
   for (const c of circles) if (c.top && Math.hypot(x - c.x, z - c.z) < c.r) return c.top;
   if (inRect(STAGE, x, z)) return STAGE.h;
   if (inRect(STEPS, x, z)) return STEPS.h;
+  if (!ISLAND) return 0;
   if (inRect(DOCK, x, z)) return DOCK.h;
   const r = Math.hypot(x, z);
   if (r < GRASS_R) return 0;
@@ -1383,11 +1732,11 @@ function waveH(x, ly, r) {
 }
 const waterY = (x, z) => -0.78 + waveH(x, -z, Math.hypot(x, z));
 function inWaterAt(x, z) {
-  if (inRect(DOCK, x, z)) return false;
+  if (!ISLAND || inRect(DOCK, x, z)) return false;
   const r = Math.hypot(x, z);
   return r > 24.3 && waterY(x, z) - seabed(r) > 0.12;
 }
-const walkable = (x, z) => Math.hypot(x, z) < SEA_R || inRect(DOCK, x, z);
+const walkable = (x, z) => CAFE ? inRect(CAFE_IN, x, z) || inRect(CAFE_OUT, x, z) : Math.hypot(x, z) < SEA_R || inRect(DOCK, x, z);
 const R = 0.42;
 function resolve(p, y = 0) {
   for (const c of circles) {
@@ -1419,7 +1768,7 @@ const store = {
 /* ---------- metrics (GoatCounter) ----------
    Counts visits and anonymous events for Poetry and Places' private dashboard. Nothing is sent until
    GOATCOUNTER below is filled in. It never sends names, chat text, room codes or anything personal. */
-const GOATCOUNTER = '';                 // your GoatCounter site code, e.g. 'poetryandplaces' → https://poetryandplaces.goatcounter.com
+const GOATCOUNTER = 'poetryandplaces';                 // your GoatCounter site code, e.g. 'poetryandplaces' → https://poetryandplaces.goatcounter.com
 const gcQueue = [], gcOnce = new Set();
 function track(name, once) {
   if (!GOATCOUNTER) return;
@@ -1457,8 +1806,8 @@ pvCam.position.set(0, 1.55, 4.6); pvCam.lookAt(0, 0.75, 0);
 pvScene.add(new THREE.HemisphereLight(0xfff0d8, 0x8fb57a, 0.85));
 const pvSun = new THREE.DirectionalLight(0xffe2b8, 0.8); pvSun.position.set(2.5, 5, 3); pvSun.castShadow = true;
 pvSun.shadow.mapSize.set(1024, 1024); pvScene.add(pvSun);
-put(new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 0.3, 14), mat(0x7cc05a)), 0, 0, 0, pvScene, false);
-put(new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.4, 0.2, 14), mat(0xf0d9a4)), 0, -0.18, 0, pvScene, false);
+put(new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 0.3, 14), mat(CAFE ? 0xbf8d5e : 0x7cc05a)), 0, 0, 0, pvScene, false);   // a little wooden floor in the cafe
+put(new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.4, 0.2, 14), mat(CAFE ? 0x6e4232 : 0xf0d9a4)), 0, -0.18, 0, pvScene, false);
 for (let i = 0; i < 7; i++) {
   const a = i / 7 * Math.PI * 2 + 0.4;
   put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.07, 0), mat(petal[i % petal.length])), Math.cos(a) * 0.95, 0.2, Math.sin(a) * 0.95, pvScene, false);
@@ -1512,15 +1861,19 @@ lobbyCard.addEventListener('submit', e => {
   lastPres = '';
   if (!joined) {
     joined = true;
-    pos.x = (Math.random() - 0.5) * 4; pos.z = 8 + Math.random() * 2;
+    if (CAFE) { pos.x = (Math.random() - 0.5) * 3; pos.z = 4.4 + Math.random(); }   // just inside the cafe door
+    else { pos.x = (Math.random() - 0.5) * 4; pos.z = 8 + Math.random() * 2; }
     camLook.set(pos.x, 1, pos.z);
     me.root.rotation.y = Math.PI;
-    track(isLobby ? 'joined/main-lobby' : 'joined/private-island', true); track('critter/' + k, true);
+    track(isLobby ? 'joined/main-lobby' : 'joined/private-' + WORLD, true); track('critter/' + k, true);
     [5, 15, 30, 60].forEach(m => setTimeout(() => track('stayed/' + m + '-min', true), m * 60000));
     if (!store.get('cove-helped')) { store.set('cove-helped', '1'); setTimeout(() => toggleHelp(true), 600); }
-    addLine('', 'Welcome, ' + myName + '. Tap Invite to copy this island’s link for friends, and turn your mic on to talk.', true);
+    if (CAFE) {
+      addLine('', 'Welcome to the Cozy Cafe, ' + myName + '. Tap Invite to copy this cafe’s link for friends, and turn your mic on to talk.', true);
+      addLine('', 'Psst: tools are hidden behind the pictures on the wall. Press F by a picture to peek, then make coffee, matcha or a sandwich at the counter. The stage is at the back. Bundle up if you go outside, the autumn wind is strong!', true);
+    } else addLine('', 'Welcome, ' + myName + '. Tap Invite to copy this island’s link for friends, and turn your mic on to talk.', true);
   }
-  wakeAudio(); loadSounds(); startSurf();
+  wakeAudio(); loadSounds(); startSurf(); if (CAFE) startWind();
   setChatMin(store.get('cove-chatmin') === '1');
   if (musicOn && music.paused) music.play().catch(() => { musicOn = false; renderMusic(); });
   sendPresence(true);
@@ -1885,10 +2238,10 @@ const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://nostr-pub.wellor
 
 const WORDS_A = ['mossy', 'sunny', 'velvet', 'amber', 'misty', 'lilac', 'cozy', 'salty', 'quiet', 'golden', 'dewy', 'starry', 'breezy', 'honey', 'sandy', 'mellow'];
 const WORDS_B = ['lantern', 'tide', 'stanza', 'harbor', 'meadow', 'shell', 'verse', 'cove', 'pebble', 'willow', 'dune', 'sonnet', 'reef', 'clover', 'haiku', 'lagoon'];
-function newRoomId() {
+function newRoomId(world) {
   const r = new Uint32Array(3); crypto.getRandomValues(r);
   const tail = Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
-  return WORDS_A[r[0] % WORDS_A.length] + '-' + WORDS_B[r[1] % WORDS_B.length] + '-' + tail;
+  return (world === 'cafe' ? 'cafe-' : '') + WORDS_A[r[0] % WORDS_A.length] + '-' + WORDS_B[r[1] % WORDS_B.length] + '-' + tail;
 }
 function readRoomId() {
   const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash);
@@ -1900,13 +2253,22 @@ let roomId = readRoomId() || LOBBY;
 const isLobby = roomId === LOBBY;
 const inviteUrl = () => location.origin + location.pathname + (isLobby ? '' : '#room=' + roomId);
 window.addEventListener('hashchange', () => { if ((readRoomId() || LOBBY) !== roomId) location.reload(); });
-document.getElementById('roomName').textContent = isLobby ? 'Main lobby' : 'Private island';
+const WORLD_NAME = { island: 'island', cafe: 'cafe' };
+document.getElementById('roomName').textContent = isLobby ? 'Main lobby' : 'Private ' + WORLD_NAME[WORLD];
 document.getElementById('roomDesc').textContent = isLobby ? 'Open to everyone, any time. Just share the link.' : 'Only people with this link can find it.';
-document.getElementById('roomTag').textContent = isLobby ? 'Main lobby' : 'Private island · ' + roomId;
-document.getElementById('newRoomBtn').textContent = isLobby ? 'Make a private island instead' : 'Make a new private island';
+document.getElementById('roomTag').textContent = isLobby ? 'Main lobby' : (CAFE ? 'Cozy Cafe · ' : 'Private island · ') + roomId;
+document.getElementById('newRoomLbl').textContent = isLobby ? 'Or make a private room:' : 'Make a new private room:';
 const lobbyRoomBtn = document.getElementById('lobbyRoomBtn');
 lobbyRoomBtn.hidden = isLobby;
-track(isLobby ? 'visit/main-lobby' : 'visit/private-island', true);
+if (CAFE) {                                   // the cafe's own words on the entrance card and the title sign
+  document.title = 'Cozy Cafe · Couplet Cove';
+  document.getElementById('lobbyTitle').textContent = 'Cozy Cafe';
+  document.querySelector('#title h1').textContent = 'Cozy Cafe';
+  document.querySelector('#titleMore p').textContent = 'Sip, chat, and walk up to the microphone on the stage at the back to read.';
+  document.querySelector('#lobbyCard .lead').textContent = 'Pick a critter, write your name on the tag, and step inside. This cafe is private, just for people with the link.';
+  document.getElementById('enterBtn').textContent = 'Step inside';
+}
+track(isLobby ? 'visit/main-lobby' : 'visit/private-' + WORLD, true);
 lobbyRoomBtn.addEventListener('click', () => { location.href = location.origin + location.pathname; });
 
 const roomLink = document.getElementById('roomLink');
@@ -1924,7 +2286,11 @@ async function copyInvite(btn, label) {
 }
 document.getElementById('copyLobbyBtn').addEventListener('click', e => copyInvite(e.currentTarget, 'Copy'));
 document.getElementById('inviteBtn').addEventListener('click', e => { copyInvite(e.currentTarget, 'Invite'); canvas.focus(); });
-document.getElementById('newRoomBtn').addEventListener('click', () => { track('private-island/created'); location.hash = 'room=' + newRoomId(); });
+document.querySelectorAll('.worldBtn').forEach(b => b.addEventListener('click', () => {
+  const w = b.dataset.world; if (w !== 'island' && w !== 'cafe') return;      // the castle isn't open yet
+  track('private-room/created-' + w);
+  location.hash = 'room=' + newRoomId(w);
+}));
 
 let room = null, actPres = null, actChat = null, actPoem = null;
 let lastPres = '', presT = 0, keepT = 0, roomReadyAt = Infinity;
@@ -1981,7 +2347,7 @@ function applyPresence(c, pr) {
   c.mic = pr.mic === 1;
   if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
-  c.net = pr.nt === 1; c.rod = pr.fr === 1; c.cook = pr.ck === 'fish' || pr.ck === 'smore' ? pr.ck : ''; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
+  c.net = pr.nt === 1; c.rod = pr.fr === 1; c.cook = pr.ck === 'fish' || pr.ck === 'smore' || HELD[pr.ck] === 1 ? pr.ck : ''; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
   if (typeof pr.n === 'string') c.n = cleanName(pr.n);
   if (typeof pr.k === 'string' && KINDS[pr.k]) c.set(pr.k);
   if (c.fresh && c.hasPos) {
@@ -2274,7 +2640,7 @@ function sfxDest() {
 /* --- ocean sounds: waves that swell with the visible surf, louder near the shore --- */
 let surf = null;
 function startSurf() {
-  const ctx = audioCtx(); if (!ctx || surf) return;
+  const ctx = audioCtx(); if (!ctx || surf || !ISLAND) return;
   try {
     const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     let last = 0;
@@ -2287,7 +2653,7 @@ function startSurf() {
 }
 let fireLoop = null;
 function startFireLoop() {
-  const ctx = audioCtx(), buf = soundBufs.fire; if (!ctx || !buf || fireLoop) return;
+  const ctx = audioCtx(), buf = soundBufs.fire; if (!ctx || !buf || fireLoop || !ISLAND) return;
   try {
     const src = ctx.createBufferSource(), g = ctx.createGain();
     src.buffer = buf; src.loop = true; src.loopStart = 0.06; src.loopEnd = buf.duration - 0.06;
@@ -2563,6 +2929,7 @@ for (let i = 0; i < 46; i++) {
   const a = Math.random() * Math.PI * 2, r = 3 + Math.random() * 16;
   flies.push({ s, hx: Math.cos(a) * r, hy: 0.5 + Math.random() * 2.2, hz: Math.sin(a) * r, ph: Math.random() * 6, sp: 0.6 + Math.random() * 0.8, bl: 0.7 + Math.random() * 1.1, caughtUntil: 0 });
 }
+if (!ISLAND) { flies.forEach(f => scene.remove(f.s)); flies.length = 0; }
 function tickFlies() {
   const amp = reduceMotion ? 0.2 : 1, n = nowMs();
   for (const f of flies) {
@@ -2588,7 +2955,7 @@ const ITEMS = {
 };
 const LOOT = [['net', 20], ['rod', 22], ['bow', 16], ['partyhat', 16], ['crown', 13], ['beret', 13]];
 const bag = (() => {
-  const b = { items: {}, head: '', hand: '', flies: 0, fish: {}, snacks: {} };
+  const b = { items: {}, head: '', hand: '', flies: 0, fish: {}, snacks: {}, tools: {} };
   try {
     const s = JSON.parse(store.get('cove-bag') || '{}');
     if (s && typeof s === 'object') {
@@ -2599,6 +2966,7 @@ const bag = (() => {
       if (s.fish && typeof s.fish === 'object') for (const k of ['perch', 'minnow', 'trout', 'koi']) if (isInt(s.fish[k], 1, 999)) b.fish[k] = s.fish[k];
       if (s.snacks && typeof s.snacks === 'object') for (const k of ['marsh', 'cracker', 'choc']) if (isInt(s.snacks[k], 1, 99)) b.snacks[k] = s.snacks[k];
       b.flies = isInt(s.flies, 0, 20) ? s.flies : 0;
+      if (s.tools && typeof s.tools === 'object') for (const k of ['scoop', 'whisk', 'knife']) if (s.tools[k] === 1) b.tools[k] = 1;
     }
   } catch (e) {}
   return b;
@@ -2793,6 +3161,7 @@ for (let i = 0; i < 14; i++) {
   const f = rollFish(), m = makeFishMesh(f.color); scene.add(m);
   swimmers.push({ m, r: 25 + Math.random() * 7, a: Math.random() * Math.PI * 2, sp: (0.08 + Math.random() * 0.1) * (Math.random() < 0.5 ? -1 : 1), ph: Math.random() * 6, jumpT: 0, nextJump: 4 + Math.random() * 14 });
 }
+if (!ISLAND) { swimmers.forEach(s => scene.remove(s.m)); swimmers.length = 0; }
 function tickSwimmers(dt) {
   for (const s of swimmers) {
     s.a += s.sp * dt;
@@ -2843,6 +3212,7 @@ function rodTip(c) {
   return tipV.set(p.x + Math.sin(a) * 0.75 + Math.cos(a) * 0.4, p.y + 1.45, p.z + Math.cos(a) * 0.75 - Math.sin(a) * 0.4);
 }
 function waterAhead() {
+  if (!ISLAND) return null;
   const a = me.root.rotation.y;
   for (const d of [3.4, 2.6, 4.3, 1.8]) {
     const x = pos.x + Math.sin(a) * d, z = pos.z + Math.cos(a) * d;
@@ -2862,7 +3232,7 @@ function fishLeap(x, z, who, f) {
 function castLine() {
   if (!me.rod || fishing || !joined || lobbyOpen || digT > 0) return false;
   const tgt = waterAhead();
-  if (!tgt) { popAt(pos.x, pos.y + 2.3, pos.z, 'Face the water to cast', ''); return true; }
+  if (!tgt) { popAt(pos.x, pos.y + 2.3, pos.z, ISLAND ? 'Face the water to cast' : 'No fish in here! Try the island.', ''); return true; }
   fishing = { phase: 'cast', t: 0, x: tgt.x, z: tgt.z, wait: 0.8 + Math.random() * 1.6 };
   me.castT = 0.45;
   noiseBurst(0.22, 'bandpass', 1200, 0.1);
@@ -3022,6 +3392,7 @@ function tickCooking(dt) {
 // the roasting stick (everyone sees it); the marshmallow or fish browns as it cooks
 const stickGeo = new THREE.CylinderGeometry(0.018, 0.022, 1.1, 5);
 function makeStick(type) {
+  if (HELD[type]) return makeHeld(type);
   const g = new THREE.Group();
   const st = put(new THREE.Mesh(stickGeo, mat(0x8a5a38)), 0, 0, 0, g, false);
   st.position.set(0.22, 0.95, 0.55); st.rotation.x = Math.PI / 2 - 0.45;
@@ -3040,6 +3411,13 @@ const toastCol = new THREE.Color(0xc8843a);
 function tickStick(c) {
   if (!c.stickMesh) return;
   const food = c.stickMesh.userData.food;
+  if (c.stickMesh.userData.held) {                       // a cup or sandwich: bob along, lift it up for a sip now and then
+    c.sipT = Math.max(0, (c.sipT || 0) - 1 / 60);
+    const sip = c === me ? Math.sin(Math.min(1, c.sipT / 0.7) * Math.PI) : Math.max(0, Math.sin((t + c.stickMesh.userData.ph) * 2.6)) ** 8;
+    food.position.set(0.3 - sip * 0.18, 0.78 + sip * 0.38 + Math.sin(t * 3) * 0.015, 0.38 + sip * 0.1);
+    food.rotation.x = -sip * 0.6;
+    return;
+  }
   const k = c === me && cooking ? Math.min(1, cooking.t / cooking.dur) : 0.6;
   food.traverse(o => { if (o.material && o.material.color && o.material.userData) { if (!o.material.userData.raw) o.material.userData.raw = o.material.color.clone(); o.material.color.copy(o.material.userData.raw).lerp(toastCol, k * 0.75); } });
   food.position.y = 1.18 + Math.sin(t * 3) * 0.02;
@@ -3081,6 +3459,192 @@ function openJar() {
 function closeJar() { jarView.hidden = true; cancelAnimationFrame(jarRAF); }
 document.getElementById('jarClose').addEventListener('click', () => { closeJar(); canvas.focus(); });
 
+/* --- the Cozy Cafe: peek behind pictures for hidden tools, make coffee, matcha and sandwiches at the
+   counter, and mind the autumn wind outside (it blows you back in through the door) --- */
+const MAKE = {
+  coffee: { verb: 'Make coffee', doing: 'Brewing', done: 'A warm latte, just for you!', first: 'Sip… so cozy.' },
+  matcha: { verb: 'Make matcha', doing: 'Whisking', done: 'A frothy matcha latte!', first: 'Sip… calm and green.' },
+  sandwich: { verb: 'Make a sandwich', doing: 'Slicing', done: 'One sandwich du jour!', first: 'Nom nom!' }
+};
+const steamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false });
+const crumbMat = new THREE.MeshBasicMaterial({ color: 0xd9a05a });
+let making = null, holding = null, windOut = false, windLoop = null, windTold = false;
+const windGust = () => 1 + 0.3 * Math.sin(t * 1.3) + 0.2 * Math.sin(t * 3.7 + 1);
+function nearFrame() {
+  if (!CAFE || pos.y > 1) return null;
+  for (const f of cafeFrames) if (pos.x - f.x < 1.7 && Math.abs(pos.z - f.z) < 1.0) return f;
+  return null;
+}
+function nearStation() {
+  if (!CAFE) return null;
+  for (const s of cafeStations) if (Math.hypot(pos.x - s.x, pos.z - s.z) < 1.15) return s;
+  return null;
+}
+function peekFrame(f, who) {
+  f.openT = 3.2;
+  const near = soundNear(who);
+  if (near > 0.02) { noiseBurst(0.4, 'lowpass', 380, 0.14 * near); chimeNotes([392, 523], 0.035 * near, 'sine', 0.1); }
+  if (who !== me) return;
+  if (actWorld) actWorld.send({ e: 'peek', i: cafeFrames.indexOf(f) }).catch(() => {});
+  if (!bag.tools[f.tool]) {
+    bag.tools[f.tool] = 1; saveBag(); renderBag(); bagBtn.classList.add('new');
+    setTimeout(() => { sfx.find(); burst(f.x + 0.5, f.y, f.z, 10, sparkMat, 0.8, 2); }, 250);
+    popAt(pos.x, pos.y + 2.3, pos.z, 'Found a ' + TOOLS[f.tool].name + '!', 'good');
+    const use = f.tool === 'scoop' ? 'make coffee at the espresso machine' : f.tool === 'whisk' ? 'make matcha at the tea station' : 'make a sandwich at the sandwich board';
+    addLine('', 'You found a ' + TOOLS[f.tool].name + ' hidden behind the picture! Now you can ' + use + ' on the counter.', true);
+    track('cafe/found-' + f.tool);
+  } else popAt(pos.x, pos.y + 2.3, pos.z, 'Just a cozy little nook', '');
+}
+function startMaking(s) {
+  if (making || !joined || lobbyOpen) return;
+  if (!bag.tools[s.tool]) {
+    popAt(pos.x, pos.y + 2.3, pos.z, 'You need a ' + TOOLS[s.tool].name, '');
+    addLine('', 'You need a ' + TOOLS[s.tool].name + ' for that. Maybe it’s hidden behind one of the pictures on the wall?', true);
+    return;
+  }
+  holding = null; me.cook = '';
+  making = { s, t: 0, dur: 2.2, tick: 0 };
+  turnToward(me.root, Math.PI / 2, 1);
+  if (actWorld) actWorld.send({ e: 'brew', i: cafeStations.indexOf(s) }).catch(() => {});
+  sendPresence(true);
+}
+function brewFx(s, tt, near) {
+  const [x, y, z] = s.steam;
+  if (near > 0.02) {
+    if (s.type === 'coffee') noiseBurst(0.28, tt < 0.9 ? 'bandpass' : 'highpass', tt < 0.9 ? 2600 : 5200, 0.07 * near, 0, 2);   // grind, then the hiss of steam
+    else if (s.type === 'matcha') noiseBurst(0.08, 'bandpass', 3200, 0.09 * near, 0, 1.2);                                      // whisk whisk whisk
+    else noiseBurst(0.07, 'lowpass', 650, 0.2 * near);                                                                           // chop chop
+  }
+  if (s.type === 'sandwich') burst(x, y, z, 2, crumbMat, 0.4, 1.3);
+  else burst(x, y + 0.1, z, 2, steamMat, 0.12, 1.1);
+}
+function slurp(v = 1) { noiseBurst(0.22, 'bandpass', 900, 0.1 * v, 0, 3); noiseBurst(0.12, 'bandpass', 1500, 0.06 * v, 0.14, 3); }
+function remotePeek(c, i) {
+  const f = cafeFrames[i], p = c.root.position;
+  if (f && Math.hypot(p.x - f.x, p.z - f.z) < 3.2) peekFrame(f, c);
+}
+function remoteBrew(c, i) {
+  const s = cafeStations[i], p = c.root.position;
+  if (s && Math.hypot(p.x - s.x, p.z - s.z) < 2.5) c.brew = { s, t: 0, tick: 0 };
+}
+// the autumn wind: outside the door it pushes you back toward the shop, harder the farther out you go
+function cafeWind(dt) {
+  if (pos.z < 6.8) windOut = false;
+  if (pos.z <= 7.5) return;
+  const push = (1.8 + (pos.z - 7.5) * 0.3) * windGust() * (reduceMotion ? 0.7 : 1);
+  const dx = (CAFE_DOOR.x - pos.x) * 0.55, dz = CAFE_DOOR.z - 0.8 - pos.z, d = Math.hypot(dx, dz) || 1;
+  const next = { x: pos.x + dx / d * push * dt, z: pos.z + dz / d * push * dt };
+  resolve(next, pos.y);
+  if (walkable(next.x, next.z)) { pos.x = next.x; pos.z = next.z; }
+  if (!windOut && pos.z > 9.5) {
+    windOut = true;
+    popAt(pos.x, pos.y + 2.3, pos.z, 'Brr! The wind blows you back inside', '');
+    if (!windTold) { windTold = true; addLine('', 'Whoosh! The autumn wind outside is strong today. It keeps blowing everyone back into the cafe.', true); }
+  }
+}
+function startWind() {
+  const ctx = audioCtx(); if (!ctx || windLoop || !CAFE) return;
+  try {
+    const len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
+    const src = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf; src.loop = true; bp.type = 'bandpass'; bp.frequency.value = 500; bp.Q.value = 0.8; g.gain.value = 0;
+    src.connect(bp); bp.connect(g); g.connect(sfxDest()); src.start();
+    windLoop = { bp, g };
+  } catch (e) {}
+}
+function tickCafe(dt) {
+  if (!CAFE) return;
+  const gust = windGust();
+  for (const w of cafeWalls) {                                     // walls between you and the camera fade away
+    const want = w.behind(camera.position) ? 0.15 : 1;
+    if (Math.abs(want - w.op) < 0.004) continue;
+    w.op += (want - w.op) * Math.min(1, dt * 7);
+    if (Math.abs(want - w.op) < 0.004) w.op = want;
+    for (const m of w.mats) { m.opacity = m.userData.base * w.op; m.depthWrite = w.op > 0.97 && m.userData.base === 1; }
+  }
+  for (const f of cafeFrames) {
+    f.openT = Math.max(0, f.openT - dt);
+    f.ang += ((f.openT > 0 ? 1.25 : 0) - f.ang) * Math.min(1, dt * 7);
+    f.pivot.rotation.y = f.ang;
+    f.toolMesh.visible = !bag.tools[f.tool];
+    f.toolMesh.position.y = f.y - 0.15 + Math.sin(t * 2 + f.z) * 0.03;
+  }
+  const amp = reduceMotion ? 0.3 : 1;
+  for (const lf of cafeLeaves) {
+    lf.z -= (1.6 + gust * 1.8) * dt * amp;
+    lf.x += (lf.vx + Math.sin(t * 1.7 + lf.ph) * 0.7) * dt * amp;
+    lf.y = Math.max(0.1, lf.y + (lf.vy + Math.sin(t * 2.6 + lf.ph) * 0.5) * dt * amp);
+    if (lf.z < 7.7 || lf.x < -16 || lf.x > 16) lf.reset(false);
+    lf.m.position.set(lf.x, lf.y, lf.z);
+    lf.m.rotation.set(t * 2.2 + lf.ph, t * 3.1 + lf.ph, t + lf.ph);
+  }
+  for (const s of sway) s.g.rotation.z = Math.sin(t * 1.6 + s.ph) * 0.035 * gust * amp;
+  if (windLoop && actx) {
+    const out = smooth(6.6, 13, pos.z);
+    windLoop.g.gain.setTargetAtTime(joined ? (0.025 + 0.2 * out) * gust : 0, actx.currentTime, 0.3);
+    windLoop.bp.frequency.setTargetAtTime(320 + 420 * out * gust, actx.currentTime, 0.3);
+  }
+  // making something at the counter
+  if (making) {
+    const m = making; m.t += dt; m.tick -= dt;
+    turnToward(me.root, Math.PI / 2, Math.min(1, dt * 6));
+    if (m.tick <= 0) { m.tick = m.s.type === 'matcha' ? 0.13 : 0.3; brewFx(m.s, m.t, 1); }
+    if (!joined || lobbyOpen) { making = null; sendPresence(true); }
+    else if (m.t >= m.dur) {
+      const type = m.s.type;
+      making = null; holding = { type, t: 0, dur: 7, sips: 0 };
+      me.cook = type; sendPresence(true);
+      chimeNotes([660, 880, 1046], 0.06, 'triangle', 0.08);
+      popAt(pos.x, pos.y + 2.4, pos.z, MAKE[type].done, 'good');
+      burst(pos.x, pos.y + 1.2, pos.z, 8, sparkMat, 0.8, 2.2);
+      track('cafe/made-' + type);
+    }
+  }
+  if (holding) {
+    const h = holding; h.t += dt;
+    if (h.sips < 3 && h.t > [2.0, 4.0, 5.8][h.sips]) {
+      h.sips++; me.sipT = 0.7;
+      if (h.type === 'sandwich') { sfx.crunch(0.9); setTimeout(() => sfx.crunch(0.7), 220); burst(pos.x, pos.y + 1, pos.z, 4, crumbMat, 0.5, 1.4); }
+      else slurp();
+      if (h.sips === 1) popAt(pos.x, pos.y + 2.3, pos.z, MAKE[h.type].first, '');
+    }
+    if (h.t >= h.dur || lobbyOpen) {
+      holding = null; me.cook = ''; sendPresence(true);
+      if (!lobbyOpen) popAt(pos.x, pos.y + 2.1, pos.z, '♥', 'heart');
+    }
+  }
+  for (const c of remotes.values()) {                              // other people making things nearby
+    if (!c.brew) continue;
+    const b = c.brew; b.t += dt; b.tick -= dt;
+    if (b.tick <= 0) { b.tick = b.s.type === 'matcha' ? 0.13 : 0.3; brewFx(b.s, b.t, soundNear(c)); }
+    if (b.t > 2.2) c.brew = null;
+  }
+}
+// what you're holding: a cup of coffee, a matcha latte or a sandwich
+const HELD = { coffee: 1, matcha: 1, sandwich: 1 };
+function makeHeld(type) {
+  const g = new THREE.Group(), item = new THREE.Group();
+  if (type === 'sandwich') {
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.22), mat(0xe8c48a)), 0, 0, 0, item, false);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.03, 0.24), mat(0x86c862)), 0, 0.045, 0, item, false);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.03, 0.2), mat(0xe8584a)), 0, 0.075, 0, item, false);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.025, 0.22), mat(0xffd36b)), 0, 0.1, 0, item, false);
+    put(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.22), mat(0xe8c48a)), 0, 0.14, 0, item, false);
+  } else {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.08, 0.2, 10), mat(0xffffff)), 0, 0, 0, item, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.02, 10), mat(type === 'matcha' ? 0x9fcf6a : 0xb07a4a)), 0, 0.095, 0, item, false);
+    put(new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.015, 4, 8), mat(0xffffff)), 0.12, 0.01, 0, item, false);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.05, 10), mat(type === 'matcha' ? 0x5aa651 : 0xc9a7f2)), 0, -0.02, 0, item, false);
+    put(new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.012, 4, 8), mat(0xffffff)), 0, 0.12, 0, item, false).rotation.x = Math.PI / 2;   // a little latte-art swirl
+  }
+  item.position.set(0.3, 0.78, 0.38);
+  g.add(item);
+  g.userData.food = item; g.userData.held = true; g.userData.ph = Math.random() * 3;
+  return g;
+}
+
 /* --- bag panel --- */
 const bagBtn = document.getElementById('bagBtn'), bagPanel = document.getElementById('bagPanel'), bagList = document.getElementById('bagList');
 function renderBag() {
@@ -3088,7 +3652,7 @@ function renderBag() {
   const owned = Object.keys(ITEMS).filter(k => bag.items[k]);
   if (!owned.length) {
     const p = document.createElement('p'); p.className = 'bagEmpty';
-    p.textContent = 'Your bag is empty. Walk up to a rock on the grass and press F (or tap Dig) to dig for treasure, like a fishing rod or a party hat.';
+    p.textContent = CAFE ? 'No treasure yet. On the island, dig under rocks on the grass to find things like a fishing rod or a party hat.' : 'Your bag is empty. Walk up to a rock on the grass and press F (or tap Dig) to dig for treasure, like a fishing rod or a party hat.';
     bagList.append(p);
   }
   for (const id of owned) {
@@ -3120,6 +3684,15 @@ function renderBag() {
     const detail = document.createElement('small');
     detail.textContent = ['marsh', 'cracker', 'choc'].map(k => SNACKS[k] + ' ×' + (bag.snacks[k] || 0)).join(' · ') + '. Cook them at the campfire.';
     row.append(sd, ss, detail); bagList.append(row);
+  }
+  const tools = Object.keys(TOOLS).filter(k => bag.tools[k]);
+  if (tools.length || CAFE) {
+    const row = document.createElement('div'); row.className = 'bagRow jar';
+    const td = document.createElement('i'); td.style.background = '#c98a5a';
+    const ts = document.createElement('span'); ts.textContent = 'Cafe tools: ' + tools.length + ' of 3';
+    const detail = document.createElement('small');
+    detail.textContent = tools.length ? tools.map(k => TOOLS[k].name[0].toUpperCase() + TOOLS[k].name.slice(1)).join(' · ') + (tools.length < 3 ? '. More are hidden behind the cafe pictures.' : '. Use them at the cafe counter.') : 'Peek behind the pictures in the cafe to find them.';
+    row.append(td, ts, detail); bagList.append(row);
   }
   const nFish = Object.values(bag.fish).reduce((a, v) => a + v, 0);
   if (nFish || bag.items.rod) {
@@ -3471,6 +4044,8 @@ function hookWorld(T) {
     else if (data.e === 'swing') c.swingT = 0.45;
     else if (data.e === 'yt' || data.e === 'file' || data.e === 'mstop') onStageWorld(c, data);
     else if (data.e === 'fish') remoteCatch(c, data);
+    else if (data.e === 'peek' && CAFE && isInt(data.i, 0, cafeFrames.length - 1)) remotePeek(c, data.i);
+    else if (data.e === 'brew' && CAFE && isInt(data.i, 0, cafeStations.length - 1)) remoteBrew(c, data.i);
     else if (data.e === 'clap' && nowMs() - (c.lastClap || 0) > 1000) {      // hear the crowd, louder when you're close
       c.lastClap = nowMs();
       const p = c.root.position, d = Math.hypot(p.x - pos.x, p.z - pos.z);
@@ -3521,12 +4096,19 @@ function applaud() {
 /* --- context button (dig / swing net) and the per-frame world tick --- */
 const ctxBtn = document.getElementById('ctxBtn');
 let ctxMode = '';
-ctxBtn.addEventListener('click', () => { if (ctxMode === 'dig') startDig(); else if (ctxMode === 'net') swingNet(); else if (ctxMode === 'fish' || ctxMode === 'cook') onActionKey(); canvas.focus(); });
-function onActionKey() { if (fishing) return fishPress(); if (cooking) return; if (startDig()) return; if (nearFire() && joined && !lobbyOpen) return toggleCookMenu(); if (me.rod) castLine(); else swingNet(); }
+ctxBtn.addEventListener('click', () => { if (ctxMode === 'dig') startDig(); else if (ctxMode === 'net') swingNet(); else if (ctxMode === 'fish' || ctxMode === 'cook' || ctxMode === 'peek' || ctxMode === 'make') onActionKey(); canvas.focus(); });
+function cafeAction() {
+  if (!CAFE || !joined || lobbyOpen) return false;
+  if (making) return true;
+  const f = nearFrame(); if (f) { if (f.openT <= 0.4) peekFrame(f, me); return true; }
+  const s = nearStation(); if (s) { startMaking(s); return true; }
+  return false;
+}
+function onActionKey() { if (cafeAction()) return; if (fishing) return fishPress(); if (cooking) return; if (startDig()) return; if (nearFire() && joined && !lobbyOpen) return toggleCookMenu(); if (me.rod) castLine(); else swingNet(); }
 let crackleT = 0;
 function tickWorld(dt) {
   const active = joined && !lobbyOpen;
-  tickPrints(dt); tickApples(dt); tickSwarms(dt); tickFlies(); tickFire(dt); tickDig(dt); tickSurf(); tickFireSound(); tickCooking(dt);
+  tickPrints(dt); tickApples(dt); tickSwarms(dt); tickFlies(); tickFire(dt); tickDig(dt); tickSurf(); tickFireSound(); tickCooking(dt); tickCafe(dt);
   if (stungT > 0) { stungT -= dt; if (stungT <= 0) { stungT = 0; sendPresence(true); addLine('', 'The bee sting feels better now.', true); } }
   me.stung = stungT > 0; me.digging = digT > 0;
   // campfire crackle when you're close
@@ -3557,10 +4139,14 @@ function tickWorld(dt) {
   if (askNow && nowMs() > askNow.until) { askNow = null; askCard.hidden = true; showNextAsk(); }
   // dig / net context button
   const rock = active && digT <= 0 ? nearRock() : null;
-  ctxMode = fishing ? 'fish' : cooking ? 'cooking' : rock ? 'dig' : active && nearFire() ? 'cook' : (active && me.net ? 'net' : (active && me.rod && waterAhead() ? 'fish' : ''));
+  const frameNear = active && !making ? nearFrame() : null, stationNear = active && !making && !frameNear ? nearStation() : null;
+  ctxMode = making ? 'making' : frameNear ? 'peek' : stationNear ? 'make' : fishing ? 'fish' : cooking ? 'cooking' : rock ? 'dig' : active && nearFire() ? 'cook' : (active && me.net ? 'net' : (active && me.rod && waterAhead() ? 'fish' : ''));
   ctxBtn.hidden = !ctxMode || digT > 0;
   if (!active || !nearFire()) cookMenu.hidden = true;
-  if (ctxMode) ctxBtn.textContent = ctxMode === 'cooking' ? (cooking.t < cooking.dur ? 'Roasting… ' + Math.round(cooking.t / cooking.dur * 100) + '%' : 'Yum!') : ctxMode === 'cook' ? 'Cook (F)' : ctxMode === 'dig' ? 'Dig here (F)' : ctxMode === 'net' ? 'Swing net (F)'
+  if (ctxMode === 'making') ctxBtn.textContent = MAKE[making.s.type].doing + '… ' + Math.round(making.t / making.dur * 100) + '%';
+  else if (ctxMode === 'peek') ctxBtn.textContent = 'Peek behind (F)';
+  else if (ctxMode === 'make') ctxBtn.textContent = MAKE[stationNear.type].verb + ' (F)';
+  else if (ctxMode) ctxBtn.textContent = ctxMode === 'cooking' ? (cooking.t < cooking.dur ? 'Roasting… ' + Math.round(cooking.t / cooking.dur * 100) + '%' : 'Yum!') : ctxMode === 'cook' ? 'Cook (F)' : ctxMode === 'dig' ? 'Dig here (F)' : ctxMode === 'net' ? 'Swing net (F)'
     : !fishing ? 'Cast (F)' : fishing.phase === 'bite' ? 'Reel in! (F)' : fishing.phase === 'reel' ? 'Stop! (F)' : 'Wait for a bite…';
   tickFishing(dt);
 }
@@ -3603,7 +4189,7 @@ function update(dt) {
   const il = Math.hypot(ix, iz); if (il > 1) { ix /= il; iz /= il; }
   runNow = active && (keys.has('ShiftLeft') || keys.has('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.92);
   const swimming = inWaterAt(pos.x, pos.z);
-  if (digT > 0 || cooking) { ix = 0; iz = 0; }          // hold still while digging or roasting
+  if (digT > 0 || cooking || making) { ix = 0; iz = 0; }          // hold still while digging or roasting
   const speed = (runNow ? 8 : 4.6) * (swimming ? 0.6 : 1) * (stungT > 0 ? 0.8 : 1);
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
   const dx = (rx * ix + fx * iz) * speed * dt, dz = (rz * ix + fz * iz) * speed * dt;
@@ -3627,6 +4213,7 @@ function update(dt) {
     pos.x -= pos.x / r * pull * dt; pos.z -= pos.z / r * pull * dt;
   }
 
+  if (CAFE && active) cafeWind(dt);
   if (wantHop && grounded && active && digT <= 0) { vy = 7.6; grounded = false; hopBase = pos.y; tryShake(); }   // peaks about 1.3 units up, clears the logs
   wantHop = false;
   const wasAir = !grounded;
@@ -3696,6 +4283,7 @@ function update(dt) {
   camera.lookAt(camLook);
 
   const amp = reduceMotion ? 0.03 : 1;
+  if (ISLAND) {
   const wp = waterGeo.attributes.position;
   for (let i = 0; i < wp.count; i++) {
     const x = wBase[i * 3], y = wBase[i * 3 + 1];
@@ -3713,6 +4301,7 @@ function update(dt) {
     const big = (0.25 + smooth(27, 50, c.r) * 1.6) * amp;
     c.mesh.position.y = -0.78 + big * (0.22 * Math.sin(c.r * 0.35 + t * 1.6) + 0.24) + 0.04;
     c.mesh.material.opacity = 0.85 * (1 - smooth(40, 47, c.r)) * smooth(24.4, 27.5, c.r) + 0.15 * (1 - smooth(25.5, 28, c.r)) * smooth(24.4, 25.5, c.r);
+  }
   }
   for (const c of clouds) { c.g.position.x += c.v * dt * amp; if (c.g.position.x > 130) c.g.position.x = -130; }
   for (const tr of trees) {
