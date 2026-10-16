@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Trailer Studio · Couplet Cove</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Lexend:wght@400;600;700&display=swap">
+<style>
+  :root { --ink: #2e2a45; --paper: #fbf9fe; --lav: #eee7f8; --plank: #7a68a1; --plank-dark: #6878a1; --muted: #6b6585; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #1f1c2e; color: var(--paper); font-family: "Lexend", system-ui, sans-serif; }
+  header { padding: 18px 24px 6px; }
+  h1 { margin: 0; font: 700 1.6rem "Fraunces", serif; color: var(--lav); }
+  header p { margin: 4px 0 0; color: #b9b3d1; font-size: .88rem; }
+  main { display: grid; grid-template-columns: 330px 1fr; gap: 20px; padding: 14px 24px 24px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background: #2b2740; border: 2px solid #3d3858; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  label.row { display: flex; flex-direction: column; gap: 5px; font-size: .78rem; font-weight: 700; color: #c9c3e0; letter-spacing: .03em; text-transform: uppercase; }
+  select { font: 600 .92rem "Lexend", sans-serif; padding: 8px 10px; border-radius: 10px; border: 2px solid #4a4468; background: #1f1c2e; color: var(--paper); }
+  .checks { display: flex; gap: 14px; flex-wrap: wrap; font-size: .86rem; }
+  .checks label { display: flex; gap: 6px; align-items: center; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { font: 700 .9rem "Lexend", sans-serif; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; background: var(--lav); color: var(--ink); }
+  button.rec { background: #e8584a; color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  #status { font-size: .85rem; color: #c9c3e0; min-height: 2.4em; line-height: 1.4; }
+  #bar { height: 8px; background: #1f1c2e; border-radius: 99px; overflow: hidden; }
+  #bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #c9a7f2, #f7b2c4); }
+  #downloads a { display: block; color: #c9f2a0; font-weight: 700; margin-top: 6px; word-break: break-all; }
+  .about { font-size: .8rem; color: #a9a2c4; line-height: 1.45; }
+  .about b { color: var(--lav); }
+  #stage { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  #out { background: #000; border-radius: 10px; max-width: 100%; max-height: 72vh; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+  #feeds { display: flex; gap: 10px; align-items: flex-start; }
+  .feed { position: relative; overflow: hidden; border-radius: 6px; border: 2px solid #3d3858; background: #000; }
+  .feed iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; }
+  .feed span { position: absolute; left: 4px; bottom: 2px; font-size: .6rem; color: #fff; text-shadow: 0 1px 2px #000; }
+  #shotList { font-size: .78rem; color: #b9b3d1; margin: 0; padding-left: 18px; max-height: 180px; overflow: auto; }
+  #shotList li.now { color: #c9f2a0; font-weight: 700; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trailer Studio</h1>
+  <p>Private to Poetry and Places. This page isn’t linked anywhere and search engines are asked not to list it.</p>
+</header>
+<main>
+  <section class="panel">
+    <label class="row">Trailer
+      <select id="pick">
+        <option value="t1">1 · Somewhere to gather (a vague teaser, ~30s)</option>
+        <option value="t2">2 · Take the mic (the open mic, ~35s)</option>
+        <option value="t3">3 · Everything (every feature, ~90s)</option>
+      </select>
+    </label>
+    <label class="row">Format
+      <select id="fmt">
+        <option value="wide">Widescreen 16:9 (1920×1080) · YouTube, website</option>
+        <option value="tall">Vertical 9:16 (1080×1920) · Reels, TikTok, Shorts</option>
+      </select>
+    </label>
+    <label class="row">Music
+      <select id="music">
+        <option value="auto">Pick for me</option>
+        <option value="music.mp3">Island bossa nova</option>
+        <option value="cafe-music.mp3">Cafe lofi (Rose Water)</option>
+        <option value="castle-music.mp3">Castle fairy tale</option>
+        <option value="">No music</option>
+      </select>
+    </label>
+    <div class="checks">
+      <label><input type="checkbox" id="sfx" checked> Sound effects</label>
+      <label><input type="checkbox" id="tags" checked> Name tags</label>
+    </div>
+    <div class="btns">
+      <button id="preview" type="button">Preview</button>
+      <button id="record" type="button" class="rec">● Record &amp; download</button>
+      <button id="stop" type="button" disabled>Stop</button>
+    </div>
+    <div id="bar"><i></i></div>
+    <div id="status">Pick a trailer, then Preview or Record.</div>
+    <div id="downloads"></div>
+    <ol id="shotList"></ol>
+    <p class="about"><b>How it works:</b> each shot opens the real Couplet Cove in a little window (the feeds under the preview) in trailer mode: scripted critters act out the scene offline, so nobody online ever sees them. This page films those windows, adds the titles and music, and saves a video. Keep this tab in front while it records. Chrome or Edge works best.</p>
+  </section>
+  <section id="stage">
+    <canvas id="out" width="1920" height="1080"></canvas>
+    <div id="feeds">
+      <div class="feed"><iframe id="ifA" title="Shot A" allow="autoplay"></iframe><span>feed A</span></div>
+      <div class="feed"><iframe id="ifB" title="Shot B" allow="autoplay"></iframe><span>feed B</span></div>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+/* ---------- the trailers: shots in order, from vague to exact ----------
+   A shot is either a title card, or a scene filmed in the game. Scenes are defined in index.html
+   (TR_SCENES); "from" starts partway into a scene. */
+const URL_LINE = 'openmic.poetryandplaces.org';
+const LAUNCH = ['October 24 · 4:00 pm PT', 'at the Poetry and Places Obsession Open Mic'];
+const PRESENTS = { presents: true, dur: 3.6 };
+const TAGLINE = { card: ['Somewhere between', 'a poem and a place…'], dur: 4 };
+const END_CARD = { card: ['Couplet Cove'], sub: [URL_LINE, 'Opens ' + LAUNCH[0], LAUNCH[1]], dur: 6 };
+const TRAILERS = {
+  t1: { name: 'Somewhere to gather', music: 'castle-music.mp3', bars: true, shots: [
+    PRESENTS,
+    TAGLINE,
+    { scene: 'island-tour', world: 'island', from: 0, dur: 6, blur: 7, caption: 'an island at golden hour' },
+    { scene: 'cafe-tour', world: 'cafe', from: 2, dur: 5.5, blur: 7, caption: 'a cafe that smells like coffee' },
+    { scene: 'castle-tour', world: 'castle', from: 0, dur: 5.5, blur: 7, caption: 'a castle above the clouds' },
+    { scene: 'open-mic', world: 'island', from: 4.4, dur: 6, blur: 4, caption: 'and a stage, waiting for your words' },
+    { card: ['Couplet Cove'], sub: LAUNCH, dur: 6 }
+  ] },
+  t2: { name: 'Take the mic', music: 'cafe-music.mp3', bars: false, shots: [
+    PRESENTS,
+    TAGLINE,
+    { scene: 'open-mic', world: 'island', from: 0, dur: 27.5, captions: [
+      { t: 0.6, d: 3.6, text: 'Gather with friends, from anywhere' },
+      { t: 4.6, d: 4.4, text: 'Step up to the mic' },
+      { t: 10, d: 4.4, text: 'Everyone hears you, live' },
+      { t: 15, d: 4.4, text: 'Your words, your spotlight' },
+      { t: 20.2, d: 4.6, text: 'and the room cheers you on' }
+    ] },
+    END_CARD
+  ] },
+  t3: { name: 'Everything', music: 'music.mp3', bars: false, shots: [
+    PRESENTS,
+    { card: ['Couplet Cove'], sub: ['an online home for open mics'], dur: 3.5 },
+    { scene: 'island-tour', world: 'island', from: 4, dur: 5, caption: 'Meet up on a cozy island' },
+    { scene: 'island-fun', world: 'island', from: 0, dur: 7.5, caption: 'Talk on your mic. Chat in bubbles.' },
+    { scene: 'open-mic', world: 'island', from: 8, dur: 6.5, caption: 'Read at the open mic' },
+    { scene: 'island-fun', world: 'island', from: 8.4, dur: 5.5, caption: 'Go fishing' },
+    { scene: 'island-fun', world: 'island', from: 14, dur: 7, caption: 'Dig for treasure. Roast s’mores.' },
+    { scene: 'island-fun', world: 'island', from: 21, dur: 7, caption: 'Catch fireflies. Share a hug.' },
+    { scene: 'cafe-tour', world: 'cafe', from: 1.5, dur: 6, caption: 'Make a private Cozy Cafe' },
+    { scene: 'cafe-fun', world: 'cafe', from: 0, dur: 5, caption: 'Find tools hidden behind the pictures' },
+    { scene: 'cafe-fun', world: 'cafe', from: 5, dur: 6, caption: 'Brew a latte' },
+    { scene: 'cafe-fun', world: 'cafe', from: 11, dur: 6.5, caption: 'Borrow a classic from the library' },
+    { scene: 'castle-tour', world: 'castle', from: 0, dur: 6, caption: 'or a Cloudy Castle' },
+    { scene: 'castle-fun', world: 'castle', from: 0.5, dur: 6.5, caption: 'Wave a wand for a feast' },
+    { scene: 'castle-fun', world: 'castle', from: 7, dur: 6, caption: 'Send letters. Catch fairies.' },
+    { scene: 'castle-fun', world: 'castle', from: 13, dur: 8, caption: 'and slide down the rainbow' },
+    END_CARD
+  ] }
+};
+
+const $ = id => document.getElementById(id);
+const out = $('out'), g = out.getContext('2d');
+const frames = [$('ifA'), $('ifB')];
+let W = 1920, H = 1080, run = null, actx = null, recDest = null, musicGain = null, sfxGain = null;
+
+function setStatus(t) { $('status').textContent = t; }
+function sizeFor(fmt) { return fmt === 'tall' ? [1080, 1920] : [1920, 1080]; }
+function layoutFeeds() {
+  const fw = 200;
+  for (const f of frames) {
+    f.style.width = W + 'px'; f.style.height = H + 'px'; f.style.transform = 'scale(' + (fw / W) + ')';
+    f.parentElement.style.width = fw + 'px'; f.parentElement.style.height = Math.round(fw * H / W) + 'px';
+  }
+}
+function sceneUrl(shot, n) {
+  const room = shot.world === 'cafe' ? 'room=cafe-trailer-take&' : shot.world === 'castle' ? 'room=castle-trailer-take&' : '';
+  return 'index.html?take=' + n + '#' + room + 'trailer=' + shot.scene + ($('tags').checked ? '' : '&tags=0');
+}
+// load a shot into a feed window, wait for the game to be ready, then fast-forward to its start
+function loadShot(shot, frame, n) {
+  shot.frame = frame; shot.ready = false; shot.failed = false;
+  frame.src = sceneUrl(shot, n);
+  const began = performance.now();
+  const check = () => {
+    if (run === null) return;
+    const w = frame.contentWindow, tr = w && w.__trailer;
+    if (tr && tr.ready) {
+      try {
+        const doc = frame.contentDocument;                       // bigger tags and bubbles so they read on video
+        doc.documentElement.style.fontSize = Math.round(Math.min(W, H) / 1080 * 32) + 'px';
+        const st = doc.createElement('style');
+        st.textContent = 'body.trailer .bubble{max-width:15em}body.trailer .tag{max-width:12em}';
+        doc.head.append(st);
+        tr.volume && tr.volume($('sfx').checked ? 1 : 0);
+        tr.prime(shot.from || 0);
+        tr.idle && tr.idle(true);
+      } catch (e) {}
+      setTimeout(() => { shot.ready = true; }, 350);
+      return;
+    }
+    if (tr && tr.error) { shot.failed = true; setStatus(tr.error); return; }
+    if (performance.now() - began > 25000) { shot.failed = true; setStatus('A shot took too long to load. Check your connection and try again.'); return; }
+    setTimeout(check, 120);
+  };
+  setTimeout(check, 300);
+}
+function nextSceneIndex(from) { for (let i = from; i < run.shots.length; i++) if (run.shots[i].scene) return i; return -1; }
+
+/* ---------- drawing ---------- */
+const logo = new Image(); logo.src = 'pp-logo-light.png';           // the Poetry and Places mark, in light lavender
+function drawPresents(local) {
+  cardBg();
+  const S = Math.min(W, H) / 1080, k = Math.min(1, local / 0.9);
+  g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const lh = 300 * S, lw = logo.naturalWidth ? lh * logo.naturalWidth / logo.naturalHeight : 0;
+  if (lw) g.drawImage(logo, W / 2 - lw / 2, H / 2 - lh * 0.9 - (1 - k) * 14 * S, lw, lh);
+  g.fillStyle = '#eee7f8'; g.font = fontD(Math.round(78 * S));
+  g.fillText('Poetry and Places', W / 2, H / 2 + 120 * S);
+  g.fillStyle = '#e8c66a'; g.font = 'italic ' + fontD(Math.round(46 * S));
+  g.fillText('presents', W / 2, H / 2 + 200 * S);
+  g.restore();
+}
+const fontD = px => '700 ' + px + 'px Fraunces, "Times New Roman", serif';
+const fontB = (w, px) => w + ' ' + px + 'px Lexend, system-ui, sans-serif';
+function cardBg() {
+  const gr = g.createLinearGradient(0, 0, 0, H);
+  gr.addColorStop(0, '#2e2a45'); gr.addColorStop(0.6, '#4a3f6b'); gr.addColorStop(1, '#7a68a1');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(255, 236, 196, 0.08)';                     // a soft stage-light glow
+  g.beginPath(); g.ellipse(W / 2, H * 0.55, W * 0.38, H * 0.3, 0, 0, Math.PI * 2); g.fill();
+}
+function drawCard(shot, local) {
+  cardBg();
+  const S = Math.min(W, H) / 1080, big = Math.round((shot.card.length > 1 ? 84 : 120) * S);
+  const k = Math.min(1, local / 0.8);
+  g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#eee7f8'; g.font = fontD(big);
+  const lines = shot.card, sub = shot.sub || [];
+  const total = lines.length * big * 1.15 + sub.length * 46 * S * 1.4 + (sub.length ? 30 * S : 0);
+  let y = H / 2 - total / 2 + big * 0.55 - (1 - k) * 18 * S;
+  for (const l of lines) { g.fillText(l, W / 2, y); y += big * 1.15; }
+  if (sub.length) {
+    y += 14 * S;
+    g.fillStyle = '#e8c66a'; g.fillRect(W / 2 - 60 * S, y - 22 * S, 120 * S, 3 * S);
+    y += 26 * S;
+    sub.forEach((l, i) => { g.font = fontB(i ? 600 : 700, Math.round((i ? 34 : 44) * S)); g.fillStyle = i ? '#c9c3e0' : '#f7d9e4'; g.fillText(l, W / 2, y); y += 46 * S * 1.4; });
+  }
+  g.restore();
+}
+function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, Math.min(r, h / 2, w / 2)); }
+function wrap(text, maxW) {
+  const words = text.split(/\s+/), lines = []; let line = '';
+  for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line);
+  return lines;
+}
+// name tags, speech bubbles and pop-up words are HTML in the game, so draw them onto the video by hand
+function drawOverlays(doc) {
+  const win = doc.defaultView;
+  for (const el of doc.querySelectorAll('#tags > *')) {
+    if (el.hidden) continue;
+    const cs = win.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    const op = parseFloat(cs.opacity); if (!(op > 0.02)) continue;
+    const r = el.getBoundingClientRect(); if (r.width < 2 || r.bottom < 0 || r.top > H) continue;
+    const text = (el.innerText || '').trim(); if (!text) continue;
+    g.save(); g.globalAlpha = op;
+    const bg = cs.backgroundColor, hasBg = bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg);
+    if (el.classList.contains('talking')) { g.shadowColor = 'rgba(127, 209, 127, .9)'; g.shadowBlur = 16; g.strokeStyle = '#7fd17f'; g.lineWidth = 4; rr(r.left - 3, r.top - 3, r.width + 6, r.height + 6, 999); g.stroke(); g.shadowBlur = 0; }
+    if (hasBg) {
+      const rad = parseFloat(cs.borderTopLeftRadius) || 8;
+      g.fillStyle = bg; rr(r.left, r.top, r.width, r.height, rad); g.fill();
+      const bw = parseFloat(cs.borderTopWidth) || 0;
+      if (bw) { g.lineWidth = bw; g.strokeStyle = cs.borderTopColor; rr(r.left + bw / 2, r.top + bw / 2, r.width - bw, r.height - bw, rad); g.stroke(); }
+      if (el.classList.contains('bubble')) {                       // the little tail under a speech bubble
+        const cx = r.left + r.width / 2, by = r.bottom - bw / 2, s = 10 * Math.min(W, H) / 1080;
+        g.beginPath(); g.moveTo(cx - s, by - 1); g.lineTo(cx, by + s * 1.1); g.lineTo(cx + s, by - 1); g.closePath(); g.fillStyle = bg; g.fill();
+        g.beginPath(); g.moveTo(cx - s, by); g.lineTo(cx, by + s * 1.1); g.lineTo(cx + s, by); g.strokeStyle = cs.borderTopColor; g.lineWidth = bw; g.stroke();
+      }
+    }
+    const fs = parseFloat(cs.fontSize);
+    g.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + fs + 'px ' + cs.fontFamily;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 2 * (parseFloat(cs.borderLeftWidth) || 0);
+    const lines = hasBg ? wrap(text, Math.max(10, r.width - padX + 2)) : [text];
+    const lh = fs * 1.22, cy = r.top + r.height / 2 - (lines.length - 1) * lh / 2;
+    lines.forEach((l, i) => {
+      if (!hasBg) { g.lineWidth = Math.max(3, fs * 0.16); g.strokeStyle = 'rgba(46, 42, 69, .9)'; g.lineJoin = 'round'; g.strokeText(l, r.left + r.width / 2, cy + i * lh); }
+      g.fillStyle = cs.color; g.fillText(l, r.left + r.width / 2, cy + i * lh);
+    });
+    g.restore();
+  }
+}
+function drawCaption(text, a) {
+  if (!text || a <= 0) return;
+  const S = Math.min(W, H) / 1080, px = Math.round(62 * S);
+  g.save(); g.globalAlpha = a; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.font = (run.def.shots === TRAILERS.t1.shots ? 'italic ' : '') + fontD(px);
+  const y = H - (run.def.bars && W > H ? H * 0.1 + 46 * S : (W > H ? 92 : 300) * S);
+  const lines = wrap(text, W * 0.86);
+  lines.forEach((l, i) => {
+    const yy = y - (lines.length - 1 - i) * px * 1.15;
+    g.shadowColor = 'rgba(20, 16, 36, .75)'; g.shadowBlur = 18 * S; g.lineWidth = 7 * S; g.strokeStyle = 'rgba(46, 42, 69, .55)'; g.lineJoin = 'round';
+    g.strokeText(l, W / 2, yy); g.fillStyle = '#fff8ee'; g.fillText(l, W / 2, yy);
+  });
+  g.restore();
+}
+function drawScene(shot, local) {
+  const doc = shot.frame && shot.frame.contentDocument, cv = doc && doc.getElementById('scene');
+  if (!cv) { g.fillStyle = '#000'; g.fillRect(0, 0, W, H); return; }
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  if (shot.blur) { g.filter = 'blur(' + shot.blur * Math.min(W, H) / 1080 + 'px) saturate(1.1)'; g.drawImage(cv, -20, -20, W + 40, H + 40); g.filter = 'none'; }
+  else { g.drawImage(cv, 0, 0, W, H); try { drawOverlays(doc); } catch (e) {} }
+  if (run.def.bars && W > H) { g.fillStyle = '#000'; g.fillRect(0, 0, W, H * 0.1); g.fillRect(0, H * 0.9, W, H * 0.1); }
+  if (shot.caption) drawCaption(shot.caption, Math.min(1, (local - 0.5) / 0.6, (shot.dur - local) / 0.5));
+  if (shot.captions) for (const c of shot.captions) if (local >= c.t && local <= c.t + c.d) drawCaption(c.text, Math.min(1, (local - c.t) / 0.5, (c.t + c.d - local) / 0.5));
+}
+function drawFade(local, dur) {
+  const a = Math.max(0, 1 - local / 0.45, 1 - (dur - local) / 0.45);
+  if (a > 0) { g.fillStyle = 'rgba(0, 0, 0, ' + Math.min(1, a) + ')'; g.fillRect(0, 0, W, H); }
+}
+// the Poetry and Places logo, small in the bottom-right corner the whole way through; the copyright sits bottom-left
+function drawWatermark() {
+  const S = Math.min(W, H) / 1080, inBar = run.def.bars && W > H;
+  const base = H - (inBar ? H * 0.05 - 26 * S : 30 * S);
+  g.save(); g.globalAlpha = 0.72; g.shadowColor = 'rgba(20, 16, 36, .55)'; g.shadowBlur = 8 * S;
+  const lh = 62 * S, lw = logo.naturalWidth ? lh * logo.naturalWidth / logo.naturalHeight : 0;
+  g.font = fontD(Math.round(26 * S)); g.fillStyle = '#eee7f8'; g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+  const right = W - 30 * S;
+  g.fillText('Poetry and Places', right, base - 6 * S);
+  const tw = g.measureText('Poetry and Places').width;
+  if (lw) g.drawImage(logo, right - tw - 12 * S - lw, base - lh, lw, lh);
+  g.globalAlpha = 0.5; g.font = fontB(600, Math.round(17 * S)); g.textAlign = 'left';
+  g.fillText('© 2026 Poetry and Places', 30 * S, base - 6 * S);
+  g.restore();
+}
+
+/* ---------- audio ---------- */
+function setupAudio() {
+  if (!actx) {
+    actx = new AudioContext();
+    recDest = actx.createMediaStreamDestination();
+    musicGain = actx.createGain(); musicGain.connect(actx.destination); musicGain.connect(recDest);
+    sfxGain = actx.createGain(); sfxGain.connect(recDest);       // the game windows already play their own sound out loud
+  }
+  if (actx.state === 'suspended') actx.resume();
+}
+function connectSfx(shot) {
+  if (run.sfxSrc) { try { run.sfxSrc.disconnect(); } catch (e) {} run.sfxSrc = null; }
+  if (!$('sfx').checked) return;
+  const tr = shot.frame && shot.frame.contentWindow && shot.frame.contentWindow.__trailer;
+  if (tr && tr.audio && tr.audio.getAudioTracks().length) { try { run.sfxSrc = actx.createMediaStreamSource(tr.audio); run.sfxSrc.connect(sfxGain); } catch (e) {} }
+}
+
+/* ---------- the director ---------- */
+function startShot(i) {
+  const shot = run.shots[i];
+  run.i = i; run.shotStart = run.clock;
+  [...$('shotList').children].forEach((li, k) => li.classList.toggle('now', k === i));
+  if (shot.scene) {
+    const tr = shot.frame.contentWindow.__trailer; tr.play();
+    connectSfx(shot);
+    // load the next scene into the other window while this one plays
+    const n = nextSceneIndex(i + 1);
+    if (n >= 0 && !run.shots[n].frame) { const other = frames.find(f => f !== shot.frame); loadShot(run.shots[n], other, n); }
+  }
+}
+function finish(stopped) {
+  const r = run; if (!r) return;
+  run = null;
+  if (r.music) { r.music.pause(); }
+  if (r.sfxSrc) try { r.sfxSrc.disconnect(); } catch (e) {}
+  for (const f of frames) f.src = 'about:blank';
+  $('preview').disabled = $('record').disabled = false; $('stop').disabled = true;
+  [...$('shotList').children].forEach(li => li.classList.remove('now'));
+  if (r.recorder && r.recorder.state !== 'inactive') {
+    r.recorder.onstop = () => {
+      const type = r.recorder.mimeType || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(r.chunks, { type });
+      const name = 'couplet-cove-trailer-' + r.key.slice(1) + '-' + r.def.name.toLowerCase().replace(/[^a-z]+/g, '-') + '-' + ($('fmt').value === 'tall' ? '9x16' : '16x9') + '.' + ext;
+      const url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = name; a.textContent = '⬇ ' + name + ' (' + (blob.size / 1048576).toFixed(1) + ' MB)';
+      $('downloads').prepend(a); a.click();
+      setStatus(stopped ? 'Stopped early. The part that was recorded is saved below.' : 'Done! Your trailer downloaded. It’s also linked below.');
+    };
+    r.recorder.stop();
+  } else setStatus(stopped ? 'Stopped.' : 'Preview finished.');
+}
+function tick(now) {
+  if (!run) return;
+  const dt = Math.min(0.1, (now - run.last) / 1000); run.last = now;
+  const shot = run.shots[run.i];
+  if (!run.waiting) run.clock += dt;
+  let local = run.clock - run.shotStart;
+  if (local >= shot.dur) {
+    const nextI = run.i + 1;
+    if (nextI >= run.shots.length) { finish(false); return; }
+    const nx = run.shots[nextI];
+    if (nx.scene && !nx.ready) {                                    // still loading: hold (and pause the recording) until it's ready
+      if (!run.waiting) { run.waiting = true; if (run.recorder && run.recorder.state === 'recording') run.recorder.pause(); if (shot.scene) shot.frame.contentWindow.__trailer.pause(); setStatus('Loading the next shot…'); }
+      if (nx.failed) { finish(true); return; }
+    } else {
+      if (run.waiting) { run.waiting = false; if (run.recorder && run.recorder.state === 'paused') run.recorder.resume(); setStatus(run.recorder ? 'Recording…' : 'Previewing…'); }
+      if (shot.scene && shot.frame.contentWindow.__trailer) shot.frame.contentWindow.__trailer.pause();
+      startShot(nextI);
+    }
+    local = Math.min(local, run.shots[run.i].dur);
+  }
+  const cur = run.shots[run.i];
+  local = run.clock - run.shotStart;
+  if (cur.presents) drawPresents(local); else if (cur.card) drawCard(cur, local); else drawScene(cur, local);
+  if (!cur.presents) drawWatermark();
+  drawFade(local, cur.dur);
+  // music: fade in at the start and out at the very end
+  if (run.music && musicGain) {
+    const left = run.total - run.clock;
+    musicGain.gain.value = 0.8 * Math.min(1, run.clock / 1.5, Math.max(0, left / 2.5));
+  }
+  $('bar').firstElementChild.style.width = Math.min(100, run.clock / run.total * 100) + '%';
+  requestAnimationFrame(tick);
+}
+async function begin(record) {
+  if (run) return;
+  const key = $('pick').value, def = TRAILERS[key];
+  [W, H] = sizeFor($('fmt').value); out.width = W; out.height = H; layoutFeeds();
+  setupAudio();
+  const shots = def.shots.map(s => Object.assign({}, s));
+  run = { key, def, shots, i: 0, clock: 0, last: performance.now(), total: shots.reduce((a, s) => a + s.dur, 0), waiting: false, chunks: [] };
+  $('shotList').innerHTML = shots.map(s => '<li>' + (s.presents ? 'Poetry and Places presents' : s.card ? 'Title: ' + s.card.join(' ') : s.scene + (s.caption ? ' · “' + s.caption + '”' : '')) + ' (' + s.dur + 's)</li>').join('');
+  $('preview').disabled = $('record').disabled = true; $('stop').disabled = false;
+  setStatus('Loading the first shots…');
+  await document.fonts.load(fontD(80)); await document.fonts.load(fontB(700, 40));
+  if (!logo.complete) await new Promise(r => { logo.onload = logo.onerror = r; });
+  // load the first scene (and the next one) before rolling
+  const a = nextSceneIndex(0), b = a >= 0 ? nextSceneIndex(a + 1) : -1;
+  if (a >= 0) loadShot(shots[a], frames[0], a);
+  if (b >= 0) loadShot(shots[b], frames[1], b);
+  const t0 = performance.now();
+  while (run && ((a >= 0 && !shots[a].ready) || (b >= 0 && !shots[b].ready))) {
+    if ((a >= 0 && shots[a].failed) || performance.now() - t0 > 30000) { setStatus('Couldn’t load the game. Make sure this page sits next to index.html on the site.'); finish(true); return; }
+    await new Promise(r => setTimeout(r, 150));
+  }
+  if (!run) return;
+  const track = $('music').value === 'auto' ? def.music : $('music').value;
+  if (track) { run.music = new Audio(track); run.music.loop = true; try { actx.createMediaElementSource(run.music).connect(musicGain); } catch (e) {} musicGain.gain.value = 0; run.music.play().catch(() => {}); }
+  if (record) {
+    const stream = new MediaStream([...out.captureStream(30).getVideoTracks(), ...recDest.stream.getAudioTracks()]);
+    const types = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    const mimeType = types.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+    run.recorder = new MediaRecorder(stream, Object.assign({ videoBitsPerSecond: 12e6, audioBitsPerSecond: 192e3 }, mimeType ? { mimeType } : {}));
+    const chunks = run.chunks; run.recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    run.recorder.start(1000);
+    setStatus('Recording… keep this tab in front until it finishes (about ' + Math.round(run.total) + ' seconds).');
+  } else setStatus('Previewing…');
+  run.last = performance.now();
+  startShotFirst();
+  requestAnimationFrame(tick);
+}
+function startShotFirst() {
+  const s = run.shots[0];
+  run.i = 0; run.shotStart = 0;
+  [...$('shotList').children].forEach((li, k) => li.classList.toggle('now', k === 0));
+  if (s.scene) { s.frame.contentWindow.__trailer.play(); connectSfx(s); }
+}
+$('preview').addEventListener('click', () => begin(false));
+$('record').addEventListener('click', () => begin(true));
+$('stop').addEventListener('click', () => finish(true));
+[W, H] = sizeFor('wide'); layoutFeeds();
+cardBg(); g.textAlign = 'center'; g.fillStyle = '#eee7f8'; g.font = fontD(90); g.fillText('Trailer Studio', W / 2, H / 2);
+})();
+</script>
+</body>
+</html>

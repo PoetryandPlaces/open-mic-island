@@ -71,6 +71,16 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 - The castle has its own dreamy theme song (`castle-music.mp3`).
 - A castle link starts with `castle-`.
 
+## Making trailers (Trailer Studio)
+
+Open `https://openmic.poetryandplaces.org/trailer.html` in Chrome or Edge. It isn't linked from the site, and search engines are asked not to list it.
+
+- Pick a trailer: **1 · Somewhere to gather** (a vague, dreamy teaser), **2 · Take the mic** (the open mic), or **3 · Everything** (every feature, labeled).
+- Pick **Widescreen 16:9** (YouTube, website) or **Vertical 9:16** (Reels, TikTok, Shorts), the music, and whether to include sound effects and name tags.
+- **Preview** plays it; **Record & download** saves a video file (MP4 in recent Chrome, otherwise WebM). Keep the tab in front while it records.
+- Each shot loads the real game in trailer mode (`index.html#trailer=<scene>`): scripted critters act out the scene on your screen only. Trailer mode never joins the meetup network and sends nothing to GoatCounter.
+- Shots, captions and title cards live in the `TRAILERS` list in `trailer.html`; the scenes themselves (who stands where, what they do, camera moves) live in `TR_SCENES` near the end of `index.html`.
+
 ## Metrics
 
 Visits and anonymous activity (joins, private rooms created per world, cafe tools found and drinks made, readings, fish caught, how long people stay, how many were on together, and more) go to a private GoatCounter dashboard once `GOATCOUNTER` near the top of the script in `index.html` holds your site code. Nothing personal is sent: no names, chat text or room codes. Ad blockers may hide some visits from the count.

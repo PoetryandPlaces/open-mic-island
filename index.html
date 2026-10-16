@@ -541,6 +541,8 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
 .bagRow button.on { background: var(--plank-dark); color: var(--paper); }
 .bagRow small { flex-basis: 100%; color: var(--muted); font-weight: 600; font-size: .76rem; padding-left: 22px; }
 .bagEmpty { margin: 0 0 8px; font-size: .9rem; font-weight: 600; color: var(--muted); }
+body.trailer > *:not(#scene):not(#tags) { display: none !important; }
+body.trailer .tag.mine, body.notags .tag { display: none !important; }
 #copyMark {
   position: fixed; left: 50%; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 4;
   font: 700 .66rem var(--font-body); letter-spacing: .02em; color: #fff; opacity: .55; white-space: nowrap;
@@ -748,12 +750,15 @@ document.body.classList.add('in-lobby');
 // as a cafe carry it at the front of their link (#room=cafe-…), so everyone with the link lands in the same world.
 const WORLD = (() => { const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash); return !m ? 'island' : /^cafe-/i.test(m[1]) ? 'cafe' : /^castle-/i.test(m[1]) ? 'castle' : 'island'; })();
 const ISLAND = WORLD === 'island', CAFE = WORLD === 'cafe', CASTLE = WORLD === 'castle';
+// #trailer=<scene> films a promo scene for trailer.html (see "trailer mode" near the end of this script)
+const TRAILER = (/(?:^|[#&])trailer=([a-z0-9-]+)/i.exec(location.hash) || [])[1] || '';
+if (TRAILER) document.body.classList.add('trailer');
 document.body.dataset.world = WORLD;
 
 /* ---------- renderer, scene, camera ---------- */
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: !!TRAILER });   // trailer.html copies each frame
+renderer.setPixelRatio(TRAILER ? 1 : Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -2089,12 +2094,12 @@ const store = {
 const GOATCOUNTER = 'poetryandplaces';                 // your GoatCounter site code, e.g. 'poetryandplaces' → https://poetryandplaces.goatcounter.com
 const gcQueue = [], gcOnce = new Set();
 function track(name, once) {
-  if (!GOATCOUNTER) return;
+  if (!GOATCOUNTER || TRAILER) return;
   if (once) { if (gcOnce.has(name)) return; gcOnce.add(name); }
   const send = () => { try { window.goatcounter.count({ path: name, title: name, event: true }); } catch (e) {} };
   if (window.goatcounter && window.goatcounter.count) send(); else gcQueue.push(send);
 }
-if (GOATCOUNTER) {
+if (GOATCOUNTER && !TRAILER) {
   const sc = document.createElement('script');
   sc.async = true; sc.src = 'https://gc.zgo.at/count.js';
   sc.setAttribute('data-goatcounter', 'https://' + GOATCOUNTER + '.goatcounter.com/count');
@@ -2867,7 +2872,7 @@ async function connect() {
   updateCount();
 }
 window.addEventListener('pagehide', () => { try { if (room) room.leave(); } catch (e) {} });
-connect();
+if (!TRAILER) connect();                                         // trailer actors never go online
 
 /* ---------- splashes, ripples, drips and wet fur ---------- */
 const dropGeo = new THREE.IcosahedronGeometry(0.07, 0);
@@ -2971,7 +2976,7 @@ let sfxPct = pct('cove-svol', 70), musicPct = pct('cove-mvol', 45);
 let sfxGain = null;
 function sfxDest() {
   const ctx = audioCtx();
-  if (!sfxGain || sfxGain.context !== ctx) { sfxGain = ctx.createGain(); sfxGain.connect(ctx.destination); }
+  if (!sfxGain || sfxGain.context !== ctx) { sfxGain = ctx.createGain(); sfxGain.connect(TRAILER ? trBus(ctx) : ctx.destination); }
   sfxGain.gain.value = sfxPct / 70;
   return sfxGain;
 }
@@ -4711,7 +4716,7 @@ function tickCastle(dt) {
     f.g.rotation.y = t * 6;
     if (k >= 1) { burst(pb.x, pb.y + 1.6, pb.z, 8, sparkMat, 0.8, 2); scene.remove(f.g); flying.splice(i, 1); }
   }
-  if (!slide && joined && !lobbyOpen && Math.hypot(pos.x, pos.z) > CLOUD_R) startSlide();
+  if (!slide && joined && !lobbyOpen && !TRAILER && Math.hypot(pos.x, pos.z) > CLOUD_R) startSlide();
 }
 function castleAction() {
   if (!CASTLE || !joined || lobbyOpen || slide) return !!slide;
@@ -5289,6 +5294,254 @@ function tickWorld(dt) {
   tickFishing(dt);
 }
 
+/* ---------- trailer mode ----------
+   Poetry and Places' promo videos are filmed here. trailer.html opens this page with #trailer=<scene>,
+   which skips the entrance, never joins the meetup network (the actors only exist on that screen),
+   sends nothing to GoatCounter, and plays a scripted scene: pretend critters act it out while a
+   cinematic camera glides around. trailer.html records the picture and sound into a video file. */
+const TR = { t: 0, paused: true, idle: false, vol: 1, cues: [], cam: [], actors: new Map(), dur: 20, bus: null, dest: null, scene: null };
+const trAt = (time, fn) => TR.cues.push({ t: time, fn, done: false });
+const trDuring = (t0, t1, fn) => TR.cues.push({ t: t0, t1, fn, during: true });
+function trShot(t0, t1, ...keys) { TR.cam.push({ t0, t1, keys: keys.map(([p, l]) => ({ p: new V(...p), l: new V(...l) })) }); }
+function trActor(id, kind, name, x, z, ry = 0) {
+  const c = ensureRemote('tr-' + id);
+  applyPresence(c, { x, y: groundAt(x, z), z, ry, k: kind, n: name });
+  c.meter = { talking: false, level: 0, tick() {}, close() {} };
+  c.walk = null; c.talkPh = Math.random() * 6;
+  TR.actors.set(id, c);
+  return c;
+}
+function trSeat(c, x, z, top, ry) {
+  c.target.x = x; c.target.z = z; c.target.y = top; c.target.ry = ry;
+  c.root.position.set(x, top, z); c.root.rotation.y = ry; c.sitting = true;
+}
+function trWalk(c, x, z, speed = 2.6, then) { c.sitting = false; c.walk = { x, z, speed, then }; }
+function trMove(c, x, y, z) { c.target.x = x; c.target.y = y; c.target.z = z; }
+function trSay(c, text) { showSay(c, text); critterSpeaks(c); }
+// smooth camera moves: within a shot the camera eases along a curve through its keys
+function crPoint(a, b, c, d, u, out) {
+  const u2 = u * u, u3 = u2 * u;
+  for (const k of ['x', 'y', 'z']) out[k] = 0.5 * (2 * b[k] + (-a[k] + c[k]) * u + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * u2 + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * u3);
+  return out;
+}
+const trCamP = new V(), trCamL = new V();
+function trCamera() {
+  const s = TR.cam.find(sh => TR.t >= sh.t0 && TR.t < sh.t1) || TR.cam[TR.cam.length - 1];
+  if (!s) return false;
+  const ks = s.keys, n = ks.length;
+  if (n === 1) { trCamP.copy(ks[0].p); trCamL.copy(ks[0].l); }
+  else {
+    const raw = Math.max(0, Math.min(1, (TR.t - s.t0) / (s.t1 - s.t0))), e = 0.5 - 0.5 * Math.cos(raw * Math.PI);
+    const f = e * (n - 1), i = Math.min(n - 2, Math.floor(f)), u = f - i;
+    const g = j => ks[Math.max(0, Math.min(n - 1, j))];
+    crPoint(g(i - 1).p, g(i).p, g(i + 1).p, g(i + 2).p, u, trCamP);
+    crPoint(g(i - 1).l, g(i).l, g(i + 1).l, g(i + 2).l, u, trCamL);
+  }
+  camera.position.copy(trCamP); camera.lookAt(trCamL);
+  return true;
+}
+function trTick(dt) {
+  if (!TR.paused) TR.t += dt;
+  for (const q of TR.cues) {
+    if (q.during) { if (TR.t >= q.t && TR.t <= q.t1) q.fn((TR.t - q.t) / (q.t1 - q.t), dt); else if (TR.t > q.t1 && !q.done) { q.done = true; q.fn(1, dt); } }
+    else if (!q.done && TR.t >= q.t) { q.done = true; q.fn(); }
+  }
+  for (const c of TR.actors.values()) {
+    if (c.walk) {
+      const w = c.walk, dx = w.x - c.target.x, dz = w.z - c.target.z, d = Math.hypot(dx, dz), step = w.speed * dt;
+      if (d <= step) { c.target.x = w.x; c.target.z = w.z; c.walk = null; c.m = 0; if (w.then) w.then(); }
+      else { c.target.x += dx / d * step; c.target.z += dz / d * step; c.target.ry = Math.atan2(dx, dz); c.m = 1; }
+      c.target.y = groundAt(c.target.x, c.target.z);
+    }
+    c.meter.talking = !!c.talkOn && (Math.sin(TR.t * 6.3 + c.talkPh) + Math.sin(TR.t * 2.1 + c.talkPh * 2)) > -0.3;
+  }
+  pos.x = trCamL.x; pos.z = trCamL.z;                              // "you" are the camera: sounds are heard from where it looks
+}
+// a quiet mixer: every sound effect goes to the speakers and also into a stream trailer.html records
+function trBus(ctx) {
+  if (!TR.bus || TR.bus.context !== ctx) { TR.bus = ctx.createGain(); TR.bus.connect(ctx.destination); TR.dest = ctx.createMediaStreamDestination(); TR.bus.connect(TR.dest); }
+  return TR.bus;
+}
+function trSetup() {
+  const build = TR_SCENES[TRAILER];
+  joined = true; lobbyOpen = false; lobby.hidden = true; document.body.classList.remove('in-lobby');
+  me.root.visible = false; myTag.hidden = true;
+  if (/(?:^|[#&])tags=0/.test(location.hash)) document.body.classList.add('notags');
+  if (!build) { window.__trailer = { ready: false, error: 'No trailer scene called ' + TRAILER }; return; }
+  build();
+  trCamera();
+  const ctx = audioCtx(); if (ctx) { trBus(ctx); sfxDest(); loadSounds(); startSurf(); if (CAFE) startWind(); }
+  window.__trailer = {
+    ready: true, dur: TR.dur,
+    audio: TR.dest ? TR.dest.stream : null,
+    prime(from) {                                                  // fast-forward silently to a point in the scene, then wait
+      if (!from) return;
+      if (TR.bus) TR.bus.gain.value = 0;
+      TR.paused = false;
+      for (let i = 0; i < Math.round(from * 30); i++) update(1 / 30);
+      TR.paused = true;
+      document.querySelectorAll('#tags .pop').forEach(el => el.remove());
+      for (const c of remotes.values()) { c.bubble.hidden = true; c.bubbleT = 0; }
+      setTimeout(() => { if (TR.bus) TR.bus.gain.value = TR.vol; }, 400);
+    },
+    play() { const c = audioCtx(); if (c && c.state === 'suspended') c.resume().catch(() => {}); TR.paused = false; TR.idle = false; },
+    pause() { TR.paused = true; },
+    idle(on) { TR.idle = !!on; },                                  // a waiting window skips drawing to save the computer's effort
+    volume(v) { TR.vol = v; if (TR.bus) TR.bus.gain.value = v; },
+    time: () => TR.t,
+    actors: () => [...TR.actors].map(([k, c]) => [k, +c.root.position.x.toFixed(1), +c.root.position.y.toFixed(1), +c.root.position.z.toFixed(1), c.cook || '', c.sitting ? 'sit' : '']),
+    reader: () => stageReader && nameOf(stageReader)
+  };
+}
+
+// The scenes. Each one places actors, schedules what they do, and sets up camera shots.
+const POEM = ['“Hope” is the thing with feathers –', 'That perches in the soul –', 'And sings the tune without the words –', 'And never stops – at all –'];
+const TR_SCENES = {
+  // a slow sweep across the island toward the stage, with a few critters out and about
+  'island-tour'() {
+    TR.dur = 14;
+    trActor('a', 'cat', 'Mo', -4, 8, 2.6); trActor('b', 'dog', 'Biscuit', -2.6, 7, -2.2);
+    const r = trActor('c', 'mouse', 'Rosy', 6, 10, 0); trWalk(r, 3, 4, 1.6);
+    const f = trActor('d', 'frog', 'Pip', 0, 27, Math.PI); trSeat(f, 0.4, 28, DOCK.h, 0.3);
+    trShot(0, 14, [[42, 20, 44], [0, 0, 2]], [[18, 12, 34], [0, 0.5, 0]], [[-10, 8, 20], [0, 1, -4]], [[-6, 5.5, 4], [0, 1.6, -9]]);
+  },
+  // the open mic: Rosy reads under the spotlight while everyone listens from the logs, then applause
+  'open-mic'() {
+    TR.dur = 28;
+    const kinds = [['cat', 'Mo'], ['frog', 'Pip'], ['dog', 'Biscuit'], ['fish', 'Bubbles'], ['cat', 'Juniper'], ['dog', 'Clover']];
+    const seats = [[-3.2, -3], [-1.4, -3], [1.4, -3], [3.2, -3], [-2.9, 0], [2.6, 0]];
+    const crowd = kinds.map(([k, n], i) => { const c = trActor('l' + i, k, n, seats[i][0], seats[i][1], Math.PI); trSeat(c, seats[i][0], seats[i][1], 0.66, Math.PI); return c; });
+    const rosy = trActor('r', 'mouse', 'Rosy', 0.4, -4.3, Math.PI);
+    trAt(0.6, () => trWalk(rosy, 0, -8.5, 1.5, () => { rosy.target.ry = 0; }));
+    trAt(3.6, () => { rosy.mic = true; setRemoteReading(rosy, true); });
+    trAt(4.2, () => { rosy.talkOn = true; });
+    POEM.forEach((line, i) => trAt(5 + i * 3.6, () => showSay(rosy, line)));
+    trAt(19.5, () => { rosy.talkOn = false; });
+    crowd.forEach((c, i) => trAt(20 + i * 0.18, () => clapFx(c, 0.55)));
+    trAt(20.6, () => { for (const c of crowd) { const p = c.root.position; setTimeout(() => popAt(p.x, p.y + 2, p.z, '♥', 'heart'), Math.random() * 600); } });
+    trAt(22.2, () => { setRemoteReading(rosy, false); rosy.clapT = 1.2; });
+    trAt(23.5, () => trSay(crowd[0], 'That was beautiful!'));
+    trAt(24.6, () => trSay(crowd[3], 'Encore! ✨'));
+    trShot(0, 3.6, [[0, 5.2, 7], [0, 1.6, -8]], [[0, 4.2, 4.5], [0, 1.5, -8.5]]);
+    trShot(3.6, 9.5, [[0, 3.2, -1.8], [0, 1.7, -9]], [[0, 2.6, -4.6], [0, 1.65, -9]]);
+    trShot(9.5, 14.5, [[5.6, 2.3, -6.2], [0, 1.6, -8.8]], [[4.2, 2.1, -7.4], [0, 1.6, -8.8]]);
+    trShot(14.5, 19.8, [[0.8, 2.5, -11.6], [0, 1.0, -1.5]], [[-0.8, 2.6, -11.2], [0, 1.0, -1.5]]);
+    trShot(19.8, 24, [[-6.5, 3.8, 3.5], [0, 1.2, -4.5]], [[-4.2, 3.2, 1.2], [0, 1.2, -5]]);
+    trShot(24, 28, [[0, 5.5, 5.5], [0, 1.2, -6]], [[0, 10, 15], [0, 1, -6]]);
+  },
+  // life on the island: talking on mic, fishing, digging, s'mores, fireflies and a hug
+  'island-fun'() {
+    TR.dur = 28;
+    const mo = trActor('mo', 'cat', 'Mo', 4.2, 6.2, -1.9), bis = trActor('bis', 'dog', 'Biscuit', 2.8, 5.8, 1.6);
+    const pip = trActor('pip', 'frog', 'Pip', 0, 29.6, 0), rosy = trActor('rosy', 'mouse', 'Rosy', -6, 4, 1);
+    pip.rod = true; mo.mic = bis.mic = true;
+    // A: chatting on mic (0–8)
+    trAt(0.4, () => { mo.talkOn = true; trSay(mo, 'this place is so cozy'); });
+    trAt(2.6, () => { mo.talkOn = false; bis.talkOn = true; });
+    trAt(3.2, () => trSay(bis, 'want to go fishing?'));
+    trAt(5.4, () => { bis.talkOn = false; mo.talkOn = true; });
+    trAt(5.8, () => trSay(mo, 'yes!! ✨'));
+    trAt(7.6, () => { mo.talkOn = false; });
+    trShot(0, 8, [[8.6, 3.2, 10.5], [3.5, 1.2, 6]], [[6.8, 2.6, 9.6], [3.5, 1.3, 6]]);
+    // B: fishing off the dock (8–14)
+    trAt(9.0, () => { pip.castT = 0.45; noiseBurst(0.22, 'bandpass', 1200, 0.1); });
+    trAt(10.8, () => { const f = FISH_BY_ID.koi; fishLeap(0.4, 33.4, pip, f); splashSound(1, true); popAt(0, 2.4, 29.6, 'Caught a Golden Koi!', 'good'); sfx.find(); pip.castT = 0.45; });
+    trShot(8, 14, [[5.5, 2.6, 27.5], [0, 0.8, 32]], [[4.2, 2.2, 29], [0, 0.8, 32]]);
+    // C: digging, then s'mores at the campfire (14–21)
+    const rock = digRocks[0] || { x: -8, z: -2, r: 0.5 };
+    trAt(13.9, () => { mo.mic = false; trMove(mo, rock.x + rock.r + 0.75, 0, rock.z); mo.root.position.set(rock.x + rock.r + 0.75, 0, rock.z); mo.target.ry = -Math.PI / 2; mo.root.rotation.y = -Math.PI / 2; });
+    trAt(14.3, () => { mo.digging = true; });
+    trDuring(14.3, 16.0, () => { if (Math.random() < 0.25) { sfx.scratch(); burst(rock.x + rock.r + 0.3, 0.2, rock.z, 3, dirtMat, 0.8, 2.2); } });
+    trAt(16.0, () => { mo.digging = false; sfx.find(); burst(mo.root.position.x, 0.9, rock.z, 14, sparkMat, 1.2, 3.5); popAt(mo.root.position.x, 2.3, rock.z, 'Found a party hat!', 'good'); });
+    trAt(16.5, () => { mo.hat = 'partyhat'; });
+    trShot(14, 17.6, [[rock.x + 4.5, 2.4, rock.z + 2.5], [rock.x + 0.6, 0.7, rock.z]], [[rock.x + 3.4, 2, rock.z + 1.6], [rock.x + 0.6, 0.7, rock.z]]);
+    const stump = [FIRE.x + Math.cos(2.6) * 2, FIRE.z + Math.sin(2.6) * 2];
+    trAt(17.5, () => { bis.mic = false; trSeat(bis, stump[0], stump[1], 0.46, Math.atan2(FIRE.x - stump[0], FIRE.z - stump[1])); bis.cook = 'smore'; });
+    trAt(20.2, () => { bis.cook = ''; for (let i = 0; i < 3; i++) setTimeout(() => sfx.crunch(0.8), i * 260); popAt(stump[0], 2.2, stump[1], 'Mmm, gooey s’more!', 'good'); });
+    trShot(17.6, 21, [[FIRE.x - 4.8, 2.0, FIRE.z + 3.2], [FIRE.x - 0.8, 0.8, FIRE.z]], [[FIRE.x - 3.8, 1.7, FIRE.z + 2.2], [FIRE.x - 0.9, 0.8, FIRE.z]]);
+    // D: catching fireflies, then a hug (21–28)
+    trAt(20.9, () => {
+      rosy.net = true; trMove(rosy, -6, 0, 4); rosy.root.position.set(-6, 0, 4); rosy.target.ry = 0.6;
+      flies.slice(0, 5).forEach((f, i) => { f.hx = -5.4 + (i % 3) * 0.5; f.hz = 4.6 + (i >> 1) * 0.5; f.hy = 1.1 + (i % 2) * 0.4; f.caughtUntil = 0; });
+      trMove(mo, -4.6, 0, 4.8); mo.root.position.set(-4.6, 0, 4.8); mo.target.ry = -1.4;
+    });
+    trAt(22.2, () => { rosy.swingT = 0.45; noiseBurst(0.18, 'bandpass', 900, 0.08); });
+    trAt(22.5, () => { flies.slice(0, 2).forEach(f => { f.caughtUntil = nowMs() + 30000; }); sfx.catchFly(); popAt(-6, 2.3, 4, 'Caught 2 fireflies!', 'good'); });
+    trAt(23.6, () => trWalk(mo, -5.3, 4.4, 1.4));
+    trAt(24.8, () => { mo.target.ry = Math.atan2(-6 - mo.target.x, 4 - mo.target.z); playEmote('hug', mo, rosy); });
+    trShot(21, 28, [[-9.2, 2.4, 8.8], [-5.5, 1.1, 4.3]], [[-8.2, 2.1, 7.4], [-5.5, 1.1, 4.3]]);
+  },
+  // the Cozy Cafe: in through the door, past the tables, toward the counter
+  'cafe-tour'() {
+    TR.dur = 13;
+    const a = trActor('a', 'cat', 'Mo', 2.9, -1.2, Math.PI / 2); trSeat(a, 2.9, -1.2, 0.52, Math.PI / 2); a.cook = 'coffee';
+    const b = trActor('b', 'dog', 'Biscuit', 4.9, -1.2, -Math.PI / 2); trSeat(b, 4.9, -1.2, 0.52, -Math.PI / 2); b.cook = 'matcha';
+    const c = trActor('c', 'frog', 'Pip', 8.7, -9, Math.PI); trSeat(c, 8.7, -9.0, 0.45, 2.6); c.cook = 'book';
+    const d = trActor('d', 'fish', 'Bubbles', -3.4, 4.0 - 1.0, 0); trSeat(d, -4.6, 4.0, 0.52, Math.PI / 2); d.cook = 'sandwich';
+    const e = trActor('e', 'mouse', 'Rosy', 0, -8.5, 0); trAt(0.2, () => { e.mic = true; setRemoteReading(e, true); e.talkOn = true; });
+    trAt(5, () => remoteBrew(a, 0));
+    trShot(0, 13, [[0, 3.6, 17], [0, 2.2, 6]], [[0, 3.2, 8.5], [0, 2, 0]], [[0, 4.6, 1.5], [0, 1.6, -8.5]], [[3, 4.4, 0.5], [6, 1.4, -4]], [[2.4, 3.8, 2.6], [5.4, 1.2, -2]]);
+  },
+  // making coffee, a book from the library, and the windy street
+  'cafe-fun'() {
+    TR.dur = 18;
+    const mo = trActor('mo', 'cat', 'Mo', -9.3, -1.2, -Math.PI / 2), rosy = trActor('rosy', 'mouse', 'Rosy', 6.4, 1.1, Math.PI / 2), pip = trActor('pip', 'frog', 'Pip', 8.6, -9.9, Math.PI);
+    trAt(1.2, () => { const f = cafeFrames[1]; peekFrame(f, mo); });
+    trAt(1.8, () => { sfx.find(); popAt(-9.3, 2.3, -1.6, 'Found a coffee scoop!', 'good'); });
+    trShot(0, 5, [[-5.2, 3.0, 1.8], [-10, 2.0, -2]], [[-6.2, 2.8, 0.8], [-10, 2.1, -2]]);
+    trAt(5.3, () => remoteBrew(rosy, 0));
+    trAt(7.6, () => { rosy.cook = 'coffee'; chimeNotes([660, 880, 1046], 0.06, 'triangle', 0.08); popAt(6.4, 2.4, 1.1, 'A warm latte!', 'good'); });
+    trAt(9.4, () => { rosy.sipT = 0.7; slurp(0.8); });
+    trShot(5, 11, [[3.6, 2.5, 3.4], [7.6, 1.3, 0.6]], [[4.3, 2.2, 2.6], [7.6, 1.3, 0.6]]);
+    trAt(11.3, () => { trSeat(pip, 8.7, -9.0, 0.45, 2.6); });
+    trAt(12.4, () => { pip.cook = 'book'; noiseBurst(0.12, 'lowpass', 600, 0.1); popAt(8.7, 2.2, -9, 'You took out Sonnets', 'good'); });
+    trShot(11, 18, [[5.6, 2.6, -6.4], [8.6, 0.9, -10.2]], [[6.4, 2.2, -7.2], [8.8, 0.9, -10.4]]);
+  },
+  // the Cloudy Castle: up past a rainbow to the glass castle
+  'castle-tour'() {
+    TR.dur = 13;
+    const a = trActor('a', 'dog', 'Biscuit', 6.3, -2, Math.PI / 2); trSeat(a, 6.3, -2, 0.53, Math.PI / 2);
+    const b = trActor('b', 'cat', 'Mo', 8.9, -0.5, -Math.PI / 2); trSeat(b, 8.9, -0.5, 0.53, -Math.PI / 2);
+    trAt(0.1, () => spawnFeast(castleTables[1], a, true));
+    const e = trActor('e', 'mouse', 'Rosy', 0, -8.5, 0); trAt(0.2, () => { e.mic = true; setRemoteReading(e, true); e.talkOn = true; });
+    trActor('f', 'frog', 'Pip', -6, 9, 0);
+    trShot(0, 13, [[40, -16, 34], [24, -6, 12]], [[30, 4, 30], [6, 2, 0]], [[6, 6, 18], [0, 3, -4]], [[0, 4.2, 6], [0, 2.2, -8]], [[-3, 4.6, 1.5], [3, 1.6, -6]]);
+  },
+  // a feast, a letter, a fairy, and the rainbow slide
+  'castle-fun'() {
+    TR.dur = 21;
+    const tb = castleTables[1];
+    const wiz = trActor('w', 'dog', 'Biscuit', 5.5, -1.2, Math.PI / 2);
+    const s1 = trActor('s1', 'cat', 'Mo', 8.9, -3, -Math.PI / 2); trSeat(s1, 8.9, -3, 0.53, -Math.PI / 2);
+    const s2 = trActor('s2', 'fish', 'Bubbles', 8.9, 0.8, -Math.PI / 2); trSeat(s2, 8.9, 0.8, 0.53, -Math.PI / 2);
+    trAt(1.0, () => { wiz.castT = 0.45; spawnFeast(tb, wiz, true); popAt(5.5, 2.4, -1.2, 'A feast appears!', 'good'); });
+    const bite = (c, msg) => () => { const p = c.root.position; let best = null, bd = 9; for (const f of (tb.feast ? tb.feast.g.children : [])) { const d = Math.hypot(f.position.x - p.x, f.position.z - p.z); if (f.userData.bites < f.userData.max && d < bd) { bd = d; best = f; } } if (best) { biteDish(best); if (best.userData.drink) slurp(0.9); else sfx.crunch(0.9); popAt(p.x, p.y + 2.2, p.z, msg, 'good'); } };
+    trAt(3.6, bite(s1, 'A royal bite!')); trAt(4.8, bite(s2, 'Delicious!')); trAt(5.8, bite(s1, 'Mmm!'));
+    trShot(0, 7, [[3.2, 3.0, 2.6], [7.6, 1.0, -1.2]], [[3.6, 2.6, 1.0], [7.6, 1.0, -1.4]]);
+    // letter + fairy (7–13), out on the cloud
+    const mo = trActor('mo', 'cat', 'Juniper', -6, 9, 0.8), rosy = trActor('rosy', 'mouse', 'Rosy', -3.2, 11, -2.2);
+    rosy.net = true;
+    trAt(7.6, () => { flyEnvelope(mo, rosy); chimeNotes([659, 880], 0.06, 'sine', 0.08); });
+    trAt(8.9, () => { chimeNotes([784, 988, 1175], 0.07, 'sine', 0.1); popAt(-3.2, 2.5, 11, 'Roses are red, violets are blue…', 'good'); });
+    trAt(9.6, () => { const f = fairies[8]; if (f) { f.hx = -2.6; f.hz = 10.2; f.hy = 1.2; f.caughtUntil = 0; } });
+    trAt(11.2, () => { rosy.swingT = 0.45; rosy.target.ry = 0.9; });
+    trAt(11.5, () => { const f = fairies[8]; if (f) f.caughtUntil = nowMs() + 30000; chimeNotes([1568, 2093, 2637], 0.06, 'sine', 0.06); popAt(-3.2, 2.3, 11, 'Caught a fairy!', 'good'); });
+    trShot(7, 13, [[-9.6, 2.8, 15.2], [-4.6, 1.2, 10]], [[-8.4, 2.4, 14], [-4.4, 1.2, 10]]);
+    // the rainbow slide (13–21)
+    const a = Math.PI / 4, start = [Math.cos(a) * 18.8, Math.sin(a) * 18.8];
+    const pip = trActor('pip', 'frog', 'Pip', start[0], start[1], a);
+    trAt(13.1, () => trWalk(pip, Math.cos(a) * 21.4, Math.sin(a) * 21.4, 2.4));
+    trAt(14.3, () => { pip.walk = null; popAt(pip.root.position.x, 2.4, pip.root.position.z, 'Wheee!', 'good'); playBuf('wee', 0.5); });
+    trDuring(14.3, 18.6, k => {
+      const top = rainbowPoint(a, Math.PI / 2);
+      if (k < 0.15) { const u = k / 0.15; trMove(pip, Math.cos(a) * 21.4 + (top.x - Math.cos(a) * 21.4) * u, -0.4 * u, Math.sin(a) * 21.4 + (top.z - Math.sin(a) * 21.4) * u); }
+      else { const u = (k - 0.15) / 0.85, phi = Math.PI / 2 * (1 - Math.pow(u, 1.7)), p = rainbowPoint(a, phi); trMove(pip, p.x, p.y, p.z); if (Math.random() < 0.3) burst(p.x, p.y + 0.2, p.z, 2, sparkMat, 0.3, 0.8); }
+    });
+    trAt(18.7, () => { const ex = RAINBOW.out + RAINBOW.r, px = ex * Math.cos(a), pz = ex * Math.sin(a); trMove(pip, px, RAINBOW.cy - 0.6, pz); chimeNotes([1046, 1318, 1568, 2093], 0.08, 'triangle', 0.06); burst(px, RAINBOW.cy, pz, 18, goldMat, 1.4, 4); popAt(px, RAINBOW.cy + 2.2, pz, 'A pot of gold!', 'good'); });
+    trShot(13, 21, [[24, 5, 4], [16, 0, 16]], [[44, -2, 6], [26, -12, 26]]);
+  }
+};
+
 /* ---------- loop ---------- */
 const pos = { x: 0, y: 0, z: 8 };
 let vy = 0, hopBase = 0, grounded = true, t = 0, last = performance.now(), movingNow = false, runNow = false;
@@ -5314,6 +5567,7 @@ function tickBubble(c, dt, headY) {
 
 function update(dt) {
   t += dt;
+  if (TRAILER) trTick(dt);
   const active = joined && !lobbyOpen;
   if (active && keys.has('KeyQ')) yaw += 1.8 * dt;
   if (active && keys.has('KeyE')) yaw -= 1.8 * dt;
@@ -5351,7 +5605,7 @@ function update(dt) {
     pos.x -= pos.x / r * pull * dt; pos.z -= pos.z / r * pull * dt;
   }
 
-  if (CAFE && active) cafeWind(dt);
+  if (CAFE && active && !TRAILER) cafeWind(dt);
   if (wantHop && grounded && active && digT <= 0 && !slide) { vy = 7.6; grounded = false; hopBase = pos.y; tryShake(); }   // peaks about 1.3 units up, clears the logs
   wantHop = false;
   const wasAir = !grounded;
@@ -5417,10 +5671,12 @@ function update(dt) {
   // camera follow (a slow drift around the island while you're at the entrance)
   const look = joined ? new V(pos.x, pos.y + 1, pos.z) : new V(0, 1, -2);
   const dist = joined ? camDist : 30;
+  if (!(TRAILER && trCamera())) {
   camLook.lerp(look, 1 - Math.exp(-dt * 8));
   const want = new V(camLook.x + Math.sin(yaw) * dist, camLook.y + dist * 0.68, camLook.z + Math.cos(yaw) * dist);
   camera.position.lerp(want, 1 - Math.exp(-dt * (joined ? 6 : 2)));
   camera.lookAt(camLook);
+  }
 
   const amp = reduceMotion ? 0.03 : 1;
   if (ISLAND) {
@@ -5493,11 +5749,12 @@ function updatePreview(dt) {
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   update(dt);
-  renderer.render(scene, camera);
+  if (!TR.idle) renderer.render(scene, camera);
   if (lobbyOpen) updatePreview(dt);
   requestAnimationFrame(frame);
 }
 resize();
+if (TRAILER) trSetup();
 update(0.016); renderer.render(scene, camera); updatePreview(0.016);
 requestAnimationFrame(frame);
 setTimeout(() => nameInput.focus(), 100);
