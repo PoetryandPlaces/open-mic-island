@@ -2820,8 +2820,9 @@ function goSolo(msg) {
 function updateCount() {
   if (!room) return;
   const n = [...remotes.values()].filter(c => c.hasPos).length;
-  if (!joined) setOnline(true, n === 0 ? 'Nobody here yet' : n === 1 ? '1 critter on the island' : n + ' critters on the island');
-  else setOnline(true, n === 0 ? 'Just you so far' : (n + 1) + ' on the island');
+  const coming = n === 0 && peerCount() > 0;                     // connected to someone who hasn't shown up yet
+  if (!joined) setOnline(true, n === 0 ? (coming ? 'Someone’s on their way…' : 'Nobody here yet') : n === 1 ? '1 critter on the island' : n + ' critters on the island');
+  else setOnline(true, n === 0 ? (coming ? 'Someone’s joining…' : 'Just you so far') : (n + 1) + ' on the island');
   for (const k of [2, 5, 10, 20]) if (n + 1 >= k) track('crowd/' + k + '-or-more-together', true);
 }
 function ensureRemote(id) {
@@ -3200,7 +3201,7 @@ async function connect() {
   room.onPeerJoin = id => {
     if (blocked.has(id)) { closePeer(id); return; }
     hostCatchUp(id);
-    ensureRemote(id);
+    ensureRemote(id); updateCount();
     sendPresence(true, id);
     if (micStream) room.addStream(micStream, { target: id });
     catchUpStageMusic(id);
@@ -3237,25 +3238,31 @@ async function connect() {
 window.addEventListener('pagehide', () => { try { if (room) room.leave(); } catch (e) {} });
 // Keep the room together: phones drop their connections when the screen sleeps, and a relay sometimes misses
 // an announcement. If you've been alone for a while, or you come back to the tab, quietly rejoin the room.
-let lastRejoin = 0, hiddenAt = 0, rejoinWait = 25;
+let lastRejoin = 0, hiddenAt = 0, rejoinWait = 40;
+function peerCount() { try { return room && room.getPeers ? Object.keys(room.getPeers()).length : 0; } catch (e) { return 0; } }
 async function rejoin() {
   if (!room || TRAILER) return;
   lastRejoin = performance.now();
-  try { room.leave(); } catch (e) {}
+  const old = room;
   room = null; actPres = actChat = actPoem = actMod = null;
+  // wait for the old room to finish closing: joining again before that hands back the dying room, and you'd vanish
+  try { await old.leave(); } catch (e) {}
   for (const id of [...remotes.keys()]) dropRemote(id, true);
   await connect();
   lastPres = ''; sendPresence(true);
 }
+// a tab in the background stops drawing frames, so keep telling everyone you're here from a timer instead
+setInterval(() => { if (document.hidden && joined && actPres && !TRAILER) { lastPres = ''; sendPresence(true); } }, 2000);
 setInterval(() => {
   if (!joined || !room || TRAILER) return;
-  if ([...remotes.values()].some(c => c.hasPos)) { rejoinWait = 25; return; }
+  if ([...remotes.values()].some(c => c.hasPos)) { rejoinWait = 40; return; }
+  if (document.hidden || peerCount() > 0) return;              // someone is connected or still joining: never cut them off
   const now = performance.now();
   if (now - roomReadyAt > rejoinWait * 1000 && now - lastRejoin > rejoinWait * 1000) { rejoinWait = Math.min(160, rejoinWait * 2); rejoin(); }
 }, 5000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { hiddenAt = performance.now(); return; }
-  if (hiddenAt && performance.now() - hiddenAt > 15000 && room && joined) rejoin();
+  if (hiddenAt && performance.now() - hiddenAt > 15000 && room && joined && peerCount() === 0) rejoin();
   hiddenAt = 0;
 });
 if (!TRAILER) connect();                                         // trailer actors never go online
