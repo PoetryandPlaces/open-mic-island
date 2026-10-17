@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Host Setup · Couplet Cove</title>
+<style>
+  :root { --lav: #ece6f6; --ink: #4b3f6b; --plum: #6b55a0; --muted: #7d7396; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--lav); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; display: grid; place-items: center; padding: 24px 16px; }
+  main { width: min(560px, 100%); background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 10px 30px rgba(107, 85, 160, .15); }
+  h1 { margin: 0 0 6px; font-size: 1.6rem; color: var(--plum); }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  label { display: block; font-weight: 700; margin: 14px 0 6px; }
+  input { width: 100%; font: inherit; padding: 10px 12px; border: 2px solid #d9cfee; border-radius: 10px; }
+  input:focus { outline: none; border-color: var(--plum); }
+  button { margin-top: 18px; font: 700 1rem system-ui, sans-serif; background: var(--plum); color: #fff; border: 0; border-radius: 10px; padding: 12px 18px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.alt { background: #e6dff2; color: var(--ink); margin-right: 8px; }
+  #sugg { margin-top: 10px; font: 700 1.05rem ui-monospace, Menlo, monospace; color: var(--plum); }
+  #msg { margin-top: 14px; font-weight: 700; }
+  #msg.err { color: #b4475a; }
+  ol { padding-left: 20px; margin: 0 0 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Host setup</h1>
+  <p>This makes the secret host code for Couplet Cove. Anyone who types <b>/host</b> and this code in the game chat can mute or kick people.</p>
+  <ol>
+    <li>Pick a code that's hard to guess: at least 20 characters and 4 words, or click <b>Suggest a strong code</b> and write it down somewhere safe.</li>
+    <li>Click <b>Make host key</b>. Your browser saves a file called <b>host-key.js</b>.</li>
+    <li>Upload host-key.js to the site, next to index.html.</li>
+  </ol>
+  <p class="muted">Your code never leaves this page. The file only holds a locked key that your code opens. If you forget the code, just make a new key and upload the new file. Making a new key also changes the code.</p>
+  <label for="c1">Host code</label>
+  <input id="c1" type="password" autocomplete="new-password">
+  <label for="c2">Type it again</label>
+  <input id="c2" type="password" autocomplete="new-password">
+  <button id="suggest" type="button" class="alt">Suggest a strong code</button>
+  <p id="sugg" class="muted"></p>
+  <button id="go" type="button">Make host key</button>
+  <div id="msg" role="status"></div>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id), enc = t => new TextEncoder().encode(t);
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const say = (t, err) => { $('msg').textContent = t; $('msg').className = err ? 'err' : ''; };
+  const WORDS = ["acorn", "amber", "anchor", "apple", "apricot", "arrow", "aspen", "autumn", "badger", "bagel", "bamboo", "banjo", "barley", "basil", "beacon", "beetle", "berry", "birch", "biscuit", "blossom", "bluebell", "bonfire", "bramble", "breeze", "brook", "bubble", "bucket", "butter", "button", "cabin", "cactus", "candle", "canoe", "canyon", "caramel", "cardinal", "carrot", "cedar", "cello", "chalk", "cherry", "chestnut", "cider", "cinnamon", "clover", "cobble", "cocoa", "comet", "compass", "copper", "coral", "cotton", "cradle", "crayon", "cricket", "crumpet", "crystal", "cupcake", "daisy", "dandelion", "dewdrop", "dolphin", "domino", "dragonfly", "drizzle", "dumpling", "ember", "emerald", "fable", "falcon", "feather", "fennel", "fern", "fiddle", "fig", "firefly", "flannel", "fluffy", "forest", "fossil", "fox", "freckle", "frost", "gable", "garden", "garnet", "gazebo", "ginger", "glacier", "glimmer", "goblet", "gondola", "gooseberry", "gravel", "guitar", "hammock", "harbor", "harp", "hazel", "heather", "hedgehog", "hickory", "honey", "hopscotch", "iris", "island", "ivory", "ivy", "jasmine", "jelly", "juniper", "kayak", "kettle", "kiwi", "ladle", "lagoon", "lantern", "larch", "lavender", "lemon", "lilac", "linen", "locket", "lotus", "lullaby", "lumber", "lupine", "magnet", "mango", "maple", "marble", "marigold", "meadow", "melon", "mint", "mitten", "moonbeam", "mosaic", "moss", "muffin", "mulberry", "nectar", "nutmeg", "oak", "oatmeal", "ocean", "olive", "opal", "orchard", "otter", "owl", "paddle", "pancake", "paper", "parsley", "pebble", "pelican", "pepper", "pickle", "pillow", "pine", "pinwheel", "plum", "pocket", "pollen", "pond", "poppy", "porch", "pretzel", "pudding", "puffin", "pumpkin", "quill", "quilt", "rabbit", "radish", "rainbow", "raven", "ribbon", "river", "robin", "rosemary", "saffron", "sage", "sailboat", "sapling", "satchel", "seashell", "sequoia", "shadow", "sherbet", "slipper", "snowdrop", "sparrow", "spindle", "sprout", "squirrel", "starfish", "stone", "sugar", "sunflower", "swallow", "teacup", "thimble", "thistle", "thunder", "tide", "timber", "toffee", "tulip", "tundra", "turnip", "twig", "umbrella", "velvet", "violet", "waffle", "walnut", "willow", "window", "winter", "wren", "yarrow", "zephyr"];
+  $('suggest').addEventListener('click', () => {
+    const pick = () => { const r = new Uint32Array(1); crypto.getRandomValues(r); return WORDS[r[0] % WORDS.length]; };
+    const code = Array.from({ length: 6 }, pick).join(' ');
+    $('sugg').textContent = code; $('c1').value = $('c2').value = code;
+    say('Write this code down somewhere safe before you click Make host key.');
+  });
+  $('go').addEventListener('click', async () => {
+    const code = $('c1').value;
+    if (code.length < 20 || code.trim().split(/[\s-]+/).length < 4) return say('Make the code at least 20 characters and 4 words long.', true);
+    if (/^(.)\1+$/.test(code.replace(/[\s-]/g, '')) || /password|poetry|places|couplet|cove|1234|qwerty/i.test(code)) return say('That code is too easy to guess. Try the suggestion button.', true);
+    if (code !== $('c2').value) return say('The two codes don’t match.', true);
+    if (/\s{2,}/.test(code) || code !== code.trim()) return say('Leave out extra spaces at the start, end or in a row. The chat trims them.', true);
+    if (!crypto.subtle) return say('This browser can’t make keys here. Open this page from the website (https) in Chrome, Safari or Firefox.', true);
+    $('go').disabled = true; say('Making your key…');
+    try {
+      const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+      const priv = await crypto.subtle.exportKey('jwk', pair.privateKey);
+      const { kty, crv, x, y } = await crypto.subtle.exportKey('jwk', pair.publicKey);
+      const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 1000000;   // slow on purpose, so guessing codes takes forever
+      const base = await crypto.subtle.importKey('raw', enc(code), 'PBKDF2', false, ['deriveKey']);
+      const aes = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+      const box = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aes, enc(JSON.stringify(priv)));
+      const data = { v: 1, pub: { kty, crv, x, y }, salt: b64(salt), iv: b64(iv), iter, box: b64(box) };
+      const file = '// Couplet Cove host key, made with host-setup.html. Safe to publish: it only opens with the host code.\nwindow.COVE_HOST = ' + JSON.stringify(data) + ';\n';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([file], { type: 'text/javascript' })); a.download = 'host-key.js';
+      document.body.append(a); a.click(); a.remove();
+      $('c1').value = $('c2').value = '';
+      say('Done! host-key.js is in your downloads. Upload it next to index.html, then type /host and your code in the game chat.');
+    } catch (e) { say('Something went wrong making the key. Try again.', true); }
+    $('go').disabled = false;
+  });
+})();
+</script>
+</body>
+</html>

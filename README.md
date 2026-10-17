@@ -91,3 +91,18 @@ Visits and anonymous activity (joins, private rooms created per world, cafe tool
 ## Copyright
 
 © 2026 Poetry and Places. All rights reserved. See `LICENSE`.
+
+## Host tools (secret moderator login)
+
+Type `/host` in the game chat. It is never sent to anyone. A hidden box appears; type the host code there (it's a password box, so it doesn't show on screen). With the right code, the Host tools panel (only you see it) lets you **Mute** someone (their mic goes silent for everyone) or **Kick** them (removed from that room for an hour). You can also type `/kick Name`, `/mute Name`, `/unmute Name`, and `/host off` to stop.
+
+Setup, once: open `host-setup.html` on the site, click **Suggest a strong code** (or pick 4+ words, 20+ characters), write the code down, and click **Make host key**. Upload the `host-key.js` it downloads next to `index.html`. To change the code, make a new key and upload the new file.
+
+How it's protected:
+- host-key.js holds a signing key locked with your code (PBKDF2, 1,000,000 rounds, AES-GCM). The code never leaves your device and is never typed into the chat.
+- Every mute and kick is signed (ECDSA P-256), and every player's game checks the signature, so nobody can fake one.
+- Old mutes and unmutes can't be replayed, kicks only work in the room they were made for, and anyone flooding fake host messages is ignored.
+- Every player passes the host's signed kicks on to newcomers, so a kicked troll stays blocked even after the host leaves.
+- Five wrong codes in a row lock the box for a minute.
+
+Limits: a kicked person who opens a private window can come back as a new critter (kick again). Whoever controls the GitHub account can replace host-key.js, so keep two-factor login on for GitHub.

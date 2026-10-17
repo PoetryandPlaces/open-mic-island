@@ -7,6 +7,7 @@
 <title>Couplet Cove</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/trystero@0.25.4/+esm" crossorigin>
+<script src="host-key.js" async></script>
 <script>window.__trystero = import("https://cdn.jsdelivr.net/npm/trystero@0.25.4/+esm").catch(() => null);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -531,6 +532,22 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
   width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 190px); overflow-y: auto; box-sizing: border-box; padding: 14px 16px 16px;
 }
 @media (max-width: 760px) { #bagPanel { left: 50%; top: 84px; transform: translateX(-50%); max-height: 46vh; } }
+#hostPanel {
+  position: fixed; right: 16px; top: 168px; z-index: 15;                      /* host tools: only the person who typed the host code sees this */
+  width: min(320px, calc(100vw - 32px)); max-height: calc(100vh - 190px); overflow-y: auto; box-sizing: border-box; padding: 14px 16px 16px;
+}
+@media (max-width: 760px) { #hostPanel { right: auto; left: 50%; top: 84px; transform: translateX(-50%); max-height: 46vh; } }
+#hostPanel .bagHead { cursor: grab; touch-action: none; user-select: none; }
+#hostPanel h2 { margin: 0; font: 700 1.3rem var(--font-display); color: var(--plank); }
+#hostPanel .hostNote { margin: 0 0 6px; font-size: .8rem; font-weight: 700; color: var(--muted); line-height: 1.35; }
+#hostList .bagRow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hostBtn { font: 800 .8rem var(--font-body); border: 0; border-radius: 8px; padding: 6px 10px; cursor: pointer; background: var(--tan); color: var(--ink); }
+.hostBtn.kick { background: #b4475a; color: #fff; }
+#hostUnlock { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#hostUnlock .hostNote { flex: 1 0 100%; margin: 0; }
+#hostCode { flex: 1; min-width: 0; font: 700 .95rem var(--font-body); padding: 8px 10px; border: 2px solid #ddd3ef; border-radius: 10px; }
+#hostErr:empty { display: none; }
+#hostErr { color: #b4475a; }
 #bagPanel .bagHead { cursor: grab; touch-action: none; user-select: none; }
 #bagPanel.dragging, #bagPanel.dragging .bagHead { cursor: grabbing; }
 #bagPanel .bagHead h2::before { content: "⠿"; font-size: .9rem; color: var(--muted); margin-right: 8px; vertical-align: middle; }
@@ -584,9 +601,9 @@ body.in-lobby #copyMark { display: none; }
 <div id="hint" class="sign" hidden>
   <div class="hintHead"><h3>How to play</h3><button id="hintClose" type="button" aria-label="Close how to play">✕</button></div>
   <span class="key-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>Shift</kbd> run</span>
-  <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them)</span>
-  <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair or bean bag to sit)</span>
-  <span class="key-only castle-only"><kbd>Space</kbd> hop (hop onto a bench to sit)</span>
+  <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them), twice to double jump</span>
+  <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair or bean bag to sit), twice to double jump</span>
+  <span class="key-only castle-only"><kbd>Space</kbd> hop (hop onto a bench to sit), twice to double jump</span>
   <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn the camera</span>
   <span class="key-only"><kbd>Space</kbd> at the mic: start / finish reading</span>
   <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
@@ -602,7 +619,7 @@ body.in-lobby #copyMark { display: none; }
   <span class="key-only island-only"><kbd>F</kbd> at the campfire: roast a fish or make a s’more</span>
   <span class="key-only"><kbd>C</kbd> applaud</span>
   <span class="key-only"><kbd>B</kbd> your bag · <kbd>Enter</kbd> chat · <kbd>H</kbd> this help</span>
-  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump. Use the buttons that pop up to <span class="island-only">dig, fish,</span><span class="cafe-only">peek behind pictures, make coffee,</span><span class="castle-only">dig for wands, make a feast,</span> read at the mic, or hug someone nearby.</span>
+  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump, and tap it again in the air to double jump. Use the buttons that pop up to <span class="island-only">dig, fish,</span><span class="cafe-only">peek behind pictures, make coffee,</span><span class="castle-only">dig for wands, make a feast,</span> read at the mic, or hug someone nearby.</span>
 </div>
 
 <div id="dock" hidden>
@@ -625,7 +642,7 @@ body.in-lobby #copyMark { display: none; }
   <div id="chatBody">
     <ul id="chatLog" aria-live="polite"></ul>
     <form id="chatForm" autocomplete="off">
-      <input id="chatInput" type="text" maxlength="200" placeholder="Connecting…" aria-label="Chat message" disabled>
+      <input id="chatInput" type="text" maxlength="200" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Connecting…" aria-label="Chat message" disabled>
       <button id="chatSend" type="submit" disabled>Send</button>
     </form>
   </div>
@@ -643,6 +660,19 @@ body.in-lobby #copyMark { display: none; }
 <section id="askCard" class="sign" hidden aria-live="polite">
   <p id="askText"></p>
   <div class="row"><button id="askYes" type="button">Accept <kbd class="key-only">Y</kbd></button><button id="askNo" type="button">No thanks <kbd class="key-only">N</kbd></button></div>
+</section>
+<section id="hostPanel" class="sign" hidden aria-labelledby="hostTitle">
+  <div class="bagHead"><h2 id="hostTitle">Host tools</h2><button id="hostClose" type="button" aria-label="Close host tools">✕</button></div>
+  <form id="hostUnlock" autocomplete="off">
+    <p class="hostNote">Enter the host code. It stays on this device and is never sent to anyone.</p>
+    <input id="hostCode" type="password" autocomplete="off" aria-label="Host code" spellcheck="false">
+    <button id="hostGo" class="hostBtn kick" type="submit">Unlock</button>
+    <p id="hostErr" class="hostNote" role="status"></p>
+  </form>
+  <div id="hostTools" hidden>
+    <p class="hostNote">Only you can see this. Mute turns someone’s mic off for everyone. Kick removes them from this room for an hour.</p>
+    <div id="hostList"></div>
+  </div>
 </section>
 <section id="bagPanel" class="sign" hidden aria-labelledby="bagTitle">
   <div class="bagHead"><h2 id="bagTitle">Your bag</h2><button id="bagClose" type="button" aria-label="Close bag">✕</button></div>
@@ -2554,6 +2584,7 @@ chatForm.addEventListener('submit', e => {
   e.preventDefault();
   const text = chatInput.value.replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!text) return;
+  if (/^\/(host|kick|mute|unmute)\b/i.test(text)) { chatInput.value = ''; hostCommand(text); return; }   // host commands stay on this device
   if (!actChat) { addLine('', 'Not connected right now. Your message was not sent.', true); return; }
   addLine(myName || 'You', text, false, me.kind); showSay(me, text); critterSpeaks(me); chatInput.value = '';
   track('chat/message'); if (hasBad(text)) track('chat/filtered');
@@ -2696,6 +2727,9 @@ function applyPresence(c, pr) {
   if (ry !== null) c.target.ry = ry;
   c.m = pr.m === 1 ? 1 : 0; c.run = pr.r === 1 ? 1 : 0;
   c.wt = num(pr.w, 0, 1) || 0;
+  const dj = isInt(pr.dj, 0, 9) ? pr.dj : 0;                 // their double-jump counter ticked: play the flip
+  if (c.dj !== undefined && dj !== c.dj) c.flipT = 0;
+  c.dj = dj;
   c.mic = pr.mic === 1;
   if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
@@ -2726,7 +2760,7 @@ function sendPresence(force, target) {
     x: Math.round(pos.x * 100) / 100, y: Math.round(pos.y * 100) / 100, z: Math.round(pos.z * 100) / 100,
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
-    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0
+    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -2775,6 +2809,7 @@ function makeMeter(stream) {
 }
 async function toggleMic() {
   if (micBusy || !joined) return;
+  if (hostMuted && !micOn) { addLine('', 'The host has muted your mic for now.', true); return; }
   if (!micStream) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       addLine('', 'This browser can’t share a microphone here. Open the island over https in Chrome, Edge, Firefox or Safari.', true);
@@ -2802,6 +2837,8 @@ async function toggleMic() {
 micBtn.addEventListener('click', () => { toggleMic(); canvas.focus(); });
 function attachAudio(id, stream) {
   const c = ensureRemote(id);
+  c.stream = stream;
+  if (mutedPeers.has(id)) stream.getAudioTracks().forEach(t => { t.enabled = false; });
   if (c.audio) { c.audio.srcObject = null; c.audio.remove(); }
   if (c.meter) c.meter.close();
   const a = document.createElement('audio');
@@ -2830,8 +2867,191 @@ function wakeAudio() {
 window.addEventListener('pointerdown', wakeAudio, { passive: true });
 window.addEventListener('keydown', wakeAudio);
 
+/* ---------- host tools ----------
+   A secret way to moderate. Type "/host" in the chat (it is never sent to anyone), enter the code in the
+   hidden box that appears, and a Host tools panel lets you mute or kick people.
+   How it stays secret on a public site: host-key.js holds a signing key that is locked with the host code
+   (made on host-setup.html). The right code unlocks it, and every mute or kick is signed with it. Everyone's
+   game checks the signature, so nobody can fake a kick without the code. The code itself never leaves your device. */
+const blocked = new Set(), mutedPeers = new Set(), hostKicks = new Set(), hostMutes = new Set();
+const kickLog = new Map(), lastMod = new Map(), modRate = new Map();   // signed kicks to pass on, newest order per person, flood guard
+let hostKey = null, hostPubKey = null, hostMuted = false, actMod = null;
+const enc = t => new TextEncoder().encode(t);
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+const modText = p => p.k + '|' + p.t + '|' + p.ts + '|' + p.r;
+const hostPanel = document.getElementById('hostPanel'), hostList = document.getElementById('hostList');
+function guardRoom() {                                     // drop everything that comes from someone who was kicked
+  const make = room.makeAction.bind(room);
+  room.makeAction = name => {
+    const a = make(name);
+    const guard = fn => (data, meta) => { if (meta && blocked.has(meta.peerId)) return; if (fn) return fn(data, meta); };
+    const d = Object.getOwnPropertyDescriptor(a, 'onMessage') || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(a) || {}, 'onMessage');
+    try {
+      if (d && d.set) Object.defineProperty(a, 'onMessage', { configurable: true, get: () => d.get ? d.get.call(a) : undefined, set: fn => d.set.call(a, guard(fn)) });
+      else { let h = (d && typeof d.value === 'function') ? guard(d.value) : guard(null); Object.defineProperty(a, 'onMessage', { configurable: true, get: () => h, set: fn => { h = guard(fn); } }); }
+    } catch (e) {}
+    return a;
+  };
+}
+function closePeer(id) { try { const pc = room && room.getPeers && room.getPeers()[id]; if (pc && pc.close) pc.close(); } catch (e) {} }
+async function hostPub() {
+  if (hostPubKey) return hostPubKey;
+  const H = window.COVE_HOST; if (!H || !H.pub) return null;
+  try { const { kty, crv, x, y } = H.pub; hostPubKey = await crypto.subtle.importKey('jwk', { kty, crv, x, y }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']); } catch (e) {}
+  return hostPubKey;
+}
+async function verifyMod(p) {
+  if (!p || typeof p !== 'object' || !['kick', 'mute', 'unmute'].includes(p.k) || typeof p.t !== 'string' || typeof p.s !== 'string') return false;
+  if (p.r !== roomId || typeof p.ts !== 'number' || p.t.length > 64 || p.s.length > 200) return false;
+  const age = Date.now() - p.ts;
+  if (age < -5 * 60e3 || age > (p.k === 'kick' ? 65 : 10) * 60e3) return false;            // kicks stay valid for the hour they last
+  if (p.k !== 'kick' && p.ts <= (lastMod.get(p.t) || 0)) return false;                     // an old mute or unmute can't be replayed
+  const key = await hostPub(); if (!key) return false;
+  try { return await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, unb64(p.s), enc(modText(p))); } catch (e) { return false; }
+}
+function hookHost() {
+  actMod = room.makeAction('mod');
+  actMod.onMessage = async (data, meta) => {
+    const from = meta && meta.peerId, now = Date.now(), r = (modRate.get(from) || []).filter(t => now - t < 5000);
+    if (r.length >= 20) return;                                                                // ignore anyone flooding fake host messages
+    r.push(now); modRate.set(from, r);
+    if (await verifyMod(data)) applyMod(data);
+  };
+}
+function applyMod(p) {
+  const self = p.t === mySelfId, c = remotes.get(p.t);
+  if (p.k === 'kick') {
+    if (self) { beKicked(); return; }
+    if (blocked.has(p.t)) return;
+    blocked.add(p.t); kickLog.set(p.t, p);
+    const who = c && c.hasPos ? nameOf(c) : '';
+    dropRemote(p.t, true); closePeer(p.t);
+    if (who) addLine('', who + ' was removed by the host.', true);
+  } else if (p.k === 'mute' || p.k === 'unmute') {
+    if (p.ts <= (lastMod.get(p.t) || 0)) return;
+    lastMod.set(p.t, p.ts);
+    const on = p.k === 'mute';
+    if (self) {
+      if (on === hostMuted) return;
+      hostMuted = on;
+      if (on && micOn) toggleMic();
+      addLine('', on ? 'The host muted your mic.' : 'The host turned your mic back on. Tap the mic to talk.', true);
+      return;
+    }
+    if (on) mutedPeers.add(p.t); else mutedPeers.delete(p.t);
+    if (c && c.stream) c.stream.getAudioTracks().forEach(t => { t.enabled = !on; });
+  }
+  renderHost();
+}
+function beKicked() {
+  store.set('cove-kicked-' + roomId, String(Date.now() + 3600e3));
+  if (micOn) try { toggleMic(); } catch (e) {}
+  try { if (room) room.leave(); } catch (e) {}
+  actChat = actPres = actPoem = null;
+  goSolo('The host removed you from this room. You can come back a little later.');
+}
+async function hostSend(k, id, target) {
+  if (!hostKey || !actMod) return;
+  const p = { k, t: id, ts: Date.now(), r: roomId };
+  p.s = b64(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, hostKey, enc(modText(p))));
+  actMod.send(p, target ? { target } : undefined).catch(() => {});
+  if (!target) applyMod(p);
+}
+function hostCatchUp(id) {                                  // tell newcomers who was kicked or muted, so a troll can't hang around for them
+  setTimeout(() => {                                          // everyone passes on the host's signed kicks, so they hold even after the host leaves
+    for (const p of kickLog.values()) if (actMod) actMod.send(p, { target: id }).catch(() => {});
+  }, 250);
+  if (!hostKey) return;
+  setTimeout(() => {
+    for (const t of hostKicks) hostSend('kick', t, id);
+    for (const t of hostMutes) hostSend('mute', t, id);
+  }, 1500);
+}
+function hostDo(k, id) {
+  if (k === 'kick') { hostKicks.add(id); hostMutes.delete(id); }
+  if (k === 'mute') hostMutes.add(id);
+  if (k === 'unmute') hostMutes.delete(id);
+  hostSend(k, id);
+}
+let hostFails = 0, hostWait = 0;
+async function unlockHost(code) {
+  const H = window.COVE_HOST, err = document.getElementById('hostErr');
+  if (!H || !H.box) { err.textContent = 'Host tools aren’t set up on this site yet. Make a key with host-setup.html first.'; return; }
+  if (Date.now() < hostWait) { err.textContent = 'Too many tries. Wait a minute and try again.'; return; }
+  err.textContent = 'Checking…';
+  try {
+    const base = await crypto.subtle.importKey('raw', enc(code), 'PBKDF2', false, ['deriveKey']);
+    const aes = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: unb64(H.salt), iterations: H.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const jwk = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(H.iv) }, aes, unb64(H.box))));
+    hostKey = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  } catch (e) {
+    if (++hostFails >= 5) { hostFails = 0; hostWait = Date.now() + 60e3; }
+    err.textContent = 'That code didn’t work.'; return;
+  }
+  hostFails = 0; err.textContent = '';
+  addLine('', 'Host tools unlocked. Only you can see them. Type /host to reopen them or /host off to stop.', true);
+  openHost(true);
+}
+document.getElementById('hostUnlock').addEventListener('submit', e => {
+  e.preventDefault();
+  const box = document.getElementById('hostCode'), code = box.value; box.value = '';
+  if (code) unlockHost(code);
+});
+function findPeer(q) {
+  q = q.toLowerCase();
+  const all = [...remotes.entries()].filter(([, c]) => c.hasPos);
+  const exact = all.filter(([, c]) => nameOf(c).toLowerCase() === q);
+  const list = exact.length ? exact : all.filter(([, c]) => nameOf(c).toLowerCase().startsWith(q));
+  if (list.length === 1) return list[0][0];
+  addLine('', list.length ? 'More than one critter matches “' + q + '”. Use the Host tools panel instead.' : 'Nobody here is called “' + q + '”.', true);
+  return null;
+}
+function hostCommand(text) {
+  const [cmd, ...rest] = text.split(' '), arg = rest.join(' ').trim(), c = cmd.toLowerCase();
+  if (c === '/host') {
+    if (/^off$/i.test(arg)) { hostKey = null; openHost(false); addLine('', 'Host tools are off on this device.', true); return; }
+    openHost(true);                                           // the code goes in the hidden box, never in the chat
+    if (arg && !hostKey) document.getElementById('hostErr').textContent = 'For safety, type the code in this box instead of the chat.';
+    return;
+  }
+  if (!hostKey) { addLine('', 'Only the host can do that.', true); return; }
+  if (!arg) { addLine('', 'Type ' + c + ' followed by a name.', true); return; }
+  const id = findPeer(arg); if (id) hostDo(c.slice(1), id);
+}
+let hostKeySig = '';
+function renderHost(force) {
+  if (hostPanel.hidden || !hostKey) return;
+  const people = [...remotes.entries()].filter(([id, c]) => c.hasPos && !blocked.has(id));
+  const sig = people.map(([id, c]) => id + nameOf(c) + mutedPeers.has(id)).join('|');
+  if (!force && sig === hostKeySig) return;
+  hostKeySig = sig;
+  hostList.innerHTML = '';
+  if (!people.length) { const p = document.createElement('p'); p.className = 'hostNote'; p.textContent = connected() ? 'Nobody else is here right now.' : 'You’re offline.'; hostList.append(p); return; }
+  for (const [id, c] of people) {
+    const row = document.createElement('div'); row.className = 'bagRow';
+    const nm = document.createElement('span'); nm.textContent = nameOf(c);
+    const mute = document.createElement('button'); mute.type = 'button'; mute.className = 'hostBtn';
+    const isMuted = mutedPeers.has(id); mute.textContent = isMuted ? 'Unmute' : 'Mute';
+    mute.addEventListener('click', () => hostDo(isMuted ? 'unmute' : 'mute', id));
+    const kick = document.createElement('button'); kick.type = 'button'; kick.className = 'hostBtn kick'; kick.textContent = 'Kick';
+    kick.addEventListener('click', () => { if (confirm('Remove ' + nameOf(c) + ' from this room for an hour?')) hostDo('kick', id); });
+    row.append(nm, mute, kick); hostList.append(row);
+  }
+}
+function openHost(show) {
+  hostPanel.hidden = !show;
+  document.getElementById('hostUnlock').hidden = !!hostKey; document.getElementById('hostTools').hidden = !hostKey;
+  if (show && !hostKey) setTimeout(() => document.getElementById('hostCode').focus(), 0);
+  if (show) renderHost(true);
+}
+document.getElementById('hostClose').addEventListener('click', () => { openHost(false); canvas.focus(); });
+makeDraggable(hostPanel, hostPanel.querySelector('.bagHead'), 'cove-hostpos');
+setInterval(() => { if (hostKey) renderHost(); }, 1000);
+
 /* ---------- connect ---------- */
 async function connect() {
+  if (Number(store.get('cove-kicked-' + roomId) || 0) > Date.now()) { goSolo('The host removed you from this room. You can come back a little later.'); return; }
   setOnline(false, 'Connecting…');
   setChatEnabled(false, 'Connecting…');
   let T;
@@ -2841,18 +3061,22 @@ async function connect() {
     room = T.joinRoom(Object.assign({ appId: APP_ID, password: 'stanza:' + roomId, relayConfig: { urls: RELAYS } }, TURN.length ? { turnConfig: TURN } : {}), roomId);
   } catch (e) { goSolo('Couldn’t open this island. Refresh to try again.'); return; }
   roomReadyAt = performance.now();
+  guardRoom();
   actPres = room.makeAction('pres');
   actChat = room.makeAction('chat');
   actPoem = room.makeAction('stage');
   hookWorld(T);
+  hookHost();
   room.onPeerJoin = id => {
+    if (blocked.has(id)) { closePeer(id); return; }
+    hostCatchUp(id);
     ensureRemote(id);
     sendPresence(true, id);
     if (micStream) room.addStream(micStream, { target: id });
     catchUpStageMusic(id);
   };
   room.onPeerLeave = id => dropRemote(id);
-  room.onPeerStream = (stream, id, meta) => { if (meta && meta.music) attachStageMusic(id, stream); else attachAudio(id, stream); };
+  room.onPeerStream = (stream, id, meta) => { if (blocked.has(id)) return; if (meta && meta.music) attachStageMusic(id, stream); else attachAudio(id, stream); };
   actPres.onMessage = (data, meta) => {
     const id = meta && meta.peerId; if (!id) return;
     const c = ensureRemote(id);
@@ -3087,7 +3311,8 @@ const sfx = {
   find: () => chimeNotes([784, 988, 1175, 1568], 0.08),
   hug: () => chimeNotes([523, 659, 784], 0.06, 'sine', 0.12),
   ouch: () => chimeNotes([660, 440], 0.1, 'square', 0.1),
-  catchFly: () => chimeNotes([1319, 1760], 0.06, 'sine', 0.06)
+  catchFly: () => chimeNotes([1319, 1760], 0.06, 'sine', 0.06),
+  whoosh: () => { noiseBurst(0.2, 'bandpass', 900, 0.07, 0, 0.8); noiseBurst(0.16, 'bandpass', 1800, 0.05, 0.05, 0.9); }
 };
 const sparkMat = new THREE.MeshBasicMaterial({ color: 0xfff2a8 });
 const dirtMat = new THREE.MeshBasicMaterial({ color: 0x7a5434 });
@@ -5167,6 +5392,11 @@ function applyPose(c, dt) {
   c.rig.position.y += hop;
   c.rig.rotation.z += tilt;
   c.rig.scale.x *= sx;
+  if (c.flipT !== undefined && c.flipT < 0.5) {               // double-jump somersault, turning around the middle of the body
+    c.flipT += dt;
+    const k = Math.min(1, c.flipT / 0.5), th = Math.PI * 2 * (1 - Math.pow(1 - k, 3)), h = 0.45;
+    c.rig.rotation.x += th; c.rig.position.y += h * (1 - Math.cos(th)); c.rig.position.z -= h * Math.sin(th);
+  }
 }
 function hookWorld(T) {
   mySelfId = T.selfId || '';
@@ -5553,6 +5783,7 @@ const TR_SCENES = {
 
 /* ---------- loop ---------- */
 const pos = { x: 0, y: 0, z: 8 };
+let airHop = false;                                          // the second hop of a double jump has been used
 let vy = 0, hopBase = 0, grounded = true, t = 0, last = performance.now(), movingNow = false, runNow = false;
 const camLook = new V(0, 1, 8);
 camera.position.set(0, 10, 21);
@@ -5615,7 +5846,11 @@ function update(dt) {
   }
 
   if (CAFE && active && !TRAILER) cafeWind(dt);
-  if (wantHop && grounded && active && digT <= 0 && !slide) { vy = 7.6; grounded = false; hopBase = pos.y; tryShake(); }   // peaks about 1.3 units up, clears the logs
+  if (wantHop && grounded && active && digT <= 0 && !slide) { vy = 7.6; grounded = false; hopBase = pos.y; airHop = false; tryShake(); }   // peaks about 1.3 units up, clears the logs
+  else if (wantHop && !grounded && !airHop && active && digT <= 0 && !slide) {                // double jump: one more hop in mid-air, with a little flip
+    vy = 7.2; airHop = true; me.flipT = 0; me.flipN = ((me.flipN || 0) + 1) % 10;
+    burst(pos.x, pos.y + 0.2, pos.z, 8, sparkMat, 0.9, 0.6); sfx.whoosh(); sendPresence(true); track('move/double-jump', true);
+  }
   wantHop = false;
   const wasAir = !grounded;
   const g = groundAt(pos.x, pos.z);
@@ -5636,6 +5871,7 @@ function update(dt) {
     if (pos.y <= g) { pos.y = g; vy = 0; grounded = true; } else grounded = false;
   }
   if (slide) { tickSlide(dt); vy = 0; grounded = true; }
+  if (grounded) airHop = false;
   me.sitT = onSeat && grounded && !movingNow && !me.emote ? (me.sitT || 0) + dt : 0;
   me.sitting = me.sitT > 0.35;
   me.root.position.set(pos.x, pos.y, pos.z);
