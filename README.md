@@ -106,3 +106,10 @@ How it's protected:
 - Five wrong codes in a row lock the box for a minute.
 
 Limits: a kicked person who opens a private window can come back as a new critter (kick again). Whoever controls the GitHub account can replace host-key.js, so keep two-factor login on for GitHub.
+
+## Arrivals, ruffled fur, jumping
+
+- Everyone arrives by ride: a sailboat to the island dock, a vintage convertible to the cafe, or a little cloud down to the castle. Move or hop to jump off any time.
+- The cafe wind and the castle's rainbow slide leave your critter's fur ruffled for a few seconds.
+- Hop onto rocks on the island. Double-jump onto the cafe and castle tables, but not while someone is reading at the mic (anyone up there gets nudged off).
+- If you've been alone in a room for a while, or your phone wakes back up, the game quietly rejoins the room so friends find each other more reliably.

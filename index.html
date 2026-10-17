@@ -601,9 +601,9 @@ body.in-lobby #copyMark { display: none; }
 <div id="hint" class="sign" hidden>
   <div class="hintHead"><h3>How to play</h3><button id="hintClose" type="button" aria-label="Close how to play">✕</button></div>
   <span class="key-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · <kbd>Shift</kbd> run</span>
-  <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them), twice to double jump</span>
-  <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair or bean bag to sit), twice to double jump</span>
-  <span class="key-only castle-only"><kbd>Space</kbd> hop (hop onto a bench to sit), twice to double jump</span>
+  <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them), twice to double jump onto rocks</span>
+  <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair or bean bag to sit), twice to double jump onto a table</span>
+  <span class="key-only castle-only"><kbd>Space</kbd> hop (hop onto a bench to sit), twice to double jump onto a table</span>
   <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn the camera</span>
   <span class="key-only"><kbd>Space</kbd> at the mic: start / finish reading</span>
   <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
@@ -1182,7 +1182,7 @@ for (let i = 0; i < 9; i++) {
   const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), rockMat);
   rk.scale.y = 0.65; rk.rotation.set(rand(), rand() * 6, rand());
   put(rk, p.x, r * 0.3, p.z);
-  placed.push({ x: p.x, z: p.z, g: r }); circles.push({ x: p.x, z: p.z, r: r * 0.95 });
+  placed.push({ x: p.x, z: p.z, g: r }); circles.push({ x: p.x, z: p.z, r: r * 0.95, top: r * 0.92 });   // top: hop up onto the rock
   digRocks.push({ x: p.x, z: p.z, r, readyAt: 0 });
 }
 for (let i = 0; i < 10; i++) {
@@ -1193,7 +1193,7 @@ for (let i = 0; i < 10; i++) {
   const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), rockMat);
   rk.scale.y = 0.7; rk.rotation.set(rand(), rand() * 6, rand());
   put(rk, x, rr > 23.5 ? -0.75 : SAND_TOP + r * 0.2, z);
-  circles.push({ x, z, r: r * 0.95 });
+  circles.push(rr > 23.5 ? { x, z, r: r * 0.95 } : { x, z, r: r * 0.95, top: SAND_TOP + r * 0.85 });
 }
 const petal = [0xf7b2c4, 0xfff08a, 0xffffff, 0xc9a7f2, 0xffa98a];
 const stemMat = mat(0x4f9a52);
@@ -1448,7 +1448,7 @@ if (CAFE) {
     put(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.04, 10), ironMat), x, 0.02, z, scene, false);
     put(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.22, 8), mat(0xeee7f8)), x, 1.06, z, scene, false);   // tiny vase
     put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.08, 0), mat(pick([0xf7b2c4, 0xc9a7f2, 0xffd36b]))), x, 1.22, z, scene, false);
-    circles.push({ x, z, r: 0.6 });
+    circles.push({ x, z, r: 0.6, top: 0.95, dj: true });      // dj: a double jump gets you up on the table (not during a reading)
     for (const s of [-1, 1]) {
       const cx = x + 1.0 * s, g = new THREE.Group(); g.position.set(cx, 0, z); g.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
       put(new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.06, 12), seatMat), 0, 0.48, 0, g);
@@ -1757,7 +1757,7 @@ if (CASTLE) {
     put(new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, L), cloth), x, 0.9, zc);
     put(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.13, L), runnerM), x, 0.91, zc, scene, false);
     for (const dz of [-L / 2 + 0.4, L / 2 - 0.4]) for (const dx of [-0.6, 0.6]) put(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.85, 0.12), gold), x + dx, 0.42, zc + dz, scene, false);
-    boxes.push({ x0: x - 0.8, x1: x + 0.8, z0, z1 });
+    boxes.push({ x0: x - 0.8, x1: x + 0.8, z0, z1, top: 0.96, dj: true });   // dj: double-jump up onto the table (not during a reading)
     for (const b of [-1, 1]) {
       const bx = x + 1.3 * b;
       put(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, L - 0.4), benchM), bx, 0.48, zc);
@@ -2063,12 +2063,137 @@ const turnToward = (obj, target, k) => {
   obj.rotation.y += d * k;
 };
 
+/* ---------- arrivals: a boat to the dock, a vintage convertible to the cafe, a cloud to the castle ---------- */
+function buildVehicle(kind) {
+  const g = new THREE.Group();
+  if (kind === 1) {                                              // a little wooden sailboat
+    const hullM = mat(0xb5793f), dark = mat(0x8a5a2e), rim = mat(0xf3e3c8);
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 2.3), hullM), 0, -0.36, -0.15, g);
+    const prow = put(new THREE.Mesh(new THREE.BoxGeometry(0.99, 0.5, 0.99), hullM), 0, -0.36, 1.0, g); prow.rotation.y = Math.PI / 4;
+    for (const s of [-1, 1]) put(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 2.3), rim), 0.7 * s, -0.08, -0.15, g, false);
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.4), dark), 0, -0.18, -0.6, g, false);       // the seat
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.4, 6), dark), 0, 0.95, 0.55, g);       // mast
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0, 1.9); sh.lineTo(1.05, 0); sh.lineTo(0, 0);
+    const sail = put(new THREE.Mesh(new THREE.ShapeGeometry(sh), mat(0xfaf3e6, { side: THREE.DoubleSide })), 0, 0.15, 0.6, g);
+    sail.rotation.y = -Math.PI / 2;
+    const flag = put(new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.18, 0.3), mat(0xc9a7f2)), 0, 2.08, 0.45, g, false);
+    g.userData.sail = sail; g.userData.flag = flag;
+  } else if (kind === 2) {                                       // an old-fashioned convertible
+    const paint = mat(0x9fd8c8), cream = mat(0xf6ecd8), chrome = mat(0xdfe3ea, { metalness: 0.6, roughness: 0.35 }), tire = mat(0x2e2a33), seat = mat(0xa0522d);
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 3.3), paint), 0, -0.18, 0, g);
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 1.2), paint), 0, 0.05, 1.0, g);                  // long hood
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.06, 3.32), cream), 0, 0.04, 0, g, false);          // cream trim line
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.36, 0.5), seat), 0, 0.02, -0.75, g, false);         // the leather seat back
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.34, 0.06), new THREE.MeshStandardMaterial({ color: 0xcfe6f2, transparent: true, opacity: 0.45, roughness: 0.1 })), 0, 0.33, 0.62, g, false).rotation.x = -0.25;
+    put(new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.24, 0.06), chrome), 0, -0.05, 1.66, g, false);      // grille
+    for (const z of [1.72, -1.7]) put(new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 0.1), chrome), 0, -0.33, z, g, false);   // bumpers
+    for (const s of [-1, 1]) {
+      put(new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), new THREE.MeshStandardMaterial({ color: 0xfff6d0, emissive: 0xffe08a, emissiveIntensity: 0.6 })), 0.5 * s, 0.02, 1.68, g, false);
+      for (const z of [1.05, -1.05]) {
+        const w = put(new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.24, 14), tire), 0.72 * s, -0.23, z, g);
+        w.rotation.z = Math.PI / 2;
+        const ww = put(new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.05, 6, 14), cream), 0.85 * s, -0.23, z, g, false);
+        ww.rotation.y = Math.PI / 2;
+        const fender = put(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 12, 1, false, 0, Math.PI), paint), 0.72 * s, -0.12, z, g, false);
+        fender.rotation.z = Math.PI / 2;                           // the top half of a cylinder, arched over the wheel
+      }
+    }
+    const spare = put(new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.09, 6, 14), tire), 0, 0.02, -1.75, g, false);
+  } else {                                                       // a puffy little cloud
+    const puff = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xf3ecff, emissiveIntensity: 0.35, flatShading: true, roughness: 1 });
+    for (const [x, y, z, r] of [[0, -0.3, 0, 0.85], [0.75, -0.35, 0.2, 0.62], [-0.75, -0.35, -0.1, 0.66], [0.2, -0.38, 0.8, 0.58], [-0.2, -0.38, -0.8, 0.6], [0.6, -0.15, -0.55, 0.45], [-0.55, -0.15, 0.6, 0.45]]) {
+      const m = put(new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), puff), x, y, z, g, false); m.scale.y = 0.62;
+    }
+  }
+  scene.add(g);
+  return g;
+}
+const RIDE = ISLAND ? { k: 1, a: [2.7, 44], b: [2.7, 29.3], to: [0.15, 29.3], dur: 8, say: 'You sail in to the dock.' }
+  : CAFE ? { k: 2, a: [-21, 14.8], b: [0.4, 14.8], to: [0.4, 12.3], dur: 6, say: 'You pull up to the Cozy Cafe.' }
+  : { k: 3, a: [0, 38], b: [0, 19.6], to: [0, 17.6], dur: 6.5, say: 'You float down to the Cloudy Castle.' };
+let ride = null, hopTo = null;
+const leaving = [];                                              // vehicles heading off after dropping someone
+function rideAt(r, k) {
+  const e = 1 - Math.pow(1 - k, 2.4);                            // slows down to a gentle stop
+  const x = r.a[0] + (r.b[0] - r.a[0]) * e, z = r.a[1] + (r.b[1] - r.a[1]) * e;
+  const y = r.k === 1 ? waterY(x, z) + 0.42 : r.k === 2 ? 0.55 + Math.abs(Math.sin(t * 9)) * 0.025 * (1 - k) : 0.9 + 5 * Math.pow(1 - e, 1.5) + Math.sin(t * 2.2) * 0.08;
+  return { x, y, z };
+}
+function startRide() {
+  ride = Object.assign({ t: 0 }, RIDE, { v: buildVehicle(RIDE.k) });
+  const p = rideAt(ride, 0); pos.x = p.x; pos.y = p.y; pos.z = p.z; vy = 0; grounded = true;
+  me.root.rotation.y = Math.atan2(ride.b[0] - ride.a[0], ride.b[1] - ride.a[1]);
+}
+function tickRide(dt) {
+  const r = ride; r.t += dt;
+  const k = Math.min(1, r.t / r.dur), p = rideAt(r, k);
+  pos.x = p.x; pos.y = p.y; pos.z = p.z;
+  me.root.rotation.y = Math.atan2(r.b[0] - r.a[0], r.b[1] - r.a[1]);
+  placeVehicle(r.v, r.k, p, me.root.rotation.y);
+  if (r.k === 3 && Math.random() < dt * 6) burst(p.x, p.y - 0.5, p.z, 1, sparkMat, 0.6, 0.3);
+  if (k >= 1) hopOff(true);
+}
+function placeVehicle(v, k, p, ry) {
+  v.position.set(p.x, p.y, p.z); v.rotation.set(0, ry, 0);
+  if (k === 1) { v.rotation.z = Math.sin(t * 1.4) * 0.05; v.rotation.x = Math.sin(t * 1.1) * 0.03; if (v.userData.flag) v.userData.flag.rotation.y = Math.sin(t * 6) * 0.4; }
+}
+function hopOff(arrived) {
+  const r = ride; if (!r) return;
+  ride = null;
+  leaving.push({ v: r.v, k: r.k, t: 0, ry: me.root.rotation.y });
+  vy = 6.4; grounded = false; airHop = false; hopBase = pos.y;
+  if (arrived) hopTo = { fx: pos.x, fz: pos.z, x: r.to[0], z: r.to[1], t: 0 };
+  else if (!walkable(pos.x, pos.z)) {                            // jumped off out at sea or off the street: land just inside
+    if (ISLAND || CASTLE) { const d = Math.hypot(pos.x, pos.z), m = (ISLAND ? SEA_R : CLOUD_R + 1.2) - 0.6; pos.x *= m / d; pos.z *= m / d; }
+    else { pos.x = Math.max(CAFE_OUT.x0 + 0.5, Math.min(CAFE_OUT.x1 - 0.5, pos.x)); pos.z = Math.max(CAFE_OUT.z0 + 0.5, Math.min(CAFE_OUT.z1 - 0.5, pos.z)); }
+  }
+  lastPres = ''; sendPresence(true);
+}
+function tickLeaving(dt) {
+  for (let i = leaving.length - 1; i >= 0; i--) {
+    const L = leaving[i], v = L.v; L.t += dt;
+    if (L.k === 1) {                                             // turn around and sail back out
+      const turn = Math.min(1, L.t / 2.2); v.rotation.y = L.ry + Math.PI * (turn * turn * (3 - 2 * turn));
+      if (L.t > 1.2) { v.position.x += Math.sin(v.rotation.y) * dt * 3; v.position.z += Math.cos(v.rotation.y) * dt * 3; }
+      v.position.y = waterY(v.position.x, v.position.z) + 0.42;
+      v.rotation.z = Math.sin(t * 1.4) * 0.05;
+    } else if (L.k === 2) {                                      // drive off down the street
+      const sp = Math.min(9, L.t * 4); v.position.x += Math.sin(L.ry) * sp * dt; v.position.z += Math.cos(L.ry) * sp * dt;
+    } else { v.position.y += dt * (0.6 + L.t * 0.8); v.position.x += dt * 1.2; v.rotation.y += dt * 0.3; }   // drift back up into the sky
+    if (L.t > 7) { scene.remove(v); leaving.splice(i, 1); }
+    else if (L.t > 5.5) v.scale.setScalar(Math.max(0.01, (7 - L.t) / 1.5));
+  }
+}
+// ruffled fur: little tufts poke out after the cafe wind or a rainbow slide, then smooth down again
+const tuftGeo = new THREE.ConeGeometry(0.055, 0.2, 4);
+function applyRuffle(c, v) {
+  if (v < 0.03) { if (c.tufts) c.tufts.visible = false; return; }
+  if (!c.tufts || c.tuftKind !== c.kind) {
+    if (c.tufts) c.rig.remove(c.tufts);
+    const g = new THREE.Group(), m = mat(parseInt(KIND_INFO[c.kind].color.slice(1), 16));
+    for (let i = 0; i < 30; i++) {
+      const a = i * 2.39996 + Math.random() * 0.4, y = 0.3 + ((i * 7) % 30) / 30 * 1.0;
+      const r = y > 0.87 ? Math.sqrt(Math.max(0.01, 0.42 * 0.42 - (y - 0.87) * (y - 0.87))) : y < 0.42 ? Math.sqrt(Math.max(0.01, 0.42 * 0.42 - (0.42 - y) * (0.42 - y))) : 0.42;
+      const dir = new V(Math.sin(a), 0.35 + Math.random() * 0.6 + (y > 0.9 ? 0.6 : 0), Math.cos(a)).normalize();
+      const tuft = new THREE.Mesh(tuftGeo, m);
+      tuft.position.set(Math.sin(a) * r * 0.92, y, Math.cos(a) * r * 0.92);
+      tuft.quaternion.setFromUnitVectors(new V(0, 1, 0), dir);
+      tuft.userData.ph = Math.random() * 6;
+      g.add(tuft);
+    }
+    c.tufts = g; c.tuftKind = c.kind; c.rig.add(g);
+  }
+  c.tufts.visible = true;
+  for (const tf of c.tufts.children) { const s = v * (0.75 + 0.25 * Math.sin(t * 14 + tf.userData.ph)); tf.scale.set(0.6 + 0.4 * v, Math.max(0.05, s), 0.6 + 0.4 * v); }
+}
+
 /* ---------- world queries ---------- */
 const inRect = (r, x, z) => x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1;
+const tablesClosed = () => !!stageReader;               // nobody stands on the tables while someone is reading
 function groundAt(x, z) {
   // seats first (stage stool, audience logs, campfire stumps), so a seat on the stage isn't hidden by the stage floor
-  for (const b of boxes) if (b.top && inRect(b, x, z)) return b.top;
-  for (const c of circles) if (c.top && Math.hypot(x - c.x, z - c.z) < c.r) return c.top;
+  for (const b of boxes) if (b.top && inRect(b, x, z) && !(b.dj && tablesClosed())) return b.top;
+  for (const c of circles) if (c.top && Math.hypot(x - c.x, z - c.z) < c.r && !(c.dj && tablesClosed())) return c.top;
   if (inRect(STAGE, x, z)) return STAGE.h;
   if (inRect(STEPS, x, z)) return STEPS.h;
   if (!ISLAND) return 0;
@@ -2094,14 +2219,16 @@ function inWaterAt(x, z) {
 }
 const walkable = (x, z) => CASTLE ? Math.hypot(x, z) < CLOUD_R + 1.6 : CAFE ? inRect(CAFE_IN, x, z) || inRect(CAFE_OUT, x, z) : Math.hypot(x, z) < SEA_R || inRect(DOCK, x, z);
 const R = 0.42;
+// a table only lets you over it if you double-jumped (or are already up there), and never during a reading
+const canTop = (o, y) => o.top && y > o.top - 0.2 && (!o.dj || (!tablesClosed() && (airHop || hopBase > o.top - 0.1 || (grounded && y > o.top - 0.06))));
 function resolve(p, y = 0) {
   for (const c of circles) {
-    if (c.top && y > c.top - 0.2) continue;          // stumps: high enough to stand on
+    if (canTop(c, y)) continue;                       // stumps, rocks: high enough to stand on
     const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + R;
     if (d < m && d > 1e-4) { p.x = c.x + dx / d * m; p.z = c.z + dz / d * m; }
   }
   for (const b of boxes) {
-    if (b.top && y > b.top - 0.2) continue;          // high enough to land on (or walk along) the log
+    if (canTop(b, y)) continue;                       // high enough to land on (or walk along) the log
     const cx = Math.max(b.x0, Math.min(p.x, b.x1)), cz = Math.max(b.z0, Math.min(p.z, b.z1));
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz);
     if (d < R) {
@@ -2218,11 +2345,8 @@ lobbyCard.addEventListener('submit', e => {
   lastPres = '';
   if (!joined) {
     joined = true;
-    if (CAFE) { pos.x = (Math.random() - 0.5) * 3; pos.z = 4.4 + Math.random(); }   // just inside the cafe door
-    else if (CASTLE) { pos.x = (Math.random() - 0.5) * 3; pos.z = 7.5 + Math.random(); }   // on the cloud by the castle door
-    else { pos.x = (Math.random() - 0.5) * 4; pos.z = 8 + Math.random() * 2; }
+    startRide();                                                 // arrive by boat, convertible or cloud
     camLook.set(pos.x, 1, pos.z);
-    me.root.rotation.y = Math.PI;
     track(isLobby ? 'joined/main-lobby' : 'joined/private-' + WORLD, true); track('critter/' + k, true);
     [5, 15, 30, 60].forEach(m => setTimeout(() => track('stayed/' + m + '-min', true), m * 60000));
     if (!store.get('cove-helped')) { store.set('cove-helped', '1'); setTimeout(() => toggleHelp(true), 600); }
@@ -2233,6 +2357,7 @@ lobbyCard.addEventListener('submit', e => {
       addLine('', 'Welcome to the Cloudy Castle, ' + myName + '. Tap Invite to copy this castle’s link for friends, and turn your mic on to talk.', true);
       addLine('', 'Dig in the cloud tufts (F) for magic wands and feather quills. A wand makes a feast at the long tables, and a quill writes little letters (L). The stage is inside. And if you step off the cloud, enjoy the rainbow!', true);
     } else addLine('', 'Welcome, ' + myName + '. Tap Invite to copy this island’s link for friends, and turn your mic on to talk.', true);
+    if (ride) addLine('', ride.say + ' Move or hop to jump off whenever you like.', true);
   }
   wakeAudio(); loadSounds(); startSurf(); if (CAFE) startWind();
   setChatMin(store.get('cove-chatmin') === '1');
@@ -2607,8 +2732,9 @@ const TURN = [
 ];
 // Nostr relays used to find each other. Trystero's random default picks included several offline relays,
 // so the island uses its own tested list (the last two keep it compatible with older copies of the page).
-const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://nostr-pub.wellorder.net', 'wss://offchain.pub', 'wss://relay.snort.social',
-  'wss://nostr.oxtr.dev', 'wss://purplerelay.com', 'wss://relay.primal.net', 'wss://top.testrelay.top', 'wss://relay.sigit.io'];
+// (Oct 2026: relay.damus.io kept failing, so it's out; the others answered quickly from California.)
+const RELAYS = ['wss://nos.lol', 'wss://nostr-pub.wellorder.net', 'wss://offchain.pub', 'wss://relay.snort.social', 'wss://relay.primal.net',
+  'wss://nostr.oxtr.dev', 'wss://purplerelay.com', 'wss://top.testrelay.top', 'wss://relay.sigit.io', 'wss://nostr.mom', 'wss://relay.nostr.net', 'wss://nostr21.com'];
 
 const WORDS_A = ['mossy', 'sunny', 'velvet', 'amber', 'misty', 'lilac', 'cozy', 'salty', 'quiet', 'golden', 'dewy', 'starry', 'breezy', 'honey', 'sandy', 'mellow'];
 const WORDS_B = ['lantern', 'tide', 'stanza', 'harbor', 'meadow', 'shell', 'verse', 'cove', 'pebble', 'willow', 'dune', 'sonnet', 'reef', 'clover', 'haiku', 'lagoon'];
@@ -2716,6 +2842,7 @@ function dropRemote(id, silent) {
   if (c.audio) { c.audio.srcObject = null; c.audio.remove(); }
   if (c.meter) c.meter.close();
   if (stageReader === c) { stageReader = null; closeTv(); }
+  if (c.vehicle) scene.remove(c.vehicle);
   scene.remove(c.root); c.tag.remove(); c.bubble.remove(); remotes.delete(id);
   updateCount();
 }
@@ -2730,6 +2857,8 @@ function applyPresence(c, pr) {
   const dj = isInt(pr.dj, 0, 9) ? pr.dj : 0;                 // their double-jump counter ticked: play the flip
   if (c.dj !== undefined && dj !== c.dj) c.flipT = 0;
   c.dj = dj;
+  c.ar = isInt(pr.ar, 0, 3) ? pr.ar : 0;                     // riding in on a boat, car or cloud
+  c.rft = num(pr.rf, 0, 1) || 0;
   c.mic = pr.mic === 1;
   if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
@@ -2760,7 +2889,8 @@ function sendPresence(force, target) {
     x: Math.round(pos.x * 100) / 100, y: Math.round(pos.y * 100) / 100, z: Math.round(pos.z * 100) / 100,
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
-    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0
+    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0,
+    ar: ride ? ride.k : 0, rf: Math.round((me.ruffle || 0) * 10) / 10
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -3105,6 +3235,29 @@ async function connect() {
   updateCount();
 }
 window.addEventListener('pagehide', () => { try { if (room) room.leave(); } catch (e) {} });
+// Keep the room together: phones drop their connections when the screen sleeps, and a relay sometimes misses
+// an announcement. If you've been alone for a while, or you come back to the tab, quietly rejoin the room.
+let lastRejoin = 0, hiddenAt = 0, rejoinWait = 25;
+async function rejoin() {
+  if (!room || TRAILER) return;
+  lastRejoin = performance.now();
+  try { room.leave(); } catch (e) {}
+  room = null; actPres = actChat = actPoem = actMod = null;
+  for (const id of [...remotes.keys()]) dropRemote(id, true);
+  await connect();
+  lastPres = ''; sendPresence(true);
+}
+setInterval(() => {
+  if (!joined || !room || TRAILER) return;
+  if ([...remotes.values()].some(c => c.hasPos)) { rejoinWait = 25; return; }
+  const now = performance.now();
+  if (now - roomReadyAt > rejoinWait * 1000 && now - lastRejoin > rejoinWait * 1000) { rejoinWait = Math.min(160, rejoinWait * 2); rejoin(); }
+}, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = performance.now(); return; }
+  if (hiddenAt && performance.now() - hiddenAt > 15000 && room && joined) rejoin();
+  hiddenAt = 0;
+});
 if (!TRAILER) connect();                                         // trailer actors never go online
 
 /* ---------- splashes, ripples, drips and wet fur ---------- */
@@ -4283,6 +4436,7 @@ function cafeWind(dt) {
   if (pos.z < 6.8) windOut = false;
   if (pos.z <= 7.5) return;
   const push = (1.8 + (pos.z - 7.5) * 0.3) * windGust() * (reduceMotion ? 0.7 : 1);
+  me.ruffle = Math.min(1, (me.ruffle || 0) + dt * 0.45 * windGust());   // the wind musses up your fur
   const dx = (CAFE_DOOR.x - pos.x) * 0.55, dz = CAFE_DOOR.z - 0.8 - pos.z, d = Math.hypot(dx, dz) || 1;
   const next = { x: pos.x + dx / d * push * dt, z: pos.z + dz / d * push * dt };
   resolve(next, pos.y);
@@ -4950,7 +5104,7 @@ function tickCastle(dt) {
     f.g.rotation.y = t * 6;
     if (k >= 1) { burst(pb.x, pb.y + 1.6, pb.z, 8, sparkMat, 0.8, 2); scene.remove(f.g); flying.splice(i, 1); }
   }
-  if (!slide && joined && !lobbyOpen && !TRAILER && Math.hypot(pos.x, pos.z) > CLOUD_R) startSlide();
+  if (!slide && !ride && !hopTo && joined && !lobbyOpen && !TRAILER && Math.hypot(pos.x, pos.z) > CLOUD_R) startSlide();
 }
 function castleAction() {
   if (!CASTLE || !joined || lobbyOpen || slide) return !!slide;
@@ -5822,6 +5976,8 @@ function update(dt) {
   runNow = active && (keys.has('ShiftLeft') || keys.has('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.92);
   const swimming = inWaterAt(pos.x, pos.z);
   if (digT > 0 || cooking || making || slide) { ix = 0; iz = 0; }          // hold still while digging or roasting
+  if (ride) { if (active && (wantHop || Math.hypot(ix, iz) > 0.05)) { wantHop = false; hopOff(false); } else { ix = 0; iz = 0; wantHop = false; } }
+  if (hopTo) { ix = 0; iz = 0; }
   const speed = (runNow ? 8 : 4.6) * (swimming ? 0.6 : 1) * (stungT > 0 ? 0.8 : 1);
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
   const dx = (rx * ix + fx * iz) * speed * dt, dz = (rz * ix + fz * iz) * speed * dt;
@@ -5845,7 +6001,7 @@ function update(dt) {
     pos.x -= pos.x / r * pull * dt; pos.z -= pos.z / r * pull * dt;
   }
 
-  if (CAFE && active && !TRAILER) cafeWind(dt);
+  if (CAFE && active && !TRAILER && !ride && !hopTo) cafeWind(dt);
   if (wantHop && grounded && active && digT <= 0 && !slide) { vy = 7.6; grounded = false; hopBase = pos.y; airHop = false; tryShake(); }   // peaks about 1.3 units up, clears the logs
   else if (wantHop && !grounded && !airHop && active && digT <= 0 && !slide) {                // double jump: one more hop in mid-air, with a little flip
     vy = 7.2; airHop = true; me.flipT = 0; me.flipN = ((me.flipN || 0) + 1) % 10;
@@ -5870,10 +6026,30 @@ function update(dt) {
     vy -= 22 * dt; pos.y += vy * dt;
     if (pos.y <= g) { pos.y = g; vy = 0; grounded = true; } else grounded = false;
   }
-  if (slide) { tickSlide(dt); vy = 0; grounded = true; }
+  if (slide) { tickSlide(dt); vy = 0; grounded = true; me.ruffle = Math.min(1, (me.ruffle || 0) + dt * 0.5); }
+  if (ride) { tickRide(dt); if (ride) { vy = 0; grounded = true; } }
+  if (hopTo) {                                                   // the little hop from the boat, car or cloud onto solid ground
+    hopTo.t += dt; const k = Math.min(1, hopTo.t / 0.55);
+    pos.x = hopTo.fx + (hopTo.x - hopTo.fx) * k; pos.z = hopTo.fz + (hopTo.z - hopTo.fz) * k;
+    turnToward(me.root, Math.atan2(hopTo.x - hopTo.fx, hopTo.z - hopTo.fz), Math.min(1, dt * 10));
+    if (k >= 1) hopTo = null;
+  }
   if (grounded) airHop = false;
+  if (grounded && !ride && !slide && tablesClosed()) {           // someone started reading: hop down off the table
+    for (const o of [...circles, ...boxes]) {
+      if (!o.dj) continue;
+      const inside = o.r ? Math.hypot(pos.x - o.x, pos.z - o.z) < o.r + R : pos.x > o.x0 - R && pos.x < o.x1 + R && pos.z > o.z0 - R && pos.z < o.z1 + R;
+      if (inside && pos.y < o.top - 0.1) {
+        const p = { x: pos.x, z: pos.z }; resolve(p, 0); pos.x = p.x; pos.z = p.z;
+        if (!me.tableTold || t - me.tableTold > 20) { me.tableTold = t; popAt(pos.x, pos.y + 2.3, pos.z, 'Off the table, someone’s reading', ''); }
+      }
+    }
+  }
+  me.ruffle = Math.max(0, (me.ruffle || 0) - dt / 14);           // fur smooths back down
+  applyRuffle(me, me.ruffle);
+  tickLeaving(dt);
   me.sitT = onSeat && grounded && !movingNow && !me.emote ? (me.sitT || 0) + dt : 0;
-  me.sitting = me.sitT > 0.35;
+  me.sitting = me.sitT > 0.35 || !!ride;
   me.root.position.set(pos.x, pos.y, pos.z);
   animateCritter(me, dt, movingNow, runNow, grounded);
   applyPose(me, dt); updateGear(me, dt);
@@ -5900,6 +6076,13 @@ function update(dt) {
     animateCritter(c, dt, c.m === 1, c.run === 1, gr);
     applyPose(c, dt); updateGear(c, dt);
     c.w += (c.wt - c.w) * Math.min(1, dt * 2);
+    c.ruffle = (c.ruffle || 0) + ((c.rft || 0) - (c.ruffle || 0)) * Math.min(1, dt * 2);
+    applyRuffle(c, c.ruffle);
+    if (c.ar && !c.vehicle) { c.vehicle = buildVehicle(c.ar); c.vehicleK = c.ar; }
+    if (c.vehicle) {
+      if (c.ar) placeVehicle(c.vehicle, c.vehicleK, p, c.root.rotation.y);
+      else { leaving.push({ v: c.vehicle, k: c.vehicleK, t: 0, ry: c.root.rotation.y }); c.vehicle = null; }
+    }
     critterFx(c, dt, p.x, p.y, p.z, c.m === 1, false);
     if (c.meter) c.meter.tick(dt);
     if (c.audio) {                                   // open mic mix: the reader up front, everyone else softer
