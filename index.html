@@ -611,7 +611,7 @@ body.in-lobby #copyMark { display: none; }
   <span class="key-only cafe-only"><kbd>F</kbd> by a picture: peek behind it for hidden tools</span>
   <span class="key-only cafe-only"><kbd>F</kbd> at the counter: make coffee, matcha or a sandwich</span>
   <span class="key-only cafe-only"><kbd>F</kbd> in the library corner: read classic poems</span>
-  <span class="key-only castle-only"><kbd>F</kbd> by a cloud tuft: dig for wands and quills</span>
+  <span class="key-only castle-only"><kbd>F</kbd> by a cloud tuft: dig for wands and quills (or hop up and sit on it)</span>
   <span class="key-only castle-only"><kbd>F</kbd> at a long table: wave your wand for a feast, then eat</span>
   <span class="key-only castle-only"><kbd>L</kbd> write a letter with your quill</span>
   <span class="key-only castle-only"><kbd>F</kbd> holding the bug net: catch a tiny fairy</span>
@@ -1807,7 +1807,7 @@ if (CASTLE) {
     const s = 0.6 + rand() * 0.3, tuft = new THREE.Group(); tuft.position.set(x, 0, z); scene.add(tuft);
     for (let k = 0; k < 4; k++) put(new THREE.Mesh(new THREE.IcosahedronGeometry(s * (0.7 + k * 0.12), 1), k % 2 ? cloudWhite : cloudPink), (k - 1.5) * s * 0.45, s * 0.35, (k % 2 - 0.5) * s * 0.4, tuft, false).scale.y = 0.7;
     put(new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), new THREE.MeshBasicMaterial({ color: 0xfff2a8 })), 0, s * 0.95, 0, tuft, false);
-    circles.push({ x, z, r: s * 0.95 });
+    circles.push({ x, z, r: s * 0.95, top: s * 0.8 });        // top: hop up and sit on the cloud
     digRocks.push({ x, z, r: s, readyAt: 0 });
     i++;
   }
