@@ -73,6 +73,8 @@ Everything is a single static `index.html`, so it runs on GitHub Pages with no s
 
 ## Making trailers (Trailer Studio)
 
+The trailer cards use Yoyi's own mockups, cut into layers in `cards/` (flight paths, the presents card, the Couplet Cove title, the loop-de-loop flight, and the two Obsession posters used as closing cards). To change a card, replace the matching PNG with the same name.
+
 Open `https://openmic.poetryandplaces.org/trailer.html` in Chrome or Edge. It isn't linked from the site, and search engines are asked not to list it.
 
 - Pick a trailer: **1 · Somewhere to gather** (a vague, dreamy teaser), **2 · Take the mic** (the open mic), or **3 · Everything** (every feature, labeled).

@@ -111,9 +111,8 @@
      { end: 'tease' | 'full', dur }             the closing card (date, Obsession open mic, link)
      { scene, world, from, dur, caption }       a scene filmed in the game ("captions" = timed list)
    dur is how many seconds the shot lasts. */
-const EVENT = {
-  date: 'October 24', time: '4:00 pm PT',
-  invite: ['…see you on October 24', 'at 4:00 pm PT?'],
+const EVENT = {                       // the closing cards are Yoyi's poster images in cards/ (end-tease.png, end-full.png)
+  date: 'Sunday, October 25', time: '4 to 5 pm PT',
   name: 'Obsession', line: 'a poetry and places open mic',
   link: 'openmic.poetryandplaces.org'
 };
@@ -238,19 +237,47 @@ const paperTex = (() => {                                          // crumpled p
 })();
 const paperFill = g.createPattern(paperTex, 'repeat');
 function lavBg() { g.fillStyle = LAV; g.fillRect(0, 0, W, H); }
-// a thin flight path, drawn on as the card plays, with a little plane at the tip
-const PLANE = new Path2D('M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z');
-function bez(p, t) { const u = 1 - t; return [u * u * u * p[0][0] + 3 * u * u * t * p[1][0] + 3 * u * t * t * p[2][0] + t * t * t * p[3][0], u * u * u * p[0][1] + 3 * u * u * t * p[1][1] + 3 * u * t * t * p[2][1] + t * t * t * p[3][1]]; }
-function flight(pts, prog) {
-  const P = pts.map(([x, y]) => [x * W, y * H]), S = SZ(), end = Math.max(0.002, Math.min(1, prog));
-  g.save(); g.strokeStyle = PLUM; g.globalAlpha = 0.85; g.lineWidth = 2.2 * S; g.lineCap = 'round';
-  g.beginPath();
-  for (let i = 0; i <= 90; i++) { const [x, y] = bez(P, end * i / 90); i ? g.lineTo(x, y) : g.moveTo(x, y); }
-  g.stroke();
-  const [x, y] = bez(P, end), [xa, ya] = bez(P, Math.max(0, end - 0.01)), [xb, yb] = bez(P, Math.min(1, end + 0.01));
-  g.globalAlpha = 1; g.translate(x, y); g.rotate(Math.atan2(yb - ya, xb - xa) + Math.PI / 2);
-  const s = 2.6 * S; g.scale(s, s); g.translate(-12, -12); g.fillStyle = PLUM; g.fill(PLANE);
+// Yoyi's own card art: decor (flight paths with their loop-de-loops) and content layers cut from her mockups
+const CARD = {};
+for (const n of ['presents-decor', 'presents-content', 'poster-top', 'poster-bottom', 'end-tease', 'end-full', 'corner-logo', 'title', 'loop']) { const im = new Image(); im.src = 'cards/' + n + '.png'; CARD[n] = im; }
+// rows of each content image that appear one after another (logo, line, name, date, link)
+const BANDS = { 'presents-content': [[0, 190], [190, 425], [425, 528]], 'end-tease': [[0, 150], [150, 245], [245, 560], [560, 653]], 'end-full': [[0, 140], [140, 231], [231, 546], [546, 652], [652, 716]] };
+const ok = im => im && im.naturalWidth > 0;
+// the flight-path decor: her 16:9 card's paths when wide, the poster's top and bottom paths when tall
+function decor(a) {
+  g.save(); g.globalAlpha = Math.max(0, Math.min(1, a));
+  if (TALL()) {
+    const t = CARD['poster-top'], b = CARD['poster-bottom'];
+    if (ok(t)) g.drawImage(t, 0, 0, W, W * t.naturalHeight / t.naturalWidth);
+    if (ok(b)) { const bh = W * b.naturalHeight / b.naturalWidth; g.drawImage(b, 0, H - bh, W, bh); }
+  } else if (ok(CARD['presents-decor'])) g.drawImage(CARD['presents-decor'], 0, 0, W, H);
   g.restore();
+}
+// draw a content layer at (x, y) and scale s, fading its bands in one by one
+function content(name, x, y, s, local, t0, gap) {
+  const im = CARD[name]; if (!ok(im)) return;
+  const S = SZ();
+  BANDS[name].forEach(([y0, y1], i) => {
+    const k = ease((local - t0 - i * gap) / 0.8); if (k <= 0) return;
+    g.save(); g.globalAlpha = k;
+    g.drawImage(im, 0, y0, im.naturalWidth, y1 - y0, x, y + y0 * s + (1 - k) * 16 * S, im.naturalWidth * s, (y1 - y0) * s);
+    g.restore();
+  });
+}
+// the loop-de-loop flight, revealed from its tail to the plane
+function loopFlight(x, y, s, rot, prog) {
+  const im = CARD.loop; if (!ok(im)) return;
+  const w = im.naturalWidth, h = im.naturalHeight, p = Math.max(0, Math.min(1, prog));
+  if (p <= 0) return;
+  g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s);
+  g.beginPath(); g.rect(-w / 2, -h / 2, w * p, h); g.clip();
+  g.drawImage(im, -w / 2, -h / 2);
+  g.restore();
+}
+// a slow push-in so the still cards feel alive
+function drift(local, dur, fn) {
+  const z = 1 + 0.025 * Math.min(1, local / dur);
+  g.save(); g.translate(W / 2, H / 2); g.scale(z, z); g.translate(-W / 2, -H / 2); fn(); g.restore();
 }
 function ease(k) { k = Math.max(0, Math.min(1, k)); return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
 // a crumpled paper speech bubble with a purple shadow, like the Obsession poster
@@ -271,120 +298,59 @@ function speech(cx, cy, lines, px, rot, appear = 1) {
   lines.forEach((l, i) => g.fillText(l, 0, (i - (lines.length - 1) / 2) * px * 1.28));
   g.restore();
 }
-// glossy purple bubble letters (like the Poetry & Places banner), drawn once and reused
-const glossCache = new Map();
-function glossy(text, px) {
-  const key = text + '|' + px; if (glossCache.has(key)) return glossCache.get(key);
-  const c = document.createElement('canvas'), x = c.getContext('2d');
-  x.font = F.bubbly(px); const tw = x.measureText(text).width;
-  c.width = Math.ceil(tw + px * 0.9); c.height = Math.ceil(px * 1.7);
-  const cx = c.width / 2, cy = c.height / 2;
-  x.font = F.bubbly(px); x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
-  x.fillStyle = '#7a2ab0'; x.fillText(text, cx + px * 0.025, cy + px * 0.07);              // depth
-  const gr = x.createLinearGradient(0, cy - px * 0.5, 0, cy + px * 0.5);
-  gr.addColorStop(0, '#f3c2ff'); gr.addColorStop(0.45, '#c46cf0'); gr.addColorStop(1, '#9440d4');
-  x.fillStyle = gr; x.fillText(text, cx, cy);
-  x.save(); x.globalCompositeOperation = 'source-atop';                                         // the shine across the top
-  const sh = x.createLinearGradient(0, cy - px * 0.48, 0, cy - px * 0.08);
-  sh.addColorStop(0, 'rgba(255,255,255,.8)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = sh; x.fillRect(0, cy - px * 0.5, c.width, px * 0.42);
-  x.restore();
-  x.strokeStyle = 'rgba(255,255,255,.5)'; x.lineWidth = Math.max(1, px * 0.022); x.strokeText(text, cx - px * 0.012, cy - px * 0.02);
-  glossCache.set(key, c); return c;
-}
-function star(x, y, r, col, a) {
-  g.save(); g.globalAlpha = a; g.fillStyle = col; g.beginPath();
-  for (let i = 0; i < 8; i++) { const ang = i * Math.PI / 4, rr = i % 2 ? r * 0.38 : r; g.lineTo(x + Math.cos(ang) * rr, y + Math.sin(ang) * rr); }
-  g.closePath(); g.fill(); g.restore();
-}
-function drawGlossy(text, cx, cy, maxPx, maxW, appear = 1) {
-  g.font = F.bubbly(100); const ratio = g.measureText(text).width / 100;
-  const px = Math.round(Math.min(maxPx, maxW / ratio)), img = glossy(text, px), k = ease(appear), S = SZ();
-  g.save(); g.globalAlpha = k; g.shadowColor = 'rgba(110, 60, 150, .28)'; g.shadowBlur = 30 * S; g.shadowOffsetY = 14 * S;
-  const sc = 0.92 + 0.08 * k; g.translate(cx, cy + (1 - k) * 20 * S); g.scale(sc, sc);
-  g.drawImage(img, -img.width / 2, -img.height / 2); g.restore();
-  const tw = ratio * px, tw2 = Math.sin(performance.now() / 400) * 0.25 + 0.75;
-  star(cx + tw / 2 + 20 * S, cy - px * 0.55, 26 * S, '#d9c9f2', k * tw2);
-  star(cx + tw / 2 + 62 * S, cy - px * 0.2, 16 * S, '#e9ddfa', k * (1.5 - tw2));
-  star(cx - tw / 2 - 30 * S, cy + px * 0.4, 18 * S, '#d9c9f2', k * (1.5 - tw2));
-}
-// ransom-note letters for the open mic's name
-const RANSOM_FONTS = ['"Abril Fatface"', '"Bowlby One"', '"Special Elite"', '"DM Serif Display"', '"Rubik Mono One"', 'Italiana'];
-function ransom(word, cx, cy, px, appear = 1) {
-  const r = seeded(word.length * 31 + 7), S = SZ(), tiles = [];
-  for (const ch of word) {
-    const f = RANSOM_FONTS[Math.floor(r() * RANSOM_FONTS.length)], size = px * (0.82 + r() * 0.34);
-    const dark = r() < 0.5, upper = r() < 0.45;
-    g.font = '400 ' + size + 'px ' + f; const c = upper ? ch.toUpperCase() : ch.toLowerCase();
-    const w = g.measureText(c).width + size * 0.28;
-    tiles.push({ c, f, size, w, h: size * 1.15, rot: (r() - 0.5) * 0.16, dy: (r() - 0.5) * px * 0.16, bg: dark ? (r() < 0.5 ? '#7a63a8' : '#5a4a86') : (r() < 0.5 ? '#ffffff' : '#efe6fb'), fg: dark ? (r() < 0.5 ? '#ffffff' : '#e9ddfa') : (r() < 0.5 ? '#6b55a0' : '#5d6898') });
-  }
-  const total = tiles.reduce((a, t) => a + t.w, 0) + (tiles.length - 1) * 6 * S;
-  let x = cx - total / 2;
-  tiles.forEach((t, i) => {
-    const k = ease(appear * tiles.length - i * 0.6);
-    if (k <= 0) { x += t.w + 6 * S; return; }
-    g.save(); g.globalAlpha = k; g.translate(x + t.w / 2, cy + t.dy); g.rotate(t.rot); g.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k);
-    g.fillStyle = 'rgba(139, 79, 159, .55)'; g.fillRect(-t.w / 2 + 5 * S, -t.h / 2 + 6 * S, t.w, t.h);
-    g.fillStyle = t.bg; g.fillRect(-t.w / 2, -t.h / 2, t.w, t.h);
-    g.fillStyle = t.fg; g.font = '400 ' + t.size + 'px ' + t.f; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t.c, 0, t.size * 0.04);
-    g.restore();
-    x += t.w + 6 * S;
-  });
-}
 function drawLogo(img, cx, cy, h, a = 1) {
   if (!img.naturalWidth) return;
   const w = h * img.naturalWidth / img.naturalHeight;
   g.save(); g.globalAlpha = a; g.drawImage(img, cx - w / 2, cy - h / 2, w, h); g.restore();
 }
 function drawPresents(local, dur) {
-  const S = SZ(), k = local / dur;
+  const S = SZ();
   lavBg();
-  flight([[-0.05, 0.25], [0.3, -0.08], [0.55, 0.5], [1.05, 0.14]], k * 1.25);
-  drawLogo(logoC, W / 2, H * 0.43 - (TALL() ? 40 : 0) * S, 250 * S, ease(local / 0.9));
-  g.save(); g.globalAlpha = ease((local - 0.5) / 0.8); g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = INK; g.font = F.thin(Math.round(96 * S)); g.fillText('poetry and places', W / 2, H * 0.43 + 200 * S - (TALL() ? 40 : 0) * S);
-  g.fillStyle = PLUM; g.font = F.deco(Math.round(58 * S)); g.fillText('presents', W / 2, H * 0.43 + 285 * S - (TALL() ? 40 : 0) * S);
-  g.restore();
+  drift(local, dur, () => {
+    decor(local / 0.6);
+    if (TALL()) { const s = (W - 100 * S) / 1545; content('presents-content', W / 2 - 1545 * s / 2, H * 0.47 - 528 * s / 2, s, local, 0.2, 0.45); }
+    else content('presents-content', 188 * W / 1920, 298 * H / 1080, S, local, 0.2, 0.45);
+  });
 }
 function drawBubbleCard(shot, local) {
   const S = SZ();
   lavBg();
-  flight([[-0.04, 0.82], [0.25, 1.05], [0.3, 0.45], [1.04, 0.3]], local / shot.dur * 1.2);
+  decor(1);
   const px = Math.round((TALL() ? 76 : 84) * S);
   speech(W / 2, H * 0.47, shot.bubble, px, -0.05, local / 0.7);
   drawLogo(logoC, W - 70 * S, H - 66 * S, 68 * S, 0.85);
 }
 function drawTitleCard(shot, local) {
-  const S = SZ();
+  const S = SZ(), tall = TALL(), im = CARD.title;
   lavBg();
-  flight([[1.05, 0.2], [0.7, -0.1], [0.4, 0.4], [-0.05, 0.15]], local / shot.dur * 1.2);
-  drawGlossy(shot.title, W / 2, H * 0.46, 200 * S, W * 0.86, local / 0.8);
-  g.save(); g.globalAlpha = ease((local - 0.6) / 0.8); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = INK; g.font = F.deco(Math.round(62 * S));
-  (shot.sub || []).forEach((l, i) => g.fillText(l, W / 2, H * 0.46 + 170 * S + i * 70 * S));
-  g.restore();
-  drawLogo(logoC, W - 70 * S, H - 66 * S, 68 * S, 0.85);
+  drift(local, shot.dur, () => {
+    if (tall) decor(local / 0.6);
+    else {
+      loopFlight(W - 380 * S, H - 250 * S, 0.5 * S, 0, local / 2);
+      loopFlight(250 * S, 200 * S, 0.4 * S, Math.PI, (local - 0.4) / 2);
+    }
+    const cy = H * (tall ? 0.43 : 0.44);
+    if (ok(im)) {
+      const s = Math.min(S, (W * (tall ? 0.92 : 0.86)) / im.naturalWidth), k = ease(local / 0.8), sc = s * (0.94 + 0.06 * k);
+      g.save(); g.globalAlpha = k; g.translate(W / 2, cy + (1 - k) * 20 * S); g.scale(sc, sc); g.drawImage(im, -im.naturalWidth / 2, -im.naturalHeight / 2); g.restore();
+    }
+    g.save(); g.globalAlpha = ease((local - 0.6) / 0.8); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = INK; g.font = F.deco(Math.round(62 * S));
+    (shot.sub || []).forEach((l, i) => g.fillText(l, W / 2, cy + (tall ? 140 : 170) * S + i * 70 * S));
+    g.restore();
+  });
 }
+// the closing card is her Obsession poster: the plain one for the teaser, the one with the link for the others
 function drawEndCard(shot, local) {
-  const S = SZ(), tall = TALL(), full = shot.end === 'full';
+  const S = SZ(), tall = TALL(), full = shot.end === 'full', name = full ? 'end-full' : 'end-tease', im = CARD[name];
   lavBg();
-  flight(tall ? [[-0.05, 0.08], [0.4, -0.02], [0.75, 0.16], [1.05, 0.05]] : [[-0.05, 0.1], [0.3, -0.04], [0.85, 0.02], [1.05, 0.32]], local / shot.dur * 1.15);
-  const a = k0 => ease((local - k0) / 0.7);
-  g.textAlign = 'center'; g.textBaseline = 'middle';
-  if (tall) {
-    drawGlossy('Couplet Cove', W / 2, H * 0.24, 190 * S, W * 0.88, local / 0.8);
-    if (full) { g.save(); g.globalAlpha = a(0.5); g.fillStyle = INK; g.font = F.deco(Math.round(56 * S)); g.fillText(EVENT.link, W / 2, H * 0.31); g.restore(); }
-    speech(W / 2, H * 0.47, EVENT.invite, Math.round(68 * S), -0.05, (local - 1) / 0.7);
-    ransom(EVENT.name, W / 2, H * 0.66, 110 * S, (local - 1.8) / 1.2);
-    g.save(); g.globalAlpha = a(2.6); g.fillStyle = INK; g.font = F.deco(Math.round(58 * S)); g.fillText(EVENT.line, W / 2, H * 0.735); g.restore();
-  } else {
-    drawGlossy('Couplet Cove', W / 2, H * 0.2, 170 * S, W * 0.7, local / 0.8);
-    if (full) { g.save(); g.globalAlpha = a(0.5); g.fillStyle = INK; g.font = F.deco(Math.round(54 * S)); g.fillText(EVENT.link, W / 2, H * 0.335); g.restore(); }
-    speech(W * 0.28, H * 0.63, EVENT.invite, Math.round(62 * S), -0.05, (local - 1) / 0.7);
-    ransom(EVENT.name, W * 0.73, H * 0.58, 118 * S, (local - 1.8) / 1.2);
-    g.save(); g.globalAlpha = a(2.6); g.fillStyle = INK; g.font = F.deco(Math.round(54 * S)); g.fillText(EVENT.line, W * 0.73, H * 0.73); g.restore();
-  }
-  drawLogo(logoC, W - 70 * S, H - 66 * S, 68 * S, 0.85);
+  drift(local, shot.dur, () => {
+    decor(local / 0.6);
+    if (ok(im)) {
+      const s = (tall ? 1.15 : 1.15) * S, w = im.naturalWidth * s, h = im.naturalHeight * s;
+      content(name, W / 2 - w / 2, H * (tall ? 0.5 : 0.5) - h / 2, s, local, 0.3, 0.5);
+    }
+    if (full && ok(CARD['corner-logo'])) { g.save(); g.globalAlpha = ease((local - 0.3) / 0.8); g.drawImage(CARD['corner-logo'], W - 115 * S, 37 * S, 66 * S, 78 * S); g.restore(); }
+  });
 }
 function wrapLines(text, font, maxW) { g.font = font; return wrap(text, maxW); }
 function drawCardShot(shot, local) {
@@ -560,8 +526,7 @@ async function begin(record) {
   $('preview').disabled = $('record').disabled = true; $('stop').disabled = false;
   setStatus('Loading the first shots…');
   await Promise.all(FONT_LOADS.map(f => document.fonts.load(f).catch(() => {})));
-  for (const im of [logoC, logoL]) if (!im.complete) await new Promise(r => { im.onload = im.onerror = r; });
-  glossCache.clear();
+  for (const im of [logoC, logoL, ...Object.values(CARD)]) if (!im.complete) await new Promise(r => { im.onload = im.onerror = r; });
   // load the first scene (and the next one) before rolling
   const a = nextSceneIndex(0), b = a >= 0 ? nextSceneIndex(a + 1) : -1;
   if (a >= 0) loadShot(shots[a], frames[0], a);
@@ -620,6 +585,8 @@ function startShotFirst() {
 $('preview').addEventListener('click', () => begin(false));
 $('record').addEventListener('click', () => begin(true));
 $('stop').addEventListener('click', () => finish(true));
+// draw one card frame on demand (used to check the card layouts)
+window.__card = (shot, local, fmt) => { [W, H] = sizeFor(fmt || 'wide'); out.width = W; out.height = H; drawCardShot(shot, local); };
 [W, H] = sizeFor('wide'); layoutFeeds();
 lavBg(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = INK; g.font = F.thin(110); g.fillText('trailer studio', W / 2, H / 2);
 document.fonts.load(F.thin(110)).then(() => { if (!run) { lavBg(); g.fillStyle = INK; g.font = F.thin(110); g.fillText('trailer studio', W / 2, H / 2); } });
