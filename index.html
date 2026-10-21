@@ -821,30 +821,43 @@ function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let
 const rand = rng(7);
 const pick = a => a[Math.floor(rand() * a.length)];
 
-/* ---------- sky & light: golden-hour sunset ---------- */
+/* ---------- sky & light ----------
+   The castle keeps its bright, iridescent day. The island follows the player's own clock from morning
+   to a pastel San Diego sunset, and stays at sunset through the night (no dark nights). The cafe and the
+   trailers always use the sunset. Add #time=morning, day, golden or sunset to a link to preview a look. */
 const SUN_DIR = (CASTLE ? new V(-0.45, 0.42, -0.79) : new V(-0.5, 0.11, -0.86)).normalize();   // a higher, brighter sun over the castle
 let skyGlow = null;
-{
-  const g = new THREE.SphereGeometry(320, 32, 20);
-  const top = new THREE.Color(CASTLE ? 0x6fa8ec : 0x2f2f6b), mid = new THREE.Color(CASTLE ? 0xbfe0ff : 0xe58fa0), hor = new THREE.Color(CASTLE ? 0xffe8f3 : 0xffad6b);
-  const p = g.attributes.position, cols = [];
+const SKY_LOOKS = {
+  morning: { top: 0x7fb6e8, mid: 0xbfdcf2, hor: 0xffe4cc, glow: 0xfff1d6, disc: 0xfff4dc, halo: 0xffe2b8, haloA: 0.25, hemiSky: 0xfff3e2, hemiGround: 0x6f7f8e, hemiI: 0.8, sunCol: 0xffeed6, sunI: 0.95, fog: 0xdbe7ef, water: 0x4a89bd, el: 0.32, az: 2.4 },
+  day: { top: 0x4f9be0, mid: 0x9fcff2, hor: 0xe6f3fa, glow: 0xffffff, disc: 0xfffbee, halo: 0xfff6dd, haloA: 0.18, hemiSky: 0xffffff, hemiGround: 0x7a8a72, hemiI: 0.9, sunCol: 0xfff8ee, sunI: 1.05, fog: 0xcfe3f0, water: 0x3c86c2, el: 0.95, az: 3.0 },
+  golden: { top: 0x6f86cc, mid: 0xf2bfa6, hor: 0xffc887, glow: 0xffcf8a, disc: 0xffe6b0, halo: 0xffb070, haloA: 0.3, hemiSky: 0xffd2b0, hemiGround: 0x55608a, hemiI: 0.7, sunCol: 0xffb978, sunI: 0.95, fog: 0xe8b8a0, water: 0x4f78ac, el: 0.2, az: -2.8 },
+  // a soft San Diego sunset: periwinkle overhead, cotton-candy pink, then peach at the horizon
+  sunset: { top: 0x9592da, mid: 0xf6aac6, hor: 0xffc4a8, glow: 0xffd9c0, disc: 0xfff1dc, halo: 0xff9fb8, haloA: 0.35, hemiSky: 0xffc6d6, hemiGround: 0x5a5a8c, hemiI: 0.72, sunCol: 0xffaebc, sunI: 0.85, fog: 0xf0b6c6, water: 0x7686c8, el: 0.07, az: -2.62 }
+};
+// local hour → look; between two marks the sky blends smoothly
+const SKY_DAY = [[0, 'sunset'], [5.2, 'sunset'], [6.6, 'morning'], [9.5, 'day'], [15, 'day'], [17.2, 'golden'], [18.6, 'sunset'], [24, 'sunset']];
+const skyGeo = new THREE.SphereGeometry(320, 32, 20);
+const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(13, 20, 14), new THREE.MeshBasicMaterial({ color: CASTLE ? 0xfffbe8 : 0xffe0a8, fog: false }));
+const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(30, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffb070, transparent: true, opacity: 0.28, fog: false, depthWrite: false }));
+function paintSky(topC, midC, horC, glowC) {
+  const top = new THREE.Color(topC), mid = new THREE.Color(midC), hor = new THREE.Color(horC), glow = new THREE.Color(glowC);
+  const p = skyGeo.attributes.position, cols = [];
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i) / 320, y = p.getY(i) / 320, z = p.getZ(i) / 320;
     const h = Math.max(0, y);
     const c = h < 0.22 ? hor.clone().lerp(mid, Math.pow(h / 0.22, 0.8)) : mid.clone().lerp(top, Math.pow((h - 0.22) / 0.78, 0.6));
     const toward = Math.max(0, x * SUN_DIR.x + y * SUN_DIR.y + z * SUN_DIR.z);     // warmer glow on the sun's side
-    c.lerp(new THREE.Color(CASTLE ? 0xfff6d6 : 0xffc27a), Math.pow(toward, 6) * 0.7);
+    c.lerp(glow, Math.pow(toward, 6) * 0.7);
     cols.push(c.r, c.g, c.b);
   }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-  scene.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false })));
-  const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(13, 20, 14), new THREE.MeshBasicMaterial({ color: CASTLE ? 0xfffbe8 : 0xffe0a8, fog: false }));
-  sunDisc.position.copy(SUN_DIR).multiplyScalar(290); scene.add(sunDisc);
-  const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(30, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffb070, transparent: true, opacity: 0.28, fog: false, depthWrite: false }));
-  sunGlow.position.copy(sunDisc.position); scene.add(sunGlow);
-  if (CASTLE) { sunGlow.material.opacity = 0.45; skyGlow = sunGlow; }                 // iridescent sunshine
+  skyGeo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
 }
-scene.add(CASTLE ? new THREE.HemisphereLight(0xf2f6ff, 0xc9bfe8, 0.85) : new THREE.HemisphereLight(0xffc6a8, 0x45506e, 0.62));
+scene.add(new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false })));
+scene.add(sunDisc, sunGlow);
+if (CASTLE) { paintSky(0x6fa8ec, 0xbfe0ff, 0xffe8f3, 0xfff6d6); sunGlow.material.opacity = 0.45; skyGlow = sunGlow; }   // iridescent sunshine
+sunDisc.position.copy(SUN_DIR).multiplyScalar(290); sunGlow.position.copy(sunDisc.position);
+const hemi = CASTLE ? new THREE.HemisphereLight(0xf2f6ff, 0xc9bfe8, 0.85) : new THREE.HemisphereLight(0xffc6a8, 0x45506e, 0.62);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(CASTLE ? 0xfff2dc : 0xffa86e, CASTLE ? 0.95 : 0.9);
 sun.position.copy(SUN_DIR).multiplyScalar(40);
 sun.castShadow = true;
@@ -852,6 +865,34 @@ sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 100 });
 sun.shadow.bias = -0.0008;
 scene.add(sun);
+let skyWater = null, skyKey = '';
+function skyLook() {                                             // the look for right now, blended between the nearest marks
+  const forced = (/(?:^|[#&])time=(morning|day|golden|sunset)/i.exec(location.hash) || [])[1];
+  if (forced) return SKY_LOOKS[forced.toLowerCase()];
+  if (!ISLAND || TRAILER) return SKY_LOOKS.sunset;
+  const d = new Date(), h = d.getHours() + d.getMinutes() / 60;
+  let i = 0; while (i < SKY_DAY.length - 2 && SKY_DAY[i + 1][0] <= h) i++;
+  const [h0, a] = SKY_DAY[i], [h1, b] = SKY_DAY[i + 1], k0 = Math.max(0, Math.min(1, (h - h0) / (h1 - h0))), k = k0 * k0 * (3 - 2 * k0);
+  const A = SKY_LOOKS[a], B = SKY_LOOKS[b], out = {};
+  const COLORS = ['top', 'mid', 'hor', 'glow', 'disc', 'halo', 'hemiSky', 'hemiGround', 'sunCol', 'fog', 'water'];
+  for (const key in A) out[key] = COLORS.includes(key) ? new THREE.Color(A[key]).lerp(new THREE.Color(B[key]), k).getHex() : A[key] + (B[key] - A[key]) * k;
+  const dAz = Math.atan2(Math.sin(B.az - A.az), Math.cos(B.az - A.az)); out.az = A.az + dAz * k;   // the sun swings the short way round
+  return out;
+}
+function applySky() {
+  if (CASTLE) return;
+  const L = skyLook(), key = JSON.stringify(L);
+  if (key === skyKey) return;
+  skyKey = key;
+  SUN_DIR.set(Math.sin(L.az) * Math.cos(L.el), Math.sin(L.el), Math.cos(L.az) * Math.cos(L.el)).normalize();
+  paintSky(L.top, L.mid, L.hor, L.glow);
+  sunDisc.material.color.setHex(L.disc); sunDisc.position.copy(SUN_DIR).multiplyScalar(290);
+  sunGlow.material.color.setHex(L.halo); sunGlow.material.opacity = L.haloA; sunGlow.position.copy(sunDisc.position);
+  hemi.color.setHex(L.hemiSky); hemi.groundColor.setHex(L.hemiGround); hemi.intensity = L.hemiI;
+  sun.color.setHex(L.sunCol); sun.intensity = L.sunI; sun.position.copy(SUN_DIR).multiplyScalar(40);
+  scene.fog.color.setHex(L.fog);
+  if (skyWater) skyWater.color.setHex(L.water);
+}
 
 /* ---------- island ---------- */
 const GRASS_R = 19.6, SAND_TOP = -0.4, WALK_R = 23;
@@ -868,6 +909,9 @@ water.rotation.x = -Math.PI / 2;
 water.position.y = -0.78;
 water.receiveShadow = true;
 scene.add(water);
+skyWater = water.material; applySky();
+setInterval(applySky, 60000);                                    // the island's sky follows your clock
+window.addEventListener('hashchange', applySky);
 const wBase = Float32Array.from(waterGeo.attributes.position.array);
 
 const shallow = new THREE.Mesh(new THREE.RingGeometry(23.4, 31, 40), new THREE.MeshBasicMaterial({ color: 0x8fb9cf, transparent: true, opacity: 0.4, depthWrite: false }));
@@ -5751,7 +5795,7 @@ function trTick(dt) {
       const w = c.walk, dx = w.x - c.target.x, dz = w.z - c.target.z, d = Math.hypot(dx, dz), step = w.speed * dt;
       if (d <= step) { c.target.x = w.x; c.target.z = w.z; c.walk = null; c.m = 0; if (w.then) w.then(); }
       else { c.target.x += dx / d * step; c.target.z += dz / d * step; c.target.ry = Math.atan2(dx, dz); c.m = 1; }
-      c.target.y = groundAt(c.target.x, c.target.z);
+      c.target.y = groundAt(c.target.x, c.target.z) + (c.hopY || 0);
     }
     c.meter.talking = !!c.talkOn && (Math.sin(TR.t * 6.3 + c.talkPh) + Math.sin(TR.t * 2.1 + c.talkPh * 2)) > -0.3;
   }
@@ -5804,6 +5848,47 @@ const TR_SCENES = {
     const r = trActor('c', 'mouse', 'Rosy', 6, 10, 0); trWalk(r, 3, 4, 1.6);
     const f = trActor('d', 'frog', 'Pip', 0, 27, Math.PI); trSeat(f, 0.4, 28, DOCK.h, 0.3);
     trShot(0, 14, [[42, 20, 44], [0, 0, 2]], [[18, 12, 34], [0, 0.5, 0]], [[-10, 8, 20], [0, 1, -4]], [[-6, 5.5, 4], [0, 1.6, -9]]);
+  },
+  // Rosy unwinds by the sea at sunset: sits in the sand, wades in, splashes and twirls, then heads off to the open mic
+  'rosy-beach'() {
+    TR.dur = 13;
+    // find a stretch of beach facing the sunset with no rocks in the way
+    let a0 = -2.1;
+    for (let k = 0; k < 40; k++) {
+      const a = -2.1 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.05;
+      const clear = [20.8, 22, 23.2, 24.6].every(r => [-3, 0, 3].every(sd => {
+        const x = Math.cos(a) * r - Math.sin(a) * sd, z = Math.sin(a) * r + Math.cos(a) * sd;
+        return circles.every(c => Math.hypot(x - c.x, z - c.z) > c.r + 1.0);
+      }));
+      if (clear) { a0 = a; break; }
+    }
+    const ux = Math.cos(a0), uz = Math.sin(a0), vx = -uz, vz = ux;     // out to sea, and along the shore
+    const P = (r, sd, y = 0) => [ux * r + vx * sd, y, uz * r + vz * sd];
+    const at = (r, sd) => { const [x, , z] = P(r, sd); return [x, z]; };
+    const face = (r, sd, r2, sd2) => { const [x, z] = at(r, sd), [x2, z2] = at(r2, sd2); return Math.atan2(x2 - x, z2 - z); };
+    const rosy = trActor('rosy', 'mouse', 'Rosy', ...at(21.6, 0.8), face(21.6, 0.8, 30, 0.8));
+    const [sx, sz] = at(21.6, 0.8); trSeat(rosy, sx, sz, SAND_TOP, face(21.6, 0.8, 30, 0.8));
+    const hop = (t0, h, flip) => {                                // a happy little hop (with a flip if asked)
+      trAt(t0, () => { if (flip) rosy.flipT = 0; });
+      trDuring(t0, t0 + 0.5, k => { rosy.hopY = k >= 1 ? 0 : Math.sin(k * Math.PI) * h; if (!rosy.walk) rosy.target.y = groundAt(rosy.target.x, rosy.target.z) + rosy.hopY; });
+      trAt(t0 + 0.5, () => {                                    // land with a splash if the waves are right there
+        const x = rosy.target.x, z = rosy.target.z;
+        if (Math.hypot(x, z) > 24.4) { splash(x, waterY(x, z), z, 14, 0.8); ripple(x, z, 1.1); splashSound(0.8, true); }
+      });
+    };
+    // A: sitting in the sand, watching the waves (0–4)
+    trAt(1.2, () => popAt(sx, SAND_TOP + 2.0, sz, '♡', 'heart'));
+    trShot(0, 4, [P(19.4, 4.2, 1.2), P(30, -0.6, 0.8)], [P(19.9, 3.0, 1.0), P(30, 0.2, 0.7)]);
+    // B: up and into the shallows, splashing along the shore (4–9)
+    trAt(4.0, () => { rosy.sitting = false; trWalk(rosy, ...at(24.9, 0.4), 2.2, () => trWalk(rosy, ...at(25.0, -2.6), 2.6, () => trWalk(rosy, ...at(24.6, 2.2), 3.4))); });
+    hop(6.4, 0.7, false); hop(7.6, 0.8, false);
+    trShot(4, 9, [P(19.6, 5.5, 1.8), P(25, 0, 0.3)], [P(20.2, -3.8, 1.7), P(25, -0.8, 0.3)]);
+    // C: a twirl and a flip, then off to the open mic (9–13)
+    trAt(9.2, () => { rosy.walk = null; rosy.target.ry = face(24.6, 2.2, 18, 2.2); });
+    hop(9.5, 1.3, true); hop(10.5, 1.0, false);
+    trAt(10.1, () => popAt(rosy.target.x, 1.9, rosy.target.z, '✨', 'good'));
+    trAt(11.2, () => trWalk(rosy, ...at(19.5, 1.6), 2.4));
+    trShot(9, 13, [P(21.4, 4.4, 1.3), P(24.4, 2, 0.6)], [P(18.6, 4.2, 2.2), P(21, 1.8, 0.7)]);
   },
   // the open mic: Rosy reads under the spotlight while everyone listens from the logs, then applause
   'open-mic'() {

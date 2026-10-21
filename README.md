@@ -113,3 +113,5 @@ Limits: a kicked person who opens a private window can come back as a new critte
 - The cafe wind and the castle's rainbow slide leave your critter's fur ruffled for a few seconds.
 - Hop onto rocks on the island. Double-jump onto the cafe and castle tables, but not while someone is reading at the mic (anyone up there gets nudged off).
 - If you've been alone in a room for a while, or your phone wakes back up, the game quietly rejoins the room so friends find each other more reliably.
+
+- The island's sky follows each player's own clock: morning, bright day, golden hour, then a pastel pink sunset that stays through the night (no dark nights). The cafe and the trailers always show the sunset. Add `#time=morning`, `#time=day`, `#time=golden` or `#time=sunset` to a link to preview a look.
