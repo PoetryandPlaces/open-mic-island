@@ -5762,6 +5762,22 @@ function trSeat(c, x, z, top, ry) {
 function trWalk(c, x, z, speed = 2.6, then) { c.sitting = false; c.walk = { x, z, speed, then }; }
 function trMove(c, x, y, z) { c.target.x = x; c.target.y = y; c.target.z = z; }
 function trSay(c, text) { showSay(c, text); critterSpeaks(c); }
+// pick a camera spot `dist` away from (cx, cz), as close as possible to the direction `prefer`
+// (radians: 0 = from +z, π/2 = from +x), with no tree, post or wall-like thing between it and the subject
+function trClearView(cx, cz, dist, prefer) {
+  const blockers = circles.filter(c => !c.top && c.r >= 0.45);
+  for (let k = 0; k < 40; k++) {
+    const a = prefer + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.1;
+    const px = cx + Math.sin(a) * dist, pz = cz + Math.cos(a) * dist;
+    const clear = blockers.every(c => {
+      const vx = px - cx, vz = pz - cz, L = vx * vx + vz * vz, u = Math.max(0.15, Math.min(1.08, ((c.x - cx) * vx + (c.z - cz) * vz) / L));
+      return Math.hypot(cx + vx * u - c.x, cz + vz * u - c.z) > c.r + 1.0;
+    }) && !boxes.some(b => !b.top && inRect({ x0: b.x0 - 0.5, x1: b.x1 + 0.5, z0: b.z0 - 0.5, z1: b.z1 + 0.5 }, px, pz));
+    if (clear) return a;
+  }
+  return prefer;
+}
+const trAround = (cx, cz, a, dist, y) => [cx + Math.sin(a) * dist, y, cz + Math.cos(a) * dist];
 // smooth camera moves: within a shot the camera eases along a curve through its keys
 function crPoint(a, b, c, d, u, out) {
   const u2 = u * u, u3 = u2 * u;
@@ -5839,7 +5855,9 @@ function trSetup() {
 }
 
 // The scenes. Each one places actors, schedules what they do, and sets up camera shots.
+const POEM_WIND = ['Who has seen the wind?', 'Neither I nor you:', 'But when the leaves hang trembling,', 'The wind is passing through.'];   // Christina Rossetti (1872)
 const POEM = ['“Hope” is the thing with feathers', 'That perches in the soul,', 'And sings the tune without the words,', 'And never stops at all,'];   // as first published (1891)
+function openMicScene(poem) { TR.poem = poem; TR_SCENES['open-mic-body'](); }   // the same open mic, with a choice of poem
 const TR_SCENES = {
   // a slow sweep across the island toward the stage, with a few critters out and about
   'island-tour'() {
@@ -5891,7 +5909,9 @@ const TR_SCENES = {
     trShot(9, 13, [P(21.4, 4.4, 1.3), P(24.4, 2, 0.6)], [P(18.6, 4.2, 2.2), P(21, 1.8, 0.7)]);
   },
   // the open mic: Rosy reads under the spotlight while everyone listens from the logs, then applause
-  'open-mic'() {
+  'open-mic'() { openMicScene(POEM); },
+  'open-mic-wind'() { openMicScene(POEM_WIND); },
+  'open-mic-body'() {
     TR.dur = 28;
     const kinds = [['cat', 'Mo'], ['frog', 'Pip'], ['dog', 'Biscuit'], ['fish', 'Bubbles'], ['cat', 'Juniper'], ['dog', 'Clover']];
     const seats = [[-3.2, -3], [-1.4, -3], [1.4, -3], [3.2, -3], [-2.9, 0], [2.6, 0]];
@@ -5900,7 +5920,7 @@ const TR_SCENES = {
     trAt(0.6, () => trWalk(rosy, 0, -8.5, 1.5, () => { rosy.target.ry = 0; }));
     trAt(3.6, () => { rosy.mic = true; setRemoteReading(rosy, true); });
     trAt(4.2, () => { rosy.talkOn = true; });
-    POEM.forEach((line, i) => trAt(5 + i * 3.6, () => showSay(rosy, line)));
+    TR.poem.forEach((line, i) => trAt(5 + i * 3.6, () => showSay(rosy, line)));
     trAt(19.5, () => { rosy.talkOn = false; });
     crowd.forEach((c, i) => trAt(20 + i * 0.18, () => clapFx(c, 0.55)));
     trAt(20.6, () => { for (const c of crowd) { const p = c.root.position; setTimeout(() => popAt(p.x, p.y + 2, p.z, '♥', 'heart'), Math.random() * 600); } });
@@ -5927,7 +5947,7 @@ const TR_SCENES = {
     trAt(5.4, () => { bis.talkOn = false; mo.talkOn = true; });
     trAt(5.8, () => trSay(mo, 'yes!! ✨'));
     trAt(7.6, () => { mo.talkOn = false; });
-    trShot(0, 8, [[8.6, 3.2, 10.5], [3.5, 1.2, 6]], [[6.8, 2.6, 9.6], [3.5, 1.3, 6]]);
+    { const a = trClearView(3.5, 6, 5, 0.15); trShot(0, 8, [trAround(3.5, 6, a, 5.4, 2.4), [3.5, 1.1, 6]], [trAround(3.5, 6, a + 0.22, 4.4, 2.0), [3.5, 1.15, 6]]); }   // side on, so you see both faces
     // B: fishing off the dock (8–14)
     trAt(9.0, () => { pip.castT = 0.45; noiseBurst(0.22, 'bandpass', 1200, 0.1); });
     trAt(10.8, () => { const f = FISH_BY_ID.koi; fishLeap(0.4, 33.4, pip, f); splashSound(1, true); popAt(0, 2.4, 29.6, 'Caught a Golden Koi!', 'good'); sfx.find(); pip.castT = 0.45; });
@@ -5939,11 +5959,14 @@ const TR_SCENES = {
     trDuring(14.3, 16.0, () => { if (Math.random() < 0.25) { sfx.scratch(); burst(rock.x + rock.r + 0.3, 0.2, rock.z, 3, dirtMat, 0.8, 2.2); } });
     trAt(16.0, () => { mo.digging = false; sfx.find(); burst(mo.root.position.x, 0.9, rock.z, 14, sparkMat, 1.2, 3.5); popAt(mo.root.position.x, 2.3, rock.z, 'Found a party hat!', 'good'); });
     trAt(16.5, () => { mo.hat = 'partyhat'; });
-    trShot(14, 17.6, [[rock.x + 4.5, 2.4, rock.z + 2.5], [rock.x + 0.6, 0.7, rock.z]], [[rock.x + 3.4, 2, rock.z + 1.6], [rock.x + 0.6, 0.7, rock.z]]);
+    { const cx = rock.x + rock.r * 0.6 + 0.35, a = trClearView(cx, rock.z, 3.6, -0.55);      // three-quarter front: Mo's face, paws and the rock
+      trShot(14, 17.6, [trAround(cx, rock.z, a, 3.9, 1.7), [cx, 0.6, rock.z]], [trAround(cx, rock.z, a - 0.15, 3.2, 1.45), [cx, 0.65, rock.z]]); }
     const stump = [FIRE.x + Math.cos(2.6) * 2, FIRE.z + Math.sin(2.6) * 2];
     trAt(17.5, () => { bis.mic = false; trSeat(bis, stump[0], stump[1], 0.46, Math.atan2(FIRE.x - stump[0], FIRE.z - stump[1])); bis.cook = 'smore'; });
     trAt(20.2, () => { bis.cook = ''; for (let i = 0; i < 3; i++) setTimeout(() => sfx.crunch(0.8), i * 260); popAt(stump[0], 2.2, stump[1], 'Mmm, gooey s’more!', 'good'); });
-    trShot(17.6, 21, [[FIRE.x - 4.8, 2.0, FIRE.z + 3.2], [FIRE.x - 0.8, 0.8, FIRE.z]], [[FIRE.x - 3.8, 1.7, FIRE.z + 2.2], [FIRE.x - 0.9, 0.8, FIRE.z]]);
+    { const dx = FIRE.x - stump[0], dz = FIRE.z - stump[1], toFire = Math.atan2(dx, dz);   // from beside the fire, so Biscuit and the s'more face the camera
+      const cx = stump[0] + dx * 0.3, cz = stump[1] + dz * 0.3, a = trClearView(cx, cz, 3.2, toFire + 1.15);
+      trShot(17.6, 21, [trAround(cx, cz, a, 3.4, 1.5), [stump[0] + dx * 0.15, 0.85, stump[1] + dz * 0.15]], [trAround(cx, cz, a + 0.12, 2.7, 1.3), [stump[0] + dx * 0.12, 0.9, stump[1] + dz * 0.12]]); }
     // D: catching fireflies, then a hug (21–28)
     trAt(20.9, () => {
       rosy.net = true; trMove(rosy, -6, 0, 4); rosy.root.position.set(-6, 0, 4); rosy.target.ry = 0.6;
