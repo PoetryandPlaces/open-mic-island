@@ -563,6 +563,12 @@ body.in-lobby #libPanel, body.in-lobby #letterPanel, body.in-lobby #letterCard {
 .bagEmpty { margin: 0 0 8px; font-size: .9rem; font-weight: 600; color: var(--muted); }
 body.trailer > *:not(#scene):not(#tags) { display: none !important; }
 body.trailer .tag.mine, body.notags .tag { display: none !important; }
+#recBtn.on { background: #d6455d; color: #fff; }
+#recBadge { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 16; display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(40, 30, 60, .78); color: #fff; font: 800 .82rem var(--font-body); pointer-events: none; }
+#recBadge[hidden] { display: none; }
+#recBadge .dot { width: 10px; height: 10px; border-radius: 50%; background: #ff5a6e; animation: recBlink 1.2s infinite; }
+@keyframes recBlink { 50% { opacity: .25; } }
+.recLink { display: inline-block; margin-top: 4px; font-weight: 800; color: var(--plank); }
 #copyMark {
   position: fixed; left: 50%; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 4;
   font: 700 .66rem var(--font-body); letter-spacing: .02em; color: #fff; opacity: .55; white-space: nowrap;
@@ -626,11 +632,13 @@ body.in-lobby #copyMark { display: none; }
   <button id="dockMic" type="button" aria-pressed="false" title="Mic (M)"></button>
   <button id="dockChat" type="button" title="Open chat and controls" aria-label="Open chat and controls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"/></svg><span class="dot" aria-hidden="true"></span></button>
 </div>
+<div id="recBadge" hidden><span class="dot"></span><span id="recText">Recording</span></div>
 <section id="chat" class="sign" aria-label="Island chat">
   <div id="controls">
     <button id="micBtn" type="button" aria-pressed="false"></button>
     <button id="musicBtn" class="icon" type="button" aria-expanded="false" aria-controls="soundPanel" aria-label="Music and sound" title="Music and sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
     <button id="bagBtn" class="icon" type="button" aria-label="Your bag (B)" title="Your bag (B)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
+    <button id="recBtn" class="icon" type="button" aria-pressed="false" aria-label="Record readings" title="Record readings at the mic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="4.2" fill="currentColor"/></svg></button>
     <button id="inviteBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><span>Invite</span></button>
   </div>
   <div id="chatBar">
@@ -2534,6 +2542,8 @@ function startReading() {
   if (actPoem) actPoem.send({ on: 1 }).catch(() => {});
   sendPresence(true);
   addLine('', 'The spotlight is yours. Press Space (or Finish reading) when you’re done.' + (micOn ? '' : ' Turn your mic on so everyone can hear you.'), true);
+  const recorders = [...remotes.values()].filter(c => c.hasPos && c.recording).map(nameOf);
+  if (recorders.length) addLine('', 'Heads up: ' + recorders.join(', ') + (recorders.length > 1 ? ' are' : ' is') + ' recording this reading.', true);
 }
 function stopReading(why) {
   if (stageReader !== me) return;
@@ -2564,6 +2574,83 @@ function setRemoteReading(c, on) {
   }
 }
 readBtn.addEventListener('click', () => { toggleReading(); canvas.focus(); });
+
+/* ---------- recording readings ----------
+   Turn on the record button and every reading at the mic is saved as a video on this device: the game
+   picture plus the reader's voice (with the stage echo), the room's reactions, claps and stage music.
+   When the reader finishes, the video downloads (and a link stays in the chat). Everyone in the room
+   is told who is recording, and readers get a heads-up when they step up. */
+let recOn = false, rec = null;
+const recBtn = document.getElementById('recBtn'), recBadge = document.getElementById('recBadge'), recText = document.getElementById('recText');
+function renderRec() {
+  recBtn.classList.toggle('on', recOn); recBtn.setAttribute('aria-pressed', String(recOn));
+  recBtn.title = recOn ? 'Recording readings is on (tap to turn off)' : 'Record readings at the mic';
+}
+recBtn.addEventListener('click', () => {
+  if (!recOn && (!canvas.captureStream || !window.MediaRecorder)) { addLine('', 'This browser can’t record video. Try Chrome, Edge or Firefox on a computer.', true); return; }
+  recOn = !recOn; renderRec();
+  if (recOn) { addLine('', 'Recording is on. Each reading at the mic will be saved as a video you can download as soon as it ends. Everyone here can see that you’re recording.', true); track('open-mic/recording-on', true); }
+  else { if (rec) finishRec(); addLine('', 'Recording is off.', true); }
+  lastPres = ''; sendPresence(true); canvas.focus();
+});
+function startRec() {
+  const ctx = audioCtx(), reader = stageReader;
+  if (!ctx || !reader) return;
+  const dest = ctx.createMediaStreamDestination(), links = [];
+  const join = (node, gain) => { try { const g = ctx.createGain(); g.gain.value = gain; node.connect(g); g.connect(dest); links.push([node, g]); } catch (e) {} };
+  const addStream = (stream, gain) => { if (stream && stream.getAudioTracks().length) try { join(ctx.createMediaStreamSource(stream), gain); } catch (e) {} };
+  for (const c of remotes.values()) addStream(c.stream, c === reader ? 1 : 0.45);   // the reader up front, the room's cheers softer
+  if (micStream) addStream(micStream, reader === me ? 1 : 0.45);
+  if (reader.echo && reader.echo.wet) join(reader.echo.wet, 1);                      // the stage echo listeners hear
+  if (reader === me && selfEcho && selfEcho.wet) join(selfEcho.wet, 1.4);
+  join(sfxDest(), 0.8);                                                               // claps, snaps and other sounds
+  if (tvAudio && tvAudio.srcObject) addStream(tvAudio.srcObject, 0.7);                // a song file someone is playing on stage
+  if (stageMusic && stageMusic.stream) addStream(stageMusic.stream, 0.7);
+  const stream = new MediaStream([...canvas.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  const types = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  const mimeType = types.find(tp => MediaRecorder.isTypeSupported(tp));
+  let recorder;
+  try { recorder = new MediaRecorder(stream, Object.assign({ videoBitsPerSecond: 6e6, audioBitsPerSecond: 160e3 }, mimeType ? { mimeType } : {})); }
+  catch (e) { addLine('', 'Couldn’t start recording on this browser.', true); recOn = false; renderRec(); return; }
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.start(1000);
+  rec = { recorder, chunks, who: nameOf(reader), reader, links, endAt: 0, started: new Date() };
+  recText.textContent = 'Recording ' + rec.who + '’s reading'; recBadge.hidden = false;
+  track('open-mic/recorded-reading');
+}
+function finishRec() {
+  const r = rec; if (!r) return;
+  rec = null; recBadge.hidden = true;
+  r.recorder.onstop = () => {
+    for (const [node, g] of r.links) { try { node.disconnect(g); } catch (e) {} try { g.disconnect(); } catch (e) {} }
+    const type = r.recorder.mimeType || 'video/webm', ext = type.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(r.chunks, { type });
+    if (!blob.size) return;
+    const d = r.started, stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
+    const file = 'couplet-cove-reading-' + (r.who.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'reader') + '-' + stamp + '.' + ext;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file; a.className = 'recLink';
+    a.textContent = '⬇ Download ' + r.who + '’s reading (' + (blob.size / 1048576).toFixed(1) + ' MB)';
+    addLine('', 'Saved ' + r.who + '’s reading.', true);
+    if (chatLog.lastElementChild) chatLog.lastElementChild.append(document.createElement('br'), a);
+    try { a.cloneNode(true).click(); } catch (e) {}                                   // download right away; the link stays in the chat too
+  };
+  try { r.recorder.stop(); } catch (e) {}
+}
+function tickRec() {
+  const anyone = recOn || [...remotes.values()].some(c => c.hasPos && c.recording);
+  if (!rec) {                                                                         // listeners see when a reading is being recorded
+    recBadge.hidden = !(anyone && stageReader);
+    if (!recBadge.hidden) recText.textContent = 'This reading is being recorded';
+  }
+  if (!recOn) return;
+  if (stageReader && !rec) startRec();
+  else if (rec && stageReader && stageReader !== rec.reader) { finishRec(); startRec(); }
+  else if (rec && !stageReader) {                                                     // keep rolling a moment for the applause
+    if (!rec.endAt) rec.endAt = performance.now() + 2500;
+    else if (performance.now() > rec.endAt) finishRec();
+  } else if (rec) rec.endAt = 0;
+}
 
 /* ---------- chat filter + critter noises ----------
    Bad words are swapped for the speaker's critter noise (a big red MEOW, RIBBIT...).
@@ -2902,6 +2989,9 @@ function applyPresence(c, pr) {
   const dj = isInt(pr.dj, 0, 9) ? pr.dj : 0;                 // their double-jump counter ticked: play the flip
   if (c.dj !== undefined && dj !== c.dj) c.flipT = 0;
   c.dj = dj;
+  const rc = pr.rc === 1;                                    // they're recording readings: let everyone know
+  if (c.hasPos && rc !== !!c.recording) addLine('', rc ? nameOf(c) + ' is recording readings at the mic.' : nameOf(c) + ' stopped recording readings.', true);
+  c.recording = rc;
   c.ar = isInt(pr.ar, 0, 3) ? pr.ar : 0;                     // riding in on a boat, car or cloud
   c.rft = num(pr.rf, 0, 1) || 0;
   c.mic = pr.mic === 1;
@@ -2935,7 +3025,7 @@ function sendPresence(force, target) {
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
     h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0,
-    ar: ride ? ride.k : 0, rf: Math.round((me.ruffle || 0) * 10) / 10
+    rc: recOn ? 1 : 0, ar: ride ? ride.k : 0, rf: Math.round((me.ruffle || 0) * 10) / 10
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -6163,6 +6253,7 @@ function update(dt) {
       }
     }
   }
+  if (!TRAILER) tickRec();
   me.ruffle = Math.max(0, (me.ruffle || 0) - dt / 14);           // fur smooths back down
   applyRuffle(me, me.ruffle);
   tickLeaving(dt);
@@ -6217,7 +6308,12 @@ function update(dt) {
   // camera follow (a slow drift around the island while you're at the entrance)
   const look = joined ? new V(pos.x, pos.y + 1, pos.z) : new V(0, 1, -2);
   const dist = joined ? camDist : 30;
-  if (!(TRAILER && trCamera())) {
+  if (rec && stageReader && stageReader.root) {                  // recording a reading: frame the stage from the audience
+    const rp = stageReader.root.position, k = 1 - Math.exp(-dt * 3);
+    camLook.lerp(new V(rp.x * 0.6, rp.y + 1.2, rp.z), k);
+    camera.position.lerp(new V(rp.x * 0.35, rp.y + 2.3, rp.z + 6.2), k);
+    camera.lookAt(camLook);
+  } else if (!(TRAILER && trCamera())) {
   camLook.lerp(look, 1 - Math.exp(-dt * 8));
   const want = new V(camLook.x + Math.sin(yaw) * dist, camLook.y + dist * 0.68, camLook.z + Math.cos(yaw) * dist);
   camera.position.lerp(want, 1 - Math.exp(-dt * (joined ? 6 : 2)));
