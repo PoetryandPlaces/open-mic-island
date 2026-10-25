@@ -5746,6 +5746,7 @@ function tickWorld(dt) {
 const TR = { t: 0, paused: true, idle: false, vol: 1, cues: [], cam: [], actors: new Map(), dur: 20, bus: null, dest: null, scene: null };
 const trAt = (time, fn) => TR.cues.push({ t: time, fn, done: false });
 const trDuring = (t0, t1, fn) => TR.cues.push({ t: t0, t1, fn, during: true });
+function trFollow(t0, t1, fn) { TR.cam.push({ t0, t1, fn }); }   // a camera that tracks something: fn() returns [[camera x,y,z], [look x,y,z]]
 function trShot(t0, t1, ...keys) { TR.cam.push({ t0, t1, keys: keys.map(([p, l]) => ({ p: new V(...p), l: new V(...l) })) }); }
 function trActor(id, kind, name, x, z, ry = 0) {
   const c = ensureRemote('tr-' + id);
@@ -5788,6 +5789,7 @@ const trCamP = new V(), trCamL = new V();
 function trCamera() {
   const s = TR.cam.find(sh => TR.t >= sh.t0 && TR.t < sh.t1) || TR.cam[TR.cam.length - 1];
   if (!s) return false;
+  if (s.fn) { const [p, l] = s.fn(); trCamP.set(...p); trCamL.set(...l); camera.position.copy(trCamP); camera.lookAt(trCamL); return true; }
   const ks = s.keys, n = ks.length;
   if (n === 1) { trCamP.copy(ks[0].p); trCamL.copy(ks[0].l); }
   else {
@@ -5937,7 +5939,7 @@ const TR_SCENES = {
   // life on the island: talking on mic, fishing, digging, s'mores, fireflies and a hug
   'island-fun'() {
     TR.dur = 28;
-    const mo = trActor('mo', 'cat', 'Mo', 4.2, 6.2, -1.9), bis = trActor('bis', 'dog', 'Biscuit', 2.8, 5.8, 1.6);
+    const mo = trActor('mo', 'cat', 'Mo', 0.8, 11, -Math.PI / 2), bis = trActor('bis', 'dog', 'Biscuit', -0.8, 11, Math.PI / 2);   // on the open path, where no trees grow
     const pip = trActor('pip', 'frog', 'Pip', 0, 29.6, 0), rosy = trActor('rosy', 'mouse', 'Rosy', -6, 4, 1);
     pip.rod = true; mo.mic = bis.mic = true;
     // A: chatting on mic (0–8)
@@ -5947,7 +5949,7 @@ const TR_SCENES = {
     trAt(5.4, () => { bis.talkOn = false; mo.talkOn = true; });
     trAt(5.8, () => trSay(mo, 'yes!! ✨'));
     trAt(7.6, () => { mo.talkOn = false; });
-    { const a = trClearView(3.5, 6, 5, 0.15); trShot(0, 8, [trAround(3.5, 6, a, 5.4, 2.4), [3.5, 1.1, 6]], [trAround(3.5, 6, a + 0.22, 4.4, 2.0), [3.5, 1.15, 6]]); }   // side on, so you see both faces
+    trShot(0, 8, [[0.6, 2.3, 16.2], [0, 1.1, 11]], [[-0.4, 1.9, 14.6], [0, 1.15, 11]]);   // side on, down the open path, so you see both faces
     // B: fishing off the dock (8–14)
     trAt(9.0, () => { pip.castT = 0.45; noiseBurst(0.22, 'bandpass', 1200, 0.1); });
     trAt(10.8, () => { const f = FISH_BY_ID.koi; fishLeap(0.4, 33.4, pip, f); splashSound(1, true); popAt(0, 2.4, 29.6, 'Caught a Golden Koi!', 'good'); sfx.find(); pip.castT = 0.45; });
@@ -5965,8 +5967,8 @@ const TR_SCENES = {
     trAt(17.5, () => { bis.mic = false; trSeat(bis, stump[0], stump[1], 0.46, Math.atan2(FIRE.x - stump[0], FIRE.z - stump[1])); bis.cook = 'smore'; });
     trAt(20.2, () => { bis.cook = ''; for (let i = 0; i < 3; i++) setTimeout(() => sfx.crunch(0.8), i * 260); popAt(stump[0], 2.2, stump[1], 'Mmm, gooey s’more!', 'good'); });
     { const dx = FIRE.x - stump[0], dz = FIRE.z - stump[1], toFire = Math.atan2(dx, dz);   // from beside the fire, so Biscuit and the s'more face the camera
-      const cx = stump[0] + dx * 0.3, cz = stump[1] + dz * 0.3, a = trClearView(cx, cz, 3.2, toFire + 1.15);
-      trShot(17.6, 21, [trAround(cx, cz, a, 3.4, 1.5), [stump[0] + dx * 0.15, 0.85, stump[1] + dz * 0.15]], [trAround(cx, cz, a + 0.12, 2.7, 1.3), [stump[0] + dx * 0.12, 0.9, stump[1] + dz * 0.12]]); }
+      const lx = stump[0] + dx * 0.25, lz = stump[1] + dz * 0.25;   // aim between Biscuit's face and the s'more (no trees grow this close to the fire)
+      trShot(17.6, 21, [trAround(stump[0], stump[1], toFire + 1.0, 2.7, 1.35), [lx, 0.85, lz]], [trAround(stump[0], stump[1], toFire + 0.85, 2.3, 1.2), [lx, 0.9, lz]]); }
     // D: catching fireflies, then a hug (21–28)
     trAt(20.9, () => {
       rosy.net = true; trMove(rosy, -6, 0, 4); rosy.root.position.set(-6, 0, 4); rosy.target.ry = 0.6;
@@ -6046,7 +6048,8 @@ const TR_SCENES = {
       else { const u = (k - 0.15) / 0.85, phi = Math.PI / 2 * (1 - Math.pow(u, 1.7)), p = rainbowPoint(a, phi); trMove(pip, p.x, p.y, p.z); if (Math.random() < 0.3) burst(p.x, p.y + 0.2, p.z, 2, sparkMat, 0.3, 0.8); }
     });
     trAt(18.7, () => { const ex = RAINBOW.out + RAINBOW.r, px = ex * Math.cos(a), pz = ex * Math.sin(a); trMove(pip, px, RAINBOW.cy - 0.6, pz); chimeNotes([1046, 1318, 1568, 2093], 0.08, 'triangle', 0.06); burst(px, RAINBOW.cy, pz, 18, goldMat, 1.4, 4); popAt(px, RAINBOW.cy + 2.2, pz, 'A pot of gold!', 'good'); });
-    trShot(13, 21, [[24, 5, 4], [16, 0, 16]], [[44, -2, 6], [26, -12, 26]]);
+    { const nx = -Math.sin(a), nz = Math.cos(a), ux = Math.cos(a), uz = Math.sin(a);   // side on to the rainbow, riding along beside Pip
+      trFollow(13, 21, () => { const q = pip.root.position; return [[q.x + nx * 7.5 - ux * 2.5, q.y + 2.2, q.z + nz * 7.5 - uz * 2.5], [q.x + ux * 1.2, q.y + 0.4, q.z + uz * 1.2]]; }); }
   }
 };
 
