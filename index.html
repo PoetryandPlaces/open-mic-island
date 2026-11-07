@@ -361,7 +361,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 .worldBtn i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink); flex: none; }
 .worldBtn:disabled { opacity: .55; cursor: default; }
 .worldBtn small { font-weight: 700; color: var(--muted); }
-body[data-world="cafe"] .island-only, body[data-world="castle"] .island-only, body:not([data-world="cafe"]) .cafe-only, body:not([data-world="castle"]) .castle-only { display: none !important; }
+body[data-world="cafe"] .island-only, body[data-world="castle"] .island-only, body[data-world="fish"] .island-only, body:not([data-world="fish"]) .fish-only, body:not([data-world="cafe"]) .cafe-only, body:not([data-world="castle"]) .castle-only { display: none !important; }
 #lobbyRoomBtn { font: 700 .84rem var(--font-body); background: none; border: 0; padding: 2px 0; align-self: flex-start; color: var(--muted); text-decoration: underline; cursor: pointer; }
 .audio-sink { display: none; }
 #cookMenu, #jarView { position: fixed; left: 50%; transform: translateX(-50%); z-index: 14; box-sizing: border-box; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -610,6 +610,7 @@ body.in-lobby #copyMark { display: none; }
   <span class="key-only island-only"><kbd>Space</kbd> hop (hop into trees to shake them), twice to double jump onto rocks</span>
   <span class="key-only cafe-only"><kbd>Space</kbd> hop (hop onto a chair or bean bag to sit), twice to double jump onto a table</span>
   <span class="key-only castle-only"><kbd>Space</kbd> hop (hop onto a bench to sit), twice to double jump onto a table</span>
+  <span class="key-only fish-only"><kbd>Space</kbd> swim higher (your fish drifts back down slowly). Fly up to the mic on the stage to read.</span>
   <span class="key-only"><kbd>Q</kbd><kbd>E</kbd> or drag to turn the camera</span>
   <span class="key-only"><kbd>Space</kbd> at the mic: start / finish reading</span>
   <span class="key-only"><kbd>M</kbd> mute or unmute your mic</span>
@@ -625,7 +626,7 @@ body.in-lobby #copyMark { display: none; }
   <span class="key-only island-only"><kbd>F</kbd> at the campfire: roast a fish or make a s’more</span>
   <span class="key-only"><kbd>C</kbd> applaud</span>
   <span class="key-only"><kbd>B</kbd> your bag · <kbd>Enter</kbd> chat · <kbd>H</kbd> this help</span>
-  <span class="touch-only">Drag the pad to walk and swipe the island to look around. Tap Hop to jump, and tap it again in the air to double jump. Use the buttons that pop up to <span class="island-only">dig, fish,</span><span class="cafe-only">peek behind pictures, make coffee,</span><span class="castle-only">dig for wands, make a feast,</span> read at the mic, or hug someone nearby.</span>
+  <span class="touch-only">Drag the pad to walk and swipe the island to look around. <span class="fish-only">Tap Hop to swim higher. </span><span class="island-only cafe-only castle-only">Tap Hop to jump, and tap it again in the air to double jump.</span> Use the buttons that pop up to <span class="island-only">dig, fish,</span><span class="cafe-only">peek behind pictures, make coffee,</span><span class="castle-only">dig for wands, make a feast,</span> read at the mic, or hug someone nearby.</span>
 </div>
 
 <div id="dock" hidden>
@@ -771,6 +772,7 @@ body.in-lobby #copyMark { display: none; }
           <button type="button" class="worldBtn" data-world="island"><i style="background:#7cc05a"></i>Island</button>
           <button type="button" class="worldBtn" data-world="cafe"><i style="background:#c98a5a"></i>Cozy Cafe</button>
           <button type="button" class="worldBtn" data-world="castle"><i style="background:#c9b8f0"></i>Cloudy Castle</button>
+          <button type="button" class="worldBtn" data-world="fish" id="fishWorldBtn"><i style="background:#e8a092"></i>Fish Sky <small>limited</small></button>
         </div>
         <button id="lobbyRoomBtn" type="button" hidden>Go to the main lobby</button>
       </div>
@@ -789,8 +791,10 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 document.body.classList.add('in-lobby');
 // Which world this room is. The main lobby and plain private links are the island; private rooms made
 // as a cafe carry it at the front of their link (#room=cafe-…), so everyone with the link lands in the same world.
-const WORLD = (() => { const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash); return !m ? 'island' : /^cafe-/i.test(m[1]) ? 'cafe' : /^castle-/i.test(m[1]) ? 'castle' : 'island'; })();
-const ISLAND = WORLD === 'island', CAFE = WORLD === 'cafe', CASTLE = WORLD === 'castle';
+const WORLD = (() => { const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash); return !m ? 'island' : /^cafe-/i.test(m[1]) ? 'cafe' : /^castle-/i.test(m[1]) ? 'castle' : /^fish-/i.test(m[1]) ? 'fish' : 'island'; })();
+const ISLAND = WORLD === 'island', CAFE = WORLD === 'cafe', CASTLE = WORLD === 'castle', SKYFISH = WORLD === 'fish';
+// Fish Sky is a limited edition for the "Being Human" open mic: its button shows in the room picker until this date
+const FISH_UNTIL = '2026-12-01';
 // #trailer=<scene> films a promo scene for trailer.html (see "trailer mode" near the end of this script)
 const TRAILER = (/(?:^|[#&])trailer=([a-z0-9-]+)/i.exec(location.hash) || [])[1] || '';
 if (TRAILER) document.body.classList.add('trailer');
@@ -804,7 +808,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-scene.fog = CASTLE ? new THREE.Fog(0xe4eeff, 90, 320) : new THREE.Fog(0xd99a8c, 60, 205);
+scene.fog = CASTLE ? new THREE.Fog(0xe4eeff, 90, 320) : SKYFISH ? new THREE.Fog(0xa9c2b4, 70, 280) : new THREE.Fog(0xd99a8c, 60, 205);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
 
 function resize() {
@@ -863,10 +867,11 @@ function paintSky(topC, midC, horC, glowC) {
 scene.add(new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false })));
 scene.add(sunDisc, sunGlow);
 if (CASTLE) { paintSky(0x6fa8ec, 0xbfe0ff, 0xffe8f3, 0xfff6d6); sunGlow.material.opacity = 0.45; skyGlow = sunGlow; }   // iridescent sunshine
+if (SKYFISH) { SUN_DIR.set(-0.35, 0.5, -0.79).normalize(); paintSky(0x3f6f78, 0x7fa89c, 0xdcdcba, 0xf4ecd0); sunDisc.material.color.setHex(0xfbf3dc); sunGlow.material.color.setHex(0xf6ead0); sunGlow.material.opacity = 0.3; }   // Bosch's teal sky, hazy cream at the horizon
 sunDisc.position.copy(SUN_DIR).multiplyScalar(290); sunGlow.position.copy(sunDisc.position);
-const hemi = CASTLE ? new THREE.HemisphereLight(0xf2f6ff, 0xc9bfe8, 0.85) : new THREE.HemisphereLight(0xffc6a8, 0x45506e, 0.62);
+const hemi = CASTLE ? new THREE.HemisphereLight(0xf2f6ff, 0xc9bfe8, 0.85) : SKYFISH ? new THREE.HemisphereLight(0xe6efe0, 0x6f7f6a, 0.85) : new THREE.HemisphereLight(0xffc6a8, 0x45506e, 0.62);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(CASTLE ? 0xfff2dc : 0xffa86e, CASTLE ? 0.95 : 0.9);
+const sun = new THREE.DirectionalLight(CASTLE ? 0xfff2dc : SKYFISH ? 0xfff0d6 : 0xffa86e, CASTLE || SKYFISH ? 0.95 : 0.9);
 sun.position.copy(SUN_DIR).multiplyScalar(40);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -888,7 +893,7 @@ function skyLook() {                                             // the look for
   return out;
 }
 function applySky() {
-  if (CASTLE) return;
+  if (CASTLE || SKYFISH) return;
   const L = skyLook(), key = JSON.stringify(L);
   if (key === skyKey) return;
   skyKey = key;
@@ -1865,9 +1870,88 @@ if (CASTLE) {
   }
 }
 
+/* ---------- Fish Sky: a limited-edition world for the "Being Human" open mic ----------
+   After Hieronymus Bosch: everyone rides a flying fish through a hazy teal sky. The stage stands on a
+   floating isle with dangling roots and two pink fountain towers; far below lies a soft green land,
+   and odd little things drift by (red berries on strings, bubbles, big fish sailing past). */
+const skyFish = [];                       // the big fish that swim past in the distance
+const skyBerries = [];                    // red berries bobbing on their strings
+const skyBubbles = [];
+if (SKYFISH) {
+  const grass = mat(0x8fae7a), earth = mat(0x8a6a4a), earthDark = mat(0x6b5038), pink = mat(0xf0a9b8), pinkDark = mat(0xd98a9e), blue = mat(0x6f8fd0, { roughness: 0.4 });
+  // the floating isle under the stage
+  put(new THREE.Mesh(new THREE.CylinderGeometry(9.6, 9.2, 0.5, 26), grass), 0, -0.25, -10, scene, false);
+  const under = put(new THREE.Mesh(new THREE.ConeGeometry(9.2, 9, 22, 2), earth), 0, -5, -10, scene, false); under.rotation.x = Math.PI;
+  for (let i = 0; i < 14; i++) {                                 // roots dangling into the sky
+    const a = rand() * Math.PI * 2, r = 1.5 + rand() * 6.5, len = 2 + rand() * 4;
+    put(new THREE.Mesh(new THREE.ConeGeometry(0.12 + rand() * 0.1, len, 5), earthDark), Math.cos(a) * r, -1 - (9 - r) * 0.5 - len / 2, -10 + Math.sin(a) * r, scene, false).rotation.x = Math.PI;
+  }
+  // two pink fountain towers, like the Fountain of Life in The Garden of Earthly Delights
+  for (const s of [-1, 1]) {
+    const g = new THREE.Group(); g.position.set(7.4 * s, 0, -12.2); scene.add(g);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.2, 1.2, 10), pinkDark), 0, 0.6, 0, g);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 3.6, 8), pink), 0, 3, 0, g);
+    for (let k = 0; k < 6; k++) { const sp = put(new THREE.Mesh(new THREE.ConeGeometry(0.12, 1.1, 5), pink), Math.cos(k) * 0.55, 2.2 + k * 0.45, Math.sin(k) * 0.55, g); sp.rotation.z = Math.cos(k) * 0.9; sp.rotation.x = Math.sin(k) * 0.9; }
+    put(new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.6, 8), pinkDark), 0, 5.6, 0, g);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), blue), 0, 4.5, 0, g);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), mat(0xfff1c4, { emissive: 0xffe08a, emissiveIntensity: 0.5 })), 0, 6.5, 0, g, false);
+    circles.push({ x: 7.4 * s, z: -12.2, r: 1.2 });
+  }
+  // the land far below, misty green and blue like the distant hills in Bosch's paintings
+  put(new THREE.Mesh(new THREE.CylinderGeometry(260, 260, 1, 40), mat(0x8ea98a)), 0, -70, 0, scene, false);
+  for (let i = 0; i < 22; i++) {
+    const a = rand() * Math.PI * 2, r = 60 + rand() * 150, s = 8 + rand() * 18;
+    put(new THREE.Mesh(new THREE.IcosahedronGeometry(s, 1), mat(i % 3 ? 0x7f9f88 : 0x93b0c2)), Math.cos(a) * r, -70, Math.sin(a) * r, scene, false).scale.y = 0.45;
+  }
+  // little floating islands drifting around the edges, each with a tree or a pink tower
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2 + 0.4, r = 46 + rand() * 30, x = Math.cos(a) * r, z = Math.sin(a) * r - 6, y = -6 + rand() * 18, s = 2 + rand() * 2.5;
+    const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(s, s * 0.9, 0.4, 12), grass), 0, 0, 0, g, false);
+    put(new THREE.Mesh(new THREE.ConeGeometry(s * 0.9, s * 2, 10), earth), 0, -s - 0.2, 0, g, false).rotation.x = Math.PI;
+    if (i % 2) { put(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.6, 6), earthDark), 0, 0.9, 0, g, false); put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 0), mat(0x6f9a5a)), 0, 2.1, 0, g, false); }
+    else { put(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 2.4, 8), pink), 0, 1.3, 0, g, false); put(new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), blue), 0, 2.6, 0, g, false); }
+    sway.push({ g, ph: rand() * 6, float: y });
+  }
+  // red berries hanging from long strings, like the fisherman's lure
+  const berryM = mat(0xd8413a, { roughness: 0.35, emissive: 0x5a0e0a, emissiveIntensity: 0.25 }), stringM = new THREE.MeshBasicMaterial({ color: 0x5a4a3a });
+  for (let i = 0; i < 12; i++) {
+    const a = rand() * Math.PI * 2, r = 12 + rand() * 18, x = Math.cos(a) * r, z = Math.sin(a) * r - 4, y = 3 + rand() * 6;
+    if (Math.abs(x) < 6 && z < -4) continue;
+    const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 3, 4), stringM), 0, 1.5, 0, g, false);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.32, 14, 10), berryM), 0, 0, 0, g);
+    skyBerries.push({ g, y, ph: rand() * 6 });
+  }
+  // big fish sailing slowly past, far out
+  for (let i = 0; i < 5; i++) {
+    const f = buildVehicle(4, i); f.scale.setScalar(2.4 + rand() * 1.5);
+    skyFish.push({ f, a: rand() * Math.PI * 2, r: 45 + rand() * 35, y: 4 + rand() * 16, v: (0.02 + rand() * 0.03) * (i % 2 ? 1 : -1) });
+  }
+  // a few soap bubbles drifting up
+  const bubbleM = new THREE.MeshStandardMaterial({ color: 0xe8f4ff, transparent: true, opacity: 0.28, roughness: 0.1, metalness: 0.2 });
+  for (let i = 0; i < 18; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.25 + rand() * 0.35, 12, 10), bubbleM);
+    m.position.set(-25 + rand() * 50, -4 + rand() * 14, -30 + rand() * 50); scene.add(m);
+    skyBubbles.push({ m, v: 0.25 + rand() * 0.35, ph: rand() * 6 });
+  }
+}
+function tickFishSky(dt) {
+  if (!SKYFISH) return;
+  for (const s of skyFish) {
+    s.a += s.v * dt;
+    const x = Math.cos(s.a) * s.r, z = Math.sin(s.a) * s.r - 6, y = s.y + Math.sin(t * 0.4 + s.a * 3) * 1.2;
+    s.f.position.set(x, y, z); s.f.rotation.y = Math.atan2(-Math.sin(s.a) * Math.sign(s.v), Math.cos(s.a) * Math.sign(s.v));
+    animFish(s.f, 0.6);
+  }
+  for (const b of skyBerries) { b.g.position.y = b.y + Math.sin(t * 0.8 + b.ph) * 0.35; b.g.rotation.z = Math.sin(t * 0.6 + b.ph) * 0.08; }
+  for (const b of skyBubbles) { b.m.position.y += b.v * dt; b.m.position.x += Math.sin(t + b.ph) * dt * 0.2; if (b.m.position.y > 14) b.m.position.y = -6; }
+  for (const s of sway) if (s.float !== undefined) s.g.position.y = s.float + Math.sin(t * 0.3 + s.ph) * 0.6;
+}
+
 /* ---------- clouds and motes ---------- */
 const clouds = [];
-const cloudMat = CASTLE ? mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.18 }) : mat(0xffc6c2, { emissive: 0xff8f7a, emissiveIntensity: 0.32 });
+const cloudMat = CASTLE ? mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.18 }) : SKYFISH ? mat(0xf3ead2, { emissive: 0xe8dcc0, emissiveIntensity: 0.2 }) : mat(0xffc6c2, { emissive: 0xff8f7a, emissiveIntensity: 0.32 });
 for (let i = 0; i < 9; i++) {
   const g = new THREE.Group();
   const n = 3 + Math.floor(rand() * 3);
@@ -2116,7 +2200,7 @@ const turnToward = (obj, target, k) => {
 };
 
 /* ---------- arrivals: a boat to the dock, a vintage convertible to the cafe, a cloud to the castle ---------- */
-function buildVehicle(kind) {
+function buildVehicle(kind, variant) {
   const g = new THREE.Group();
   if (kind === 1) {                                              // a little wooden sailboat
     const hullM = mat(0xb5793f), dark = mat(0x8a5a2e), rim = mat(0xf3e3c8);
@@ -2151,6 +2235,26 @@ function buildVehicle(kind) {
       }
     }
     const spare = put(new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.09, 6, 14), tire), 0, 0.02, -1.75, g, false);
+  } else if (kind === 4) {                                       // a flying fish after Bosch: long body, big round eye, open mouth, glassy wing fins
+    const pal = [[0xe8a092, 0xf6d2c6], [0xd9b77a, 0xf2e2b8], [0xd2d8c8, 0xeef0e4], [0xc98a72, 0xeec4ac], [0xa9b9a6, 0xdfe6d6]][(variant || 0) % 5];
+    const body = mat(pal[0]), belly = mat(pal[1]), finM = new THREE.MeshStandardMaterial({ color: pal[1], transparent: true, opacity: 0.55, side: THREE.DoubleSide, roughness: 0.6 });
+    const fish = new THREE.Group(); fish.position.y = -0.48; g.add(fish);
+    const b = put(new THREE.Mesh(new THREE.SphereGeometry(0.5, 18, 12), body), 0, 0, 0.1, fish); b.scale.set(0.95, 0.9, 2.6);
+    const bl = put(new THREE.Mesh(new THREE.SphereGeometry(0.46, 16, 10), belly), 0, -0.14, 0.15, fish, false); bl.scale.set(0.85, 0.7, 2.4);
+    for (const s of [-1, 1]) {
+      put(new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), mat(0xfbf7ee)), 0.36 * s, 0.1, 1.05, fish, false);
+      put(new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), mat(0x1f1a22)), 0.45 * s, 0.11, 1.1, fish, false);
+      const pivot = new THREE.Group(); pivot.position.set(0.3 * s, -0.05, 0.35); fish.add(pivot);           // the wing flaps from its root
+      const wing = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), finM); wing.position.set(0.7 * s, 0, -0.1); wing.rotation.set(-Math.PI / 2, 0, -0.35 * s); pivot.add(wing);
+      (g.userData.wings = g.userData.wings || []).push({ p: pivot, s });
+      const barbel = put(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.55, 4), mat(0x7a5a4a)), 0.16 * s, -0.24, 1.42, fish, false); barbel.rotation.set(1.1, 0, 0.4 * s);
+    }
+    const mouth = put(new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.05, 6, 14), mat(0xb4645a)), 0, -0.08, 1.33, fish, false); mouth.scale.y = 0.75;
+    put(new THREE.Mesh(new THREE.CircleGeometry(0.13, 12), mat(0x5a2a2a)), 0, -0.08, 1.34, fish, false);
+    const dorsal = put(new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.7, 3), finM), 0, 0.42, -0.35, fish, false); dorsal.rotation.x = -0.9; dorsal.scale.z = 0.25;
+    const tail = new THREE.Group(); tail.position.set(0, 0, -1.15); fish.add(tail);
+    for (const s of [-1, 1]) { const tf = put(new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.85, 4), body), 0, 0.22 * s, -0.38, tail, false); tf.rotation.x = -Math.PI / 2 + 0.5 * s; tf.scale.x = 0.3; }
+    g.userData.tail = tail; g.userData.fish = fish; g.userData.ph = Math.random() * 6;
   } else {                                                       // a puffy little cloud
     const puff = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xf3ecff, emissiveIntensity: 0.35, flatShading: true, roughness: 1 });
     for (const [x, y, z, r] of [[0, -0.3, 0, 0.85], [0.75, -0.35, 0.2, 0.62], [-0.75, -0.35, -0.1, 0.66], [0.2, -0.38, 0.8, 0.58], [-0.2, -0.38, -0.8, 0.6], [0.6, -0.15, -0.55, 0.45], [-0.55, -0.15, 0.6, 0.45]]) {
@@ -2164,6 +2268,24 @@ const RIDE = ISLAND ? { k: 1, a: [2.7, 44], b: [2.7, 29.3], to: [0.15, 29.3], du
   : CAFE ? { k: 2, a: [-21, 14.8], b: [0.4, 14.8], to: [0.4, 12.3], dur: 6, say: 'You pull up to the Cozy Cafe.' }
   : { k: 3, a: [0, 38], b: [0, 19.6], to: [0, 17.6], dur: 6.5, say: 'You float down to the Cloudy Castle.' };
 let ride = null, hopTo = null;
+// Fish Sky: everyone rides their own fish (one of five colors, kept for you on this device)
+let myFishV = -1;
+function myFish() { if (myFishV < 0) { let v = parseInt(store.get('cove-fish'), 10); if (!(v >= 0 && v < 5)) { v = Math.floor(Math.random() * 5); store.set('cove-fish', String(v)); } myFishV = v; } return myFishV; }
+let flyT = 2.2;
+function mountFish() {
+  pos.x = (Math.random() - 0.5) * 6; pos.z = 14 + Math.random() * 2; pos.y = flyT = 3.2;
+  me.root.rotation.y = Math.PI;
+  if (!me.mount) me.mount = buildVehicle(4, myFish());
+}
+function placeMount(v, root, dt, moving) {                       // the fish sits under its rider, tilting into turns and swimming harder when moving
+  v.position.copy(root.position);
+  const prev = v.userData.ry === undefined ? root.rotation.y : v.userData.ry;
+  const turn = Math.atan2(Math.sin(root.rotation.y - prev), Math.cos(root.rotation.y - prev));
+  v.userData.ry = root.rotation.y;
+  v.userData.bank = (v.userData.bank || 0) + (Math.max(-0.5, Math.min(0.5, -turn / Math.max(dt, 0.001) * 0.12)) - (v.userData.bank || 0)) * Math.min(1, dt * 4);
+  v.rotation.set(0, root.rotation.y, v.userData.bank);
+  animFish(v, moving ? 1.4 : 0.7);
+}
 const leaving = [];                                              // vehicles heading off after dropping someone
 function rideAt(r, k) {
   const e = 1 - Math.pow(1 - k, 2.4);                            // slows down to a gentle stop
@@ -2215,6 +2337,12 @@ function tickLeaving(dt) {
     if (L.t > 7) { scene.remove(v); leaving.splice(i, 1); }
     else if (L.t > 5.5) v.scale.setScalar(Math.max(0.01, (7 - L.t) / 1.5));
   }
+}
+function animFish(v, k = 1) {                                   // tail swish and wing flaps for a flying fish
+  const u = v.userData; if (!u.tail) return;
+  u.tail.rotation.y = Math.sin(t * 5 + u.ph) * 0.45 * k;
+  u.fish.rotation.y = Math.sin(t * 5 + u.ph + 1.3) * 0.05 * k;
+  if (u.wings) for (const w of u.wings) w.p.rotation.z = w.s * (0.12 + Math.sin(t * 3.2 + u.ph) * 0.25 * k);
 }
 // ruffled fur: little tufts poke out after the cafe wind or a rainbow slide, then smooth down again
 const tuftGeo = new THREE.ConeGeometry(0.055, 0.2, 4);
@@ -2269,7 +2397,7 @@ function inWaterAt(x, z) {
   const r = Math.hypot(x, z);
   return r > 24.3 && waterY(x, z) - seabed(r) > 0.12;
 }
-const walkable = (x, z) => CASTLE ? Math.hypot(x, z) < CLOUD_R + 1.6 : CAFE ? inRect(CAFE_IN, x, z) || inRect(CAFE_OUT, x, z) : Math.hypot(x, z) < SEA_R || inRect(DOCK, x, z);
+const walkable = (x, z) => SKYFISH ? Math.hypot(x, z + 4) < 34 : CASTLE ? Math.hypot(x, z) < CLOUD_R + 1.6 : CAFE ? inRect(CAFE_IN, x, z) || inRect(CAFE_OUT, x, z) : Math.hypot(x, z) < SEA_R || inRect(DOCK, x, z);
 const R = 0.42;
 // a table only lets you over it if you double-jumped (or are already up there), and never during a reading
 const canTop = (o, y) => o.top && y > o.top - 0.2 && (!o.dj || (!tablesClosed() && (airHop || hopBase > o.top - 0.1 || (grounded && y > o.top - 0.06))));
@@ -2397,7 +2525,7 @@ lobbyCard.addEventListener('submit', e => {
   lastPres = '';
   if (!joined) {
     joined = true;
-    startRide();                                                 // arrive by boat, convertible or cloud
+    if (SKYFISH) mountFish(); else startRide();                     // arrive by boat, convertible or cloud (or ride a fish in Fish Sky)
     camLook.set(pos.x, 1, pos.z);
     track(isLobby ? 'joined/main-lobby' : 'joined/private-' + WORLD, true); track('critter/' + k, true);
     [5, 15, 30, 60].forEach(m => setTimeout(() => track('stayed/' + m + '-min', true), m * 60000));
@@ -2408,6 +2536,8 @@ lobbyCard.addEventListener('submit', e => {
     } else if (CASTLE) {
       addLine('', 'Welcome to the Cloudy Castle, ' + myName + '. Tap Invite to copy this castle’s link for friends, and turn your mic on to talk.', true);
       addLine('', 'Dig in the cloud tufts (F) for magic wands and feather quills. A wand makes a feast at the long tables, and a quill writes little letters (L). The stage is inside. And if you step off the cloud, enjoy the rainbow!', true);
+    } else if (SKYFISH) {
+      addLine('', 'Welcome to Fish Sky, ' + myName + '. You’re riding your own flying fish! Press Space (or Hop) to swim higher, and fly up to the mic on the floating stage when it’s your turn to read.', true);
     } else addLine('', 'Welcome, ' + myName + '. Tap Invite to copy this island’s link for friends, and turn your mic on to talk.', true);
     if (ride) addLine('', ride.say + ' Move or hop to jump off whenever you like.', true);
   }
@@ -2872,7 +3002,7 @@ const WORDS_B = ['lantern', 'tide', 'stanza', 'harbor', 'meadow', 'shell', 'vers
 function newRoomId(world) {
   const r = new Uint32Array(3); crypto.getRandomValues(r);
   const tail = Array.from(crypto.getRandomValues(new Uint8Array(4)), b => 'abcdefghjkmnpqrstuvwxyz23456789'[b % 31]).join('');
-  return (world === 'cafe' ? 'cafe-' : world === 'castle' ? 'castle-' : '') + WORDS_A[r[0] % WORDS_A.length] + '-' + WORDS_B[r[1] % WORDS_B.length] + '-' + tail;
+  return (world === 'cafe' ? 'cafe-' : world === 'castle' ? 'castle-' : world === 'fish' ? 'fish-' : '') + WORDS_A[r[0] % WORDS_A.length] + '-' + WORDS_B[r[1] % WORDS_B.length] + '-' + tail;
 }
 function readRoomId() {
   const m = /(?:^|[#&])room=([a-z0-9-]{3,48})/i.exec(location.hash);
@@ -2884,10 +3014,11 @@ let roomId = readRoomId() || LOBBY;
 const isLobby = roomId === LOBBY;
 const inviteUrl = () => location.origin + location.pathname + (isLobby ? '' : '#room=' + roomId);
 window.addEventListener('hashchange', () => { if ((readRoomId() || LOBBY) !== roomId) location.reload(); });
-const WORLD_NAME = { island: 'island', cafe: 'cafe', castle: 'castle' };
+const WORLD_NAME = { island: 'island', cafe: 'cafe', castle: 'castle', fish: 'Fish Sky' };
+if (new Date() >= new Date(FISH_UNTIL + 'T00:00:00')) document.getElementById('fishWorldBtn').hidden = true;   // the limited edition is over
 document.getElementById('roomName').textContent = isLobby ? 'Main lobby' : 'Private ' + WORLD_NAME[WORLD];
 document.getElementById('roomDesc').textContent = isLobby ? 'Open to everyone, any time. Just share the link.' : 'Only people with this link can find it.';
-document.getElementById('roomTag').textContent = isLobby ? 'Main lobby' : (CAFE ? 'Cozy Cafe · ' : CASTLE ? 'Cloudy Castle · ' : 'Private island · ') + roomId;
+document.getElementById('roomTag').textContent = isLobby ? 'Main lobby' : (CAFE ? 'Cozy Cafe · ' : CASTLE ? 'Cloudy Castle · ' : SKYFISH ? 'Fish Sky · ' : 'Private island · ') + roomId;
 document.getElementById('newRoomLbl').textContent = isLobby ? 'Or make a private room:' : 'Make a new private room:';
 const lobbyRoomBtn = document.getElementById('lobbyRoomBtn');
 lobbyRoomBtn.hidden = isLobby;
@@ -2907,7 +3038,15 @@ if (CASTLE) {
   document.querySelector('#lobbyCard .lead').textContent = 'Pick a critter, write your name on the tag, and float up to the castle. This castle is private, just for people with the link.';
   document.getElementById('enterBtn').textContent = 'Float up';
 }
-if (!ISLAND) document.getElementById('chatName').textContent = CAFE ? 'Cafe chat' : 'Castle chat';
+if (SKYFISH) {
+  document.title = 'Fish Sky · Couplet Cove';
+  document.getElementById('lobbyTitle').textContent = 'Fish Sky';
+  document.querySelector('#title h1').textContent = 'Fish Sky';
+  document.querySelector('#titleMore p').textContent = 'Ride your fish through the sky, and fly up to the microphone on the floating stage to read.';
+  document.querySelector('#lobbyCard .lead').textContent = 'Pick a critter, write your name on the tag, and climb onto your flying fish. A limited-edition sky for our Being Human open mic, just for people with the link.';
+  document.getElementById('enterBtn').textContent = 'Fly in';
+}
+if (!ISLAND) document.getElementById('chatName').textContent = CAFE ? 'Cafe chat' : CASTLE ? 'Castle chat' : 'Sky chat';
 track(isLobby ? 'visit/main-lobby' : 'visit/private-' + WORLD, true);
 lobbyRoomBtn.addEventListener('click', () => { location.href = location.origin + location.pathname; });
 
@@ -2927,7 +3066,7 @@ async function copyInvite(btn, label) {
 document.getElementById('copyLobbyBtn').addEventListener('click', e => copyInvite(e.currentTarget, 'Copy'));
 document.getElementById('inviteBtn').addEventListener('click', e => { copyInvite(e.currentTarget, 'Invite'); canvas.focus(); });
 document.querySelectorAll('.worldBtn').forEach(b => b.addEventListener('click', () => {
-  const w = b.dataset.world; if (w !== 'island' && w !== 'cafe' && w !== 'castle') return;
+  const w = b.dataset.world; if (w !== 'island' && w !== 'cafe' && w !== 'castle' && w !== 'fish') return;
   track('private-room/created-' + w);
   location.hash = 'room=' + newRoomId(w);
 }));
@@ -2975,6 +3114,7 @@ function dropRemote(id, silent) {
   if (c.meter) c.meter.close();
   if (stageReader === c) { stageReader = null; closeTv(); }
   if (c.vehicle) scene.remove(c.vehicle);
+  if (c.mount) scene.remove(c.mount);
   scene.remove(c.root); c.tag.remove(); c.bubble.remove(); remotes.delete(id);
   updateCount();
 }
@@ -2989,6 +3129,7 @@ function applyPresence(c, pr) {
   const dj = isInt(pr.dj, 0, 9) ? pr.dj : 0;                 // their double-jump counter ticked: play the flip
   if (c.dj !== undefined && dj !== c.dj) c.flipT = 0;
   c.dj = dj;
+  if (isInt(pr.fc, 0, 4) && pr.fc !== c.fc) { c.fc = pr.fc; if (c.mount) { scene.remove(c.mount); c.mount = null; } }
   const rc = pr.rc === 1;                                    // they're recording readings: let everyone know
   if (c.hasPos && rc !== !!c.recording) addLine('', rc ? nameOf(c) + ' is recording readings at the mic.' : nameOf(c) + ' stopped recording readings.', true);
   c.recording = rc;
@@ -3025,7 +3166,7 @@ function sendPresence(force, target) {
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
     h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0,
-    rc: recOn ? 1 : 0, ar: ride ? ride.k : 0, rf: Math.round((me.ruffle || 0) * 10) / 10
+    fc: myFish(), rc: recOn ? 1 : 0, ar: ride ? ride.k : 0, rf: Math.round((me.ruffle || 0) * 10) / 10
   };
   const s = JSON.stringify(pr);
   if (!force && s === lastPres) return;
@@ -5381,7 +5522,7 @@ renderBag();
 /* --- music + sound settings panel --- */
 const musicBtn = document.getElementById('musicBtn'), soundPanel = document.getElementById('soundPanel');
 const musicToggle = document.getElementById('musicToggle'), musicVol = document.getElementById('musicVol'), sfxVol = document.getElementById('sfxVol');
-const music = new Audio(CAFE ? 'cafe-music.mp3' : CASTLE ? 'castle-music.mp3' : 'music.mp3');   // the cafe and the castle each have their own theme
+const music = new Audio(CAFE ? 'cafe-music.mp3' : CASTLE || SKYFISH ? 'castle-music.mp3' : 'music.mp3');   // the cafe and the castle each have their own theme
 music.loop = true; music.preload = 'none';
 let duckMusic = false;                                   // background music dips while someone plays stage music
 const applyMusicVol = () => { music.volume = Math.min(1, musicPct / 100 * 0.6) * (duckMusic ? 0.2 : 1); };
@@ -6210,6 +6351,12 @@ function update(dt) {
   }
 
   if (CAFE && active && !TRAILER && !ride && !hopTo) cafeWind(dt);
+  if (SKYFISH && active) {                                           // riding a fish: Space swims up, then you drift gently back down
+    if (wantHop) { flyT = Math.min(10, flyT + 1.7); sfx.whoosh(); }
+    const floor = inRect(STAGE, pos.x, pos.z) || inRect(STEPS, pos.x, pos.z) ? STAGE.h + 0.95 : 1.3;   // the fish hovers just above the stage floor
+    flyT = Math.max(floor, flyT - dt * 0.45);
+    wantHop = false;
+  }
   if (wantHop && grounded && active && digT <= 0 && !slide) { vy = 7.6; grounded = false; hopBase = pos.y; airHop = false; tryShake(); }   // peaks about 1.3 units up, clears the logs
   else if (wantHop && !grounded && !airHop && active && digT <= 0 && !slide) {                // double jump: one more hop in mid-air, with a little flip
     vy = 7.2; airHop = true; me.flipT = 0; me.flipN = ((me.flipN || 0) + 1) % 10;
@@ -6234,6 +6381,10 @@ function update(dt) {
     vy -= 22 * dt; pos.y += vy * dt;
     if (pos.y <= g) { pos.y = g; vy = 0; grounded = true; } else grounded = false;
   }
+  if (SKYFISH && active) {                                           // glide at your swimming height with a gentle bob
+    const want = flyT + Math.sin(t * 1.6) * 0.12;
+    pos.y += (want - pos.y) * Math.min(1, dt * 3); vy = 0; grounded = true;
+  }
   if (slide) { tickSlide(dt); vy = 0; grounded = true; me.ruffle = Math.min(1, (me.ruffle || 0) + dt * 0.5); }
   if (ride) { tickRide(dt); if (ride) { vy = 0; grounded = true; } }
   if (hopTo) {                                                   // the little hop from the boat, car or cloud onto solid ground
@@ -6257,10 +6408,12 @@ function update(dt) {
   me.ruffle = Math.max(0, (me.ruffle || 0) - dt / 14);           // fur smooths back down
   applyRuffle(me, me.ruffle);
   tickLeaving(dt);
+  tickFishSky(dt);
   me.sitT = onSeat && grounded && !movingNow && !me.emote ? (me.sitT || 0) + dt : 0;
-  me.sitting = me.sitT > 0.35 || !!ride;
+  me.sitting = me.sitT > 0.35 || !!ride || SKYFISH;
+  if (me.mount) placeMount(me.mount, me.root, dt, movingNow);
   me.root.position.set(pos.x, pos.y, pos.z);
-  animateCritter(me, dt, movingNow, runNow, grounded);
+  animateCritter(me, dt, movingNow && !SKYFISH, runNow, grounded);
   applyPose(me, dt); updateGear(me, dt);
   me.w = inW ? Math.min(1, me.w + dt * 2.5) : Math.max(0, me.w - dt / 22);   // soak fast, dry slowly
   critterFx(me, dt, pos.x, pos.y, pos.z, movingNow, wasAir && grounded);
@@ -6282,7 +6435,8 @@ function update(dt) {
     p.x += (c.target.x - p.x) * k; p.y += (c.target.y - p.y) * k; p.z += (c.target.z - p.z) * k;
     turnToward(c.root, c.target.ry, k);
     const gr = Math.abs(p.y - groundAt(p.x, p.z)) < 0.08;
-    animateCritter(c, dt, c.m === 1, c.run === 1, gr);
+    animateCritter(c, dt, c.m === 1 && !SKYFISH, c.run === 1, gr || SKYFISH);
+    if (SKYFISH) { if (!c.mount) c.mount = buildVehicle(4, c.fc || 0); placeMount(c.mount, c.root, dt, c.m === 1); }
     applyPose(c, dt); updateGear(c, dt);
     c.w += (c.wt - c.w) * Math.min(1, dt * 2);
     c.ruffle = (c.ruffle || 0) + ((c.rft || 0) - (c.ruffle || 0)) * Math.min(1, dt * 2);
@@ -6357,7 +6511,7 @@ function update(dt) {
   mp.needsUpdate = true;
   bulbs.forEach((b, i) => b.material.color.setHSL(0.11, 1, 0.72 + 0.1 * Math.sin(t * 2 + i * 0.9) * amp));
 
-  nearMic = active && pos.y > 0.6 && pos.y < 1.2 && Math.hypot(pos.x, pos.z + 9.2) < 2.0;
+  nearMic = active && pos.y > 0.6 && pos.y < (SKYFISH ? 2.6 : 1.2) && Math.hypot(pos.x, pos.z + 9.2) < (SKYFISH ? 2.4 : 2.0);
   if (stageReader === me && (!active || !inRect(STAGE_ZONE, pos.x, pos.z))) stopReading(active ? 'left' : 'quiet');
   tickSpot(dt);
   if (joined) {
