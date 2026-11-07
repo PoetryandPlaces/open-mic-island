@@ -1871,81 +1871,251 @@ if (CASTLE) {
 }
 
 /* ---------- Fish Sky: a limited-edition world for the "Being Human" open mic ----------
-   After Hieronymus Bosch: everyone rides a flying fish through a hazy teal sky. The stage stands on a
-   floating isle with dangling roots and two pink fountain towers; far below lies a soft green land,
-   and odd little things drift by (red berries on strings, bubbles, big fish sailing past). */
-const skyFish = [];                       // the big fish that swim past in the distance
-const skyBerries = [];                    // red berries bobbing on their strings
-const skyBubbles = [];
+   After Hieronymus Bosch's Garden of Earthly Delights: everyone rides a flying fish through a crowded,
+   dreamlike sky. The stage sits inside the Tree Man, a broken eggshell body on tree-trunk legs that stand
+   in two little boats, with a disc hat and a pink bagpipe on top. All around: blue fountain globes with
+   pink spires, a pool where animals parade in a ring, giant fruit, glass bubbles, a mussel shell, huge
+   birds, musical instruments, other critters out riding their fish, and blue mountains on the horizon. */
+const skyFish = [], skyBerries = [], skyBubbles = [], skyMovers = [], skyFlap = [], skyRiders = [];
 if (SKYFISH) {
-  const grass = mat(0x8fae7a), earth = mat(0x8a6a4a), earthDark = mat(0x6b5038), pink = mat(0xf0a9b8), pinkDark = mat(0xd98a9e), blue = mat(0x6f8fd0, { roughness: 0.4 });
-  // the floating isle under the stage
-  put(new THREE.Mesh(new THREE.CylinderGeometry(9.6, 9.2, 0.5, 26), grass), 0, -0.25, -10, scene, false);
-  const under = put(new THREE.Mesh(new THREE.ConeGeometry(9.2, 9, 22, 2), earth), 0, -5, -10, scene, false); under.rotation.x = Math.PI;
-  for (let i = 0; i < 14; i++) {                                 // roots dangling into the sky
-    const a = rand() * Math.PI * 2, r = 1.5 + rand() * 6.5, len = 2 + rand() * 4;
-    put(new THREE.Mesh(new THREE.ConeGeometry(0.12 + rand() * 0.1, len, 5), earthDark), Math.cos(a) * r, -1 - (9 - r) * 0.5 - len / 2, -10 + Math.sin(a) * r, scene, false).rotation.x = Math.PI;
-  }
-  // two pink fountain towers, like the Fountain of Life in The Garden of Earthly Delights
-  for (const s of [-1, 1]) {
-    const g = new THREE.Group(); g.position.set(7.4 * s, 0, -12.2); scene.add(g);
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.2, 1.2, 10), pinkDark), 0, 0.6, 0, g);
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.6, 3.6, 8), pink), 0, 3, 0, g);
-    for (let k = 0; k < 6; k++) { const sp = put(new THREE.Mesh(new THREE.ConeGeometry(0.12, 1.1, 5), pink), Math.cos(k) * 0.55, 2.2 + k * 0.45, Math.sin(k) * 0.55, g); sp.rotation.z = Math.cos(k) * 0.9; sp.rotation.x = Math.sin(k) * 0.9; }
-    put(new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.6, 8), pinkDark), 0, 5.6, 0, g);
-    put(new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), blue), 0, 4.5, 0, g);
-    put(new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), mat(0xfff1c4, { emissive: 0xffe08a, emissiveIntensity: 0.5 })), 0, 6.5, 0, g, false);
-    circles.push({ x: 7.4 * s, z: -12.2, r: 1.2 });
-  }
-  // the land far below, misty green and blue like the distant hills in Bosch's paintings
-  put(new THREE.Mesh(new THREE.CylinderGeometry(260, 260, 1, 40), mat(0x8ea98a)), 0, -70, 0, scene, false);
-  for (let i = 0; i < 22; i++) {
-    const a = rand() * Math.PI * 2, r = 60 + rand() * 150, s = 8 + rand() * 18;
-    put(new THREE.Mesh(new THREE.IcosahedronGeometry(s, 1), mat(i % 3 ? 0x7f9f88 : 0x93b0c2)), Math.cos(a) * r, -70, Math.sin(a) * r, scene, false).scale.y = 0.45;
-  }
-  // little floating islands drifting around the edges, each with a tree or a pink tower
-  for (let i = 0; i < 7; i++) {
-    const a = i / 7 * Math.PI * 2 + 0.4, r = 46 + rand() * 30, x = Math.cos(a) * r, z = Math.sin(a) * r - 6, y = -6 + rand() * 18, s = 2 + rand() * 2.5;
-    const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
-    put(new THREE.Mesh(new THREE.CylinderGeometry(s, s * 0.9, 0.4, 12), grass), 0, 0, 0, g, false);
-    put(new THREE.Mesh(new THREE.ConeGeometry(s * 0.9, s * 2, 10), earth), 0, -s - 0.2, 0, g, false).rotation.x = Math.PI;
-    if (i % 2) { put(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.6, 6), earthDark), 0, 0.9, 0, g, false); put(new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 0), mat(0x6f9a5a)), 0, 2.1, 0, g, false); }
-    else { put(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 2.4, 8), pink), 0, 1.3, 0, g, false); put(new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), blue), 0, 2.6, 0, g, false); }
+  const M = (c, o) => mat(c, o);
+  const grass = M(0x8fb06a), grassDark = M(0x6f9a52), earth = M(0x8a6a4a), earthDark = M(0x6b5038), pink = M(0xf0a9b8), pinkDark = M(0xd98a9e), pinkPale = M(0xf6cdd4);
+  const blue = M(0x4f7fc8, { roughness: 0.35, metalness: 0.1 }), blueDark = M(0x3a5f9e), gold = M(0xd9b46a, { metalness: 0.3, roughness: 0.5 }), bone = M(0xeadfcb), skin = M(0xe8cdb0);
+  const water = M(0x7fb3d8, { roughness: 0.25 }), ice = M(0xdbe9ef, { roughness: 0.3 }), red = M(0xd8413a, { roughness: 0.35 }), dark = M(0x2a2228);
+  const add = (geo, m, x, y, z, parent = scene, shadow = true) => put(new THREE.Mesh(geo, m), x, y, z, parent, shadow);
+  const grp = (x, y, z, parent = scene) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+  const floatIsle = (x, y, z, r, top = grass) => {               // a round floating island with a rocky underside
+    const g = grp(x, y, z);
+    add(new THREE.CylinderGeometry(r, r * 0.92, 0.6, 18), top, 0, 0, 0, g, false);
+    add(new THREE.ConeGeometry(r * 0.92, r * 1.6, 14), earth, 0, -r * 0.8 - 0.3, 0, g, false).rotation.x = Math.PI;
     sway.push({ g, ph: rand() * 6, float: y });
+    return g;
+  };
+  const spire = (g, y, h, m = pink) => {                         // a pink Bosch spire with thorny spikes
+    add(new THREE.CylinderGeometry(0.25 * h / 3, 0.55 * h / 3, h, 8), m, 0, y + h / 2, 0, g);
+    for (let k = 0; k < 7; k++) { const sp = add(new THREE.ConeGeometry(0.1 * h / 3, 0.9 * h / 3, 5), m, Math.cos(k * 2.1) * 0.45 * h / 3, y + 0.4 * h + k * 0.08 * h, Math.sin(k * 2.1) * 0.45 * h / 3, g, false); sp.rotation.z = Math.cos(k * 2.1) * 1.0; sp.rotation.x = -Math.sin(k * 2.1) * 1.0; }
+    add(new THREE.ConeGeometry(0.4 * h / 3, 1.2 * h / 3, 8), pinkDark, 0, y + h + 0.5 * h / 3, 0, g);
+    add(new THREE.SphereGeometry(0.16 * h / 3, 8, 6), M(0xfff1c4, { emissive: 0xffe08a, emissiveIntensity: 0.5 }), 0, y + h + 1.15 * h / 3, 0, g, false);
+  };
+
+  // --- the Tree Man, with the stage inside his broken eggshell body ---
+  const EGG = { x: 0, y: 1.6, z: -10.3, rx: 7.2, ry: 5.2, rz: 6.2 }, gap = 1.25;  // the shell is open toward the audience
+  const shellGeo = new THREE.SphereGeometry(1, 40, 28, Math.PI / 2 + gap, Math.PI * 2 - gap * 2);
+  const shellOut = new THREE.Mesh(shellGeo, M(0xeadfcb, { side: THREE.FrontSide })), shellIn = new THREE.Mesh(shellGeo, M(0xc8956c, { side: THREE.BackSide, emissive: 0x7a4626, emissiveIntensity: 0.35 }));
+  for (const m of [shellOut, shellIn]) { m.position.set(EGG.x, EGG.y, EGG.z); m.scale.set(EGG.rx, EGG.ry, EGG.rz); m.castShadow = false; m.receiveShadow = true; scene.add(m); }
+  for (const side of [-1, 1]) for (let i = 1; i < 12; i++) {     // jagged broken edges along the opening
+    const th = i / 12 * Math.PI, ph = Math.PI / 2 + side * gap;
+    const nx = -Math.cos(ph) * Math.sin(th), ny = Math.cos(th), nz = Math.sin(ph) * Math.sin(th);
+    const sh = add(new THREE.ConeGeometry(0.28, 0.9 + rand() * 1.1, 4), bone, EGG.x + nx * EGG.rx, EGG.y + ny * EGG.ry, EGG.z + nz * EGG.rz, scene, false);
+    sh.rotation.set(rand() * 0.6 - 0.3 + Math.PI / 2, 0, side * (0.6 + rand() * 0.5));
   }
+  // the head at the back, looking over his shoulder, under a wide disc hat with a pink bagpipe on top
+  const head = grp(-1.4, 7.6, -14.4); head.rotation.y = 0.55; head.scale.setScalar(1.25);
+  add(new THREE.SphereGeometry(1.5, 20, 16), skin, 0, 0, 0, head).scale.set(1, 1.18, 1);
+  for (const s of [-1, 1]) { add(new THREE.SphereGeometry(0.16, 10, 8), M(0xfbf7ee), 0.5 * s, 0.25, 1.32, head, false); add(new THREE.SphereGeometry(0.08, 8, 6), dark, 0.5 * s, 0.25, 1.45, head, false); }
+  add(new THREE.ConeGeometry(0.22, 0.6, 6), skin, 0, -0.05, 1.55, head, false).rotation.x = Math.PI / 2;
+  add(new THREE.BoxGeometry(0.55, 0.06, 0.08), M(0x9a5a52), 0, -0.55, 1.38, head, false);
+  const hat = grp(-1.2, 9.2, -14.2);
+  add(new THREE.CylinderGeometry(4.6, 4.6, 0.32, 30), M(0xe9d6cf), 0, 0, 0, hat);
+  add(new THREE.TorusGeometry(4.6, 0.12, 6, 30), M(0xd8c2b8), 0, 0.05, 0, hat, false).rotation.x = Math.PI / 2;
+  const bag = add(new THREE.SphereGeometry(1.1, 18, 14), pink, 0.4, 1.25, 0.2, hat); bag.scale.set(0.8, 1.15, 0.8);
+  add(new THREE.CylinderGeometry(0.09, 0.09, 3.2, 6), M(0xb07a8a), 0.95, 2.6, 0.2, hat).rotation.z = -0.45;
+  add(new THREE.ConeGeometry(0.22, 0.9, 6), M(0xb07a8a), -0.3, 0.5, 0.9, hat, false).rotation.x = 1.9;
+  for (let k = 0; k < 5; k++) { const p = grp(Math.cos(k * 1.26) * 3.2, 0.16, Math.sin(k * 1.26) * 3.2, hat); add(new THREE.CapsuleGeometry(0.16, 0.35, 3, 6), M([0xe7c7b0, 0xf0a9b8, 0x9fb5d8][k % 3]), 0, 0.35, 0, p); skyMovers.push({ o: p, kind: 'dance', ph: k }); }   // tiny dancers circling the hat
+  // tree-trunk legs standing in two little boats on a frozen pond far below
+  for (const s of [-1, 1]) {
+    const lx = 2.3 * s, top = EGG.y - EGG.ry * 0.7, bot = -15.5;
+    const leg = add(new THREE.CylinderGeometry(0.7, 1.15, top - bot, 9), earthDark, lx, (top + bot) / 2, -10.2, scene);
+    leg.rotation.z = -0.08 * s;
+    for (let k = 0; k < 4; k++) { const br = add(new THREE.ConeGeometry(0.22, 2.2, 5), earthDark, lx + 0.4 * s, bot + 3 + k * 2.6, -10.2 + (k % 2 ? 0.4 : -0.4), scene, false); br.rotation.z = -s * (0.9 + k * 0.1); }
+    const pierce = add(new THREE.ConeGeometry(0.3, 4.5, 6), earthDark, lx * 2.4, EGG.y - 1, -10.6, scene, false); pierce.rotation.z = -s * 0.75;   // branches breaking through the shell
+    const boat = grp(lx * 1.25, bot - 0.2, -9.6);
+    add(new THREE.BoxGeometry(2.0, 0.6, 3.6), M(0x6b4a32), 0, 0, 0, boat);
+    add(new THREE.BoxGeometry(1.4, 0.6, 1.4), M(0x6b4a32), 0, 0, 2.1, boat, false).rotation.y = Math.PI / 4;
+  }
+  add(new THREE.CylinderGeometry(10, 9.6, 0.5, 26), ice, 0, -16.2, -10, scene, false);
+  add(new THREE.ConeGeometry(9.6, 10, 18), earth, 0, -21.6, -10, scene, false).rotation.x = Math.PI;
+  for (let i = 0; i < 10; i++) { const a = rand() * 6.28, r = 2 + rand() * 6; add(new THREE.ConeGeometry(0.14, 3 + rand() * 4, 5), earthDark, Math.cos(a) * r, -27 - rand() * 3, -10 + Math.sin(a) * r, scene, false).rotation.x = Math.PI; }
+
+  // --- the Fountains of the Four Rivers: blue globes with pink spires on floating islands ---
+  for (const [x, y, z, r] of [[-32, -2, -42, 7], [0, 6, -56, 8], [32, -2, -42, 7], [-46, 4, -14, 6]]) {
+    const g = floatIsle(x, y, z, r);
+    add(new THREE.CylinderGeometry(r * 0.7, r * 0.7, 0.1, 18), water, 0, 0.32, 0, g, false);
+    add(new THREE.SphereGeometry(r * 0.48, 22, 16), blue, 0, r * 0.5, 0, g);
+    add(new THREE.TorusGeometry(r * 0.49, 0.08, 6, 26), blueDark, 0, r * 0.5, 0, g, false).rotation.x = 1.2;
+    for (let k = 0; k < 3; k++) add(new THREE.SphereGeometry(0.3, 8, 6), pinkPale, Math.cos(k * 2.1) * r * 0.46, r * 0.62, Math.sin(k * 2.1) * r * 0.46, g, false);
+    spire(g, r * 0.9, r * 0.9);
+  }
+  // --- the Fountain of Life: a tall pink spire with a round owl-eye globe, in a blue pond ---
+  { const g = floatIsle(44, -4, 8, 8);
+    add(new THREE.CylinderGeometry(5.2, 5.2, 0.1, 20), water, 0, 0.32, 0, g, false);
+    spire(g, 0.3, 11);
+    const eye = add(new THREE.SphereGeometry(1.4, 16, 12), pinkPale, 0, 2.6, 0, g); eye.scale.set(1, 0.9, 1);
+    add(new THREE.SphereGeometry(0.7, 12, 10), dark, 0, 2.6, 0.9, g, false); }
+
+  // --- the pool where animals parade in a ring ---
+  { const g = floatIsle(-40, -7, 10, 11, grassDark);
+    add(new THREE.CylinderGeometry(4.6, 4.6, 0.1, 22), water, 0, 0.32, 0, g, false);
+    const ring = grp(0, 0.3, 0, g); skyMovers.push({ o: ring, kind: 'spin', v: 0.12 });
+    const coats = [0xfbf7ee, 0x8a5a3a, 0xd9b77a, 0xf0a9b8, 0x5a4a3a, 0xe8d8b8, 0xc9a37a, 0x9a9aa8];
+    for (let i = 0; i < 16; i++) {
+      const a = i / 16 * Math.PI * 2, an = grp(Math.cos(a) * 7.6, 0, Math.sin(a) * 7.6, ring); an.rotation.y = -a;
+      const c = M(coats[i % coats.length]), tall = i % 5 === 2;      // horses, deer, pigs, a camel or two, and a unicorn
+      add(new THREE.BoxGeometry(0.55, 0.55, 1.4), c, 0, 1.0, 0, an);
+      for (const [lx, lz] of [[-0.2, -0.5], [0.2, -0.5], [-0.2, 0.5], [0.2, 0.5]]) add(new THREE.CylinderGeometry(0.07, 0.06, 0.8, 5), c, lx, 0.4, lz, an, false);
+      const neck = add(new THREE.CylinderGeometry(0.12, 0.18, tall ? 1.3 : 0.7, 6), c, 0, tall ? 1.8 : 1.45, 0.75, an, false); neck.rotation.x = 0.5;
+      add(new THREE.BoxGeometry(0.3, 0.3, 0.55), c, 0, tall ? 2.4 : 1.8, 1.05, an, false);
+      if (i % 4 === 1) add(new THREE.ConeGeometry(0.05, 0.5, 5), gold, 0, (tall ? 2.4 : 1.8) + 0.35, 1.2, an, false).rotation.x = 0.6;
+      if (i % 6 === 3) add(new THREE.SphereGeometry(0.3, 8, 6), c, 0, 1.45, -0.1, an, false);
+      skyMovers.push({ o: an, kind: 'gallop', ph: i });
+    }
+  }
+
+  // --- giant fruit floating everywhere: strawberries, cherries and blackberries ---
+  const seedM = M(0xfff1a8), leafM = M(0x5a8f3a), blackM = M(0x3a2340, { roughness: 0.3 });
+  const fruitAt = [[-14, 11, -24], [16, 13, -20], [-22, 8, 6], [22, 9, 4], [-8, 15, 10], [10, 6, 22], [-28, 3, -8], [28, 12, -10], [0, 17, -26], [-18, 5, 20], [12, 16, 4], [-30, 14, -20], [32, 6, -4], [-4, 4, 26], [20, 18, 26], [-12, 20, -8]];
+  fruitAt.forEach(([x, y, z], i) => {
+    const g = grp(x, y, z), kind = i % 3;
+    if (kind === 0) { const b = add(new THREE.SphereGeometry(1.1, 14, 10), red, 0, 0, 0, g); b.scale.set(1, 1.2, 1); add(new THREE.ConeGeometry(0.9, 0.5, 7), leafM, 0, 1.25, 0, g, false).rotation.x = Math.PI; for (let k = 0; k < 12; k++) { const a = k * 2.4, h = -0.8 + (k % 6) * 0.3; add(new THREE.SphereGeometry(0.07, 5, 4), seedM, Math.cos(a) * 1.05, h, Math.sin(a) * 1.05, g, false); } }
+    else if (kind === 1) { for (const s of [-1, 1]) { add(new THREE.SphereGeometry(0.75, 14, 10), red, s * 0.7, 0, 0, g); add(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 4), leafM, s * 0.35, 1.0, 0, g, false).rotation.z = -s * 0.45; } }
+    else { for (let k = 0; k < 14; k++) add(new THREE.SphereGeometry(0.42, 8, 6), blackM, Math.cos(k * 2.4) * 0.5 * (k % 3), (k % 5) * 0.32 - 0.6, Math.sin(k * 2.4) * 0.5 * (k % 3), g, false); }
+    skyBerries.push({ g, y, ph: rand() * 6, spin: 0.2 + rand() * 0.3 });
+  });
   // red berries hanging from long strings, like the fisherman's lure
-  const berryM = mat(0xd8413a, { roughness: 0.35, emissive: 0x5a0e0a, emissiveIntensity: 0.25 }), stringM = new THREE.MeshBasicMaterial({ color: 0x5a4a3a });
-  for (let i = 0; i < 12; i++) {
-    const a = rand() * Math.PI * 2, r = 12 + rand() * 18, x = Math.cos(a) * r, z = Math.sin(a) * r - 4, y = 3 + rand() * 6;
-    if (Math.abs(x) < 6 && z < -4) continue;
-    const g = new THREE.Group(); g.position.set(x, y, z); scene.add(g);
-    put(new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 3, 4), stringM), 0, 1.5, 0, g, false);
-    put(new THREE.Mesh(new THREE.SphereGeometry(0.32, 14, 10), berryM), 0, 0, 0, g);
-    skyBerries.push({ g, y, ph: rand() * 6 });
+  for (let i = 0; i < 10; i++) {
+    const a = rand() * Math.PI * 2, r = 14 + rand() * 18, x = Math.cos(a) * r, z = Math.sin(a) * r - 4, y = 3 + rand() * 8;
+    if (Math.abs(x) < 8 && z < -2) continue;
+    const g = grp(x, y, z);
+    add(new THREE.CylinderGeometry(0.015, 0.015, 3, 4), new THREE.MeshBasicMaterial({ color: 0x5a4a3a }), 0, 1.5, 0, g, false);
+    add(new THREE.SphereGeometry(0.32, 14, 10), red, 0, 0, 0, g);
+    skyBerries.push({ g, y, ph: rand() * 6, spin: 0 });
   }
-  // big fish sailing slowly past, far out
-  for (let i = 0; i < 5; i++) {
-    const f = buildVehicle(4, i); f.scale.setScalar(2.4 + rand() * 1.5);
-    skyFish.push({ f, a: rand() * Math.PI * 2, r: 45 + rand() * 35, y: 4 + rand() * 16, v: (0.02 + rand() * 0.03) * (i % 2 ? 1 : -1) });
+  // glass bubbles with something inside (a strawberry, a little bird, a cherry)
+  const glass = new THREE.MeshStandardMaterial({ color: 0xdff2ff, transparent: true, opacity: 0.25, roughness: 0.05, metalness: 0.3, depthWrite: false });
+  for (const [x, y, z, k] of [[-18, 6, -14, 0], [18, 4, -30, 1], [-30, 12, 18, 2], [30, 5, 18, 0], [6, 13, 30, 1]]) {
+    const g = grp(x, y, z);
+    add(new THREE.SphereGeometry(2.2, 20, 14), glass, 0, 0, 0, g, false);
+    if (k === 0) add(new THREE.SphereGeometry(0.7, 10, 8), red, 0, -0.3, 0, g);
+    else if (k === 1) { add(new THREE.SphereGeometry(0.5, 10, 8), M(0x3f8fc8), 0, -0.2, 0, g); add(new THREE.ConeGeometry(0.15, 0.6, 4), M(0xe8a04a), 0, -0.2, 0.6, g, false).rotation.x = Math.PI / 2; }
+    else add(new THREE.SphereGeometry(0.6, 10, 8), pink, 0, -0.3, 0, g);
+    skyBerries.push({ g, y, ph: rand() * 6, spin: 0.1 });
   }
-  // a few soap bubbles drifting up
-  const bubbleM = new THREE.MeshStandardMaterial({ color: 0xe8f4ff, transparent: true, opacity: 0.28, roughness: 0.1, metalness: 0.2 });
-  for (let i = 0; i < 18; i++) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(0.25 + rand() * 0.35, 12, 10), bubbleM);
-    m.position.set(-25 + rand() * 50, -4 + rand() * 14, -30 + rand() * 50); scene.add(m);
-    skyBubbles.push({ m, v: 0.25 + rand() * 0.35, ph: rand() * 6 });
+  // a giant mussel shell, slowly opening and closing, with a pearl inside
+  { const g = grp(26, 3, -22); g.rotation.y = -0.8;
+    const lower = add(new THREE.SphereGeometry(3, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M(0x3a3a4e, { side: THREE.DoubleSide }), 0, 0, 0, g); lower.scale.set(1, 0.45, 1.6);
+    const lid = grp(0, 0, -4.6, g); const upper = add(new THREE.SphereGeometry(3, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0x4a4a62, { side: THREE.DoubleSide }), 0, 0, 4.6, lid); upper.scale.set(1, 0.45, 1.6);
+    add(new THREE.SphereGeometry(0.8, 14, 10), M(0xf8f2ea, { roughness: 0.2, metalness: 0.2 }), 0, 0.3, 0.5, g);
+    skyMovers.push({ o: lid, kind: 'clam' }); sway.push({ g, ph: 1, float: 3 }); }
+  // giant musical instruments, like the ones in the right panel: a harp, a lute and a drum
+  { const g = grp(-24, 6, -28); g.rotation.y = 0.6;
+    add(new THREE.CylinderGeometry(0.25, 0.3, 9, 8), gold, 0, 0, 0, g);
+    const arm = add(new THREE.TorusGeometry(4.4, 0.25, 6, 20, Math.PI * 0.6), gold, 0.2, 0.4, 0, g, false); arm.rotation.z = 0.15;
+    add(new THREE.CylinderGeometry(0.2, 0.2, 6, 6), gold, 2.6, -1.2, 0, g, false).rotation.z = 0.55;
+    for (let k = 0; k < 9; k++) add(new THREE.CylinderGeometry(0.02, 0.02, 6.5 - k * 0.55, 4), M(0xfff6dc), 0.3 + k * 0.3, 0.8 - k * 0.15, 0, g, false);
+    sway.push({ g, ph: 2, float: 6 }); }
+  { const g = grp(26, 9, 12); g.rotation.set(0.3, -0.6, 0.9);
+    const body = add(new THREE.SphereGeometry(2.2, 18, 12), M(0xc99a5a), 0, 0, 0, g); body.scale.set(1, 1.3, 0.45);
+    add(new THREE.CircleGeometry(0.6, 16), dark, 0, 0.3, 1.0, g, false);
+    add(new THREE.BoxGeometry(0.5, 4.5, 0.25), M(0x8a5a3a), 0, 4.4, 0, g);
+    sway.push({ g, ph: 3, float: 9 }); }
+  { const g = grp(-12, -3, -24); g.rotation.z = 0.4;
+    add(new THREE.CylinderGeometry(1.8, 1.8, 2.2, 18), M(0x4f7fc8), 0, 0, 0, g);
+    add(new THREE.CylinderGeometry(1.85, 1.85, 0.1, 18), M(0xf3ead2), 0, 1.12, 0, g, false);
+    sway.push({ g, ph: 4, float: -3 }); }
+
+  // --- pink rock castles full of round dark windows, and red berry-dome huts, like the middle panel ---
+  for (const [x, y, z, h] of [[-36, -4, -30, 12], [40, -3, -22, 10]]) {
+    const g = floatIsle(x, y, z, 6);
+    add(new THREE.CylinderGeometry(1.6, 2.6, h, 9), pink, 0, h / 2, 0, g);
+    add(new THREE.CylinderGeometry(1.0, 1.4, h * 0.5, 8), pinkDark, 1.6, h * 0.25, 1.2, g);
+    for (let k = 0; k < 9; k++) { const a = k * 1.9, yy = 1.5 + (k % 5) * h * 0.17; add(new THREE.CircleGeometry(0.35, 10), dark, Math.cos(a) * 2.05, yy, Math.sin(a) * 2.05, g, false).lookAt(g.position.x + Math.cos(a) * 9, g.position.y + yy, g.position.z + Math.sin(a) * 9); }
+    for (let k = 0; k < 5; k++) { const sp = add(new THREE.ConeGeometry(0.25, 2.2, 5), pink, Math.cos(k * 1.3) * 1.4, h + 0.6, Math.sin(k * 1.3) * 1.4, g, false); sp.rotation.z = Math.cos(k * 1.3) * 0.5; sp.rotation.x = -Math.sin(k * 1.3) * 0.5; }
+    add(new THREE.SphereGeometry(0.9, 12, 10), blue, 0, h + 1.4, 0, g);
   }
+  for (const [x, y, z] of [[-16, -6, -6], [18, -5, -2], [-6, -8, 20]]) {
+    const g = floatIsle(x, y, z, 3.4);
+    const dome = add(new THREE.SphereGeometry(2.2, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), red, 0, 0.3, 0, g);
+    add(new THREE.CircleGeometry(0.7, 12), dark, 0, 1.0, 2.1, g, false);
+    for (let k = 0; k < 10; k++) add(new THREE.SphereGeometry(0.08, 5, 4), seedM, Math.cos(k * 2.4) * 1.9, 0.6 + (k % 3) * 0.5, Math.sin(k * 2.4) * 1.9, g, false);
+    add(new THREE.ConeGeometry(0.15, 1.4, 5), leafM, 0, 2.9, 0, g, false);
+  }
+  // --- huge birds: some perched on the islands, some circling overhead with flapping wings ---
+  const bird = (cBody, cWing, cBeak, sc) => {
+    const g = new THREE.Group();
+    const b = add(new THREE.SphereGeometry(0.8, 14, 10), M(cBody), 0, 0, 0, g); b.scale.set(0.8, 0.8, 1.3);
+    add(new THREE.SphereGeometry(0.5, 12, 10), M(cBody), 0, 0.5, 0.9, g, false);
+    add(new THREE.ConeGeometry(0.14, 0.9, 5), M(cBeak), 0, 0.45, 1.75, g, false).rotation.x = Math.PI / 2;
+    for (const s of [-1, 1]) { add(new THREE.SphereGeometry(0.08, 6, 5), dark, 0.32 * s, 0.62, 1.2, g, false); const piv = grp(0.5 * s, 0.2, 0, g); const w = add(new THREE.BoxGeometry(1.8, 0.08, 0.9), M(cWing), 0.9 * s, 0, 0, piv, false); skyFlap.push({ p: piv, s, ph: rand() * 6 }); }
+    add(new THREE.ConeGeometry(0.35, 1.0, 4), M(cWing), 0, 0.1, -1.3, g, false).rotation.x = -Math.PI / 2;
+    g.scale.setScalar(sc); scene.add(g); return g;
+  };
+  [[0x3f8fc8, 0xe8803a, 0x2a2a2a, 3.2], [0xd9a04a, 0x2a2a2a, 0xf0d8a0, 2.6], [0x8a6a4a, 0x6a5040, 0xd9b46a, 3.6], [0xe8c8a8, 0xf0a9b8, 0x2a2a2a, 2.8]].forEach(([b, w, k, sc], i) => {
+    const g = bird(b, w, k, sc); skyMovers.push({ o: g, kind: 'circle', r: 26 + i * 6, y: 16 + i * 3, a: i * 1.6, v: (i % 2 ? 1 : -1) * (0.08 + i * 0.015) });
+  });
+  { const owl = bird(0x7a5a3a, 0x5a4030, 0xd9b46a, 2.6); owl.position.set(-40, -3.4, 10 + 2); owl.rotation.y = 0.8; }   // an owl watching the parade
+  // a flock of little birds swirling high above
+  const tiny = M(0x3a3438);
+  for (let i = 0; i < 28; i++) { const g = grp(0, 0, 0); add(new THREE.ConeGeometry(0.18, 0.7, 3), tiny, 0, 0, 0, g, false).rotation.x = Math.PI / 2; skyMovers.push({ o: g, kind: 'flock', a: rand() * 6.28, r: 12 + rand() * 10, y: 22 + rand() * 6, v: 0.25 + rand() * 0.2, ph: rand() * 6 }); }
+
+  // --- other critters out riding their fish, looping around the sky ---
+
+  // big fish sailing slowly past, farther out
+  for (let i = 0; i < 7; i++) {
+    const f = buildVehicle(4, i); f.scale.setScalar(2.4 + rand() * 1.8);
+    skyFish.push({ f, a: rand() * Math.PI * 2, r: 44 + rand() * 30, y: -2 + rand() * 22, v: (0.02 + rand() * 0.03) * (i % 2 ? 1 : -1) });
+  }
+  // little floating islands with trees and pink towers drifting around the edges
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2 + 0.4, r = 52 + rand() * 26, x = Math.cos(a) * r, z = Math.sin(a) * r - 6, y = -8 + rand() * 20, s = 2 + rand() * 2.5;
+    const g = floatIsle(x, y, z, s);
+    if (i % 2) { add(new THREE.CylinderGeometry(0.12, 0.18, 1.6, 6), earthDark, 0, 1.1, 0, g, false); add(new THREE.IcosahedronGeometry(0.9, 0), M(0x6f9a5a), 0, 2.3, 0, g, false); }
+    else spire(g, 0.3, 3.2);
+  }
+  // soap bubbles drifting up
+  const bubbleM = new THREE.MeshStandardMaterial({ color: 0xe8f4ff, transparent: true, opacity: 0.28, roughness: 0.1, metalness: 0.2, depthWrite: false });
+  for (let i = 0; i < 22; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.25 + rand() * 0.35, 12, 10), bubbleM); m.position.set(-28 + rand() * 56, -4 + rand() * 16, -32 + rand() * 54); scene.add(m); skyBubbles.push({ m, v: 0.25 + rand() * 0.35, ph: rand() * 6 }); }
+  // the land far below and blue mountains on the horizon, like the backgrounds of the panels
+  add(new THREE.CylinderGeometry(300, 300, 1, 40), M(0x8fae6a), 0, -70, 0, scene, false);
+  for (let i = 0; i < 26; i++) { const a = rand() * Math.PI * 2, r = 50 + rand() * 170, s = 6 + rand() * 14; add(new THREE.IcosahedronGeometry(s, 1), M(i % 4 ? 0x6f9a52 : 0x7fb3d8), Math.cos(a) * r, -70, Math.sin(a) * r, scene, false).scale.y = i % 4 ? 0.6 : 0.08; }
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + rand() * 0.2, r = 170 + rand() * 50, h = 30 + rand() * 50; add(new THREE.ConeGeometry(8 + rand() * 10, h, 6), M(i % 3 ? 0x6f8fc0 : 0x8fa8d0), Math.cos(a) * r, -70 + h / 2, Math.sin(a) * r, scene, false); }
+}
+function spawnSkyRiders() {                                      // other critters out riding their fish (made once the critters are ready)
+  ['cat', 'frog', 'dog', 'mouse', 'fish', 'cat', 'frog', 'mouse'].forEach((kind, i) => {
+    const f = buildVehicle(4, i), c = makeCritter(kind); c.root.position.set(0, 0, 0); f.add(c.root); c.rig.position.y = -0.16;
+    skyRiders.push({ f, c, a: i * 0.79, r: 18 + (i % 3) * 6, y: 9 + (i % 4) * 2.5, v: (i % 2 ? 1 : -1) * (0.09 + i * 0.01) });
+  });
 }
 function tickFishSky(dt) {
   if (!SKYFISH) return;
+  if (!skyRiders.length) spawnSkyRiders();
   for (const s of skyFish) {
     s.a += s.v * dt;
-    const x = Math.cos(s.a) * s.r, z = Math.sin(s.a) * s.r - 6, y = s.y + Math.sin(t * 0.4 + s.a * 3) * 1.2;
-    s.f.position.set(x, y, z); s.f.rotation.y = Math.atan2(-Math.sin(s.a) * Math.sign(s.v), Math.cos(s.a) * Math.sign(s.v));
+    s.f.position.set(Math.cos(s.a) * s.r, s.y + Math.sin(t * 0.4 + s.a * 3) * 1.2, Math.sin(s.a) * s.r - 6);
+    s.f.rotation.y = Math.atan2(-Math.sin(s.a) * Math.sign(s.v), Math.cos(s.a) * Math.sign(s.v));
     animFish(s.f, 0.6);
   }
-  for (const b of skyBerries) { b.g.position.y = b.y + Math.sin(t * 0.8 + b.ph) * 0.35; b.g.rotation.z = Math.sin(t * 0.6 + b.ph) * 0.08; }
-  for (const b of skyBubbles) { b.m.position.y += b.v * dt; b.m.position.x += Math.sin(t + b.ph) * dt * 0.2; if (b.m.position.y > 14) b.m.position.y = -6; }
+  for (const s of skyRiders) {
+    s.a += s.v * dt;
+    const y = s.y + Math.sin(t * 0.5 + s.a * 2) * 2;
+    s.f.position.set(Math.cos(s.a) * s.r, y, Math.sin(s.a) * s.r - 4);
+    s.f.rotation.set(0, Math.atan2(-Math.sin(s.a) * Math.sign(s.v), Math.cos(s.a) * Math.sign(s.v)), -Math.sign(s.v) * 0.18);
+    animFish(s.f, 1); s.c.model.anim(t);
+  }
+  for (const b of skyBerries) { b.g.position.y = b.y + Math.sin(t * 0.8 + b.ph) * 0.4; b.g.rotation.y += b.spin * dt; }
+  for (const b of skyBubbles) { b.m.position.y += b.v * dt; b.m.position.x += Math.sin(t + b.ph) * dt * 0.2; if (b.m.position.y > 16) b.m.position.y = -6; }
+  for (const f of skyFlap) f.p.rotation.z = f.s * Math.sin(t * 5 + f.ph) * 0.6;
+  for (const m of skyMovers) {
+    if (m.kind === 'spin') m.o.rotation.y += m.v * dt;
+    else if (m.kind === 'gallop') m.o.position.y = Math.abs(Math.sin(t * 6 + m.ph)) * 0.25;
+    else if (m.kind === 'dance') m.o.position.y = 0.16 + Math.abs(Math.sin(t * 4 + m.ph)) * 0.3;
+    else if (m.kind === 'clam') m.o.rotation.x = -0.15 - (0.5 + 0.5 * Math.sin(t * 0.5)) * 0.45;
+    else if (m.kind === 'circle' || m.kind === 'flock') {
+      m.a += m.v * dt * (m.kind === 'circle' ? 1 : 1);
+      const fy = m.kind === 'flock' ? Math.sin(t * 2 + m.ph) * 0.8 : Math.sin(t * 0.6 + m.a) * 1.5;
+      m.o.position.set(Math.cos(m.a) * m.r, m.y + fy, Math.sin(m.a) * m.r - 4);
+      m.o.rotation.y = Math.atan2(-Math.sin(m.a) * Math.sign(m.v), Math.cos(m.a) * Math.sign(m.v));
+    }
+  }
   for (const s of sway) if (s.float !== undefined) s.g.position.y = s.float + Math.sin(t * 0.3 + s.ph) * 0.6;
 }
 
