@@ -11,7 +11,7 @@
 <script>window.__trystero = import("https://cdn.jsdelivr.net/npm/trystero@0.25.4/+esm").catch(() => null);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..800,0..100,0..1;1,9..144,400..800,0..100,0..1&family=Lexend:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..800,0..100,0..1;1,9..144,400..800,0..100,0..1&family=Lexend:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Italiana&display=swap">
 <style>
 /* Layout: full-bleed 3D canvas with small wooden-sign HUD pieces floating at the corners;
    an entrance card over a blurred island before you join.
@@ -237,64 +237,81 @@ kbd {
   touch-action: none;
 }
 
-/* entrance */
+/* entrance: flat, like poetryandplaces.org (lavender page, purple blocks, big serif, square buttons) */
 #lobby {
-  position: fixed; inset: 0;
-  display: grid; place-items: center;
-  overflow-y: auto;
-  padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px));
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  background: rgba(238, 231, 248, .35);
-  backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
-  z-index: 20;
+  --lv: #eee7f8; --pu: #7a68a1; --pu2: #6878a1; --pink: #5c4a86;
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto;
+  background: var(--lv); color: #3d3458;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
-#lobbyCard {
-  width: min(520px, 100%);
-  box-sizing: border-box;
-  padding: 18px 20px 20px;
-  display: flex; flex-direction: column; gap: 14px;
-}
-#lobbyCard h2 { margin: 0; font: 700 2.2rem/1.05 var(--font-display); color: var(--plank); text-align: center; text-wrap: balance; }
-#lobbyCard .lead { margin: -6px 0 0; text-align: center; font-weight: 600; font-size: .95rem; }
-#stageBox {
-  position: relative; height: 230px; border-radius: 12px; overflow: hidden;
-  background: linear-gradient(#3b3a74 0%, #e58fa0 58%, #ffb36b 100%);
-  border: 2px solid #cfc3e8;
-}
-#preview { width: 100%; height: 100%; display: block; }
-#pickedName {
-  position: absolute; left: 12px; top: 10px;
-  font: 800 1.1rem var(--font-display); color: var(--plank-dark);
-  background: rgba(238, 231, 248, .88); border-radius: 999px; padding: 0 12px;
-}
+#lobbyCard { min-height: 100%; box-sizing: border-box; max-width: 1040px; margin: 0 auto; padding: 0 28px 20px; display: flex; flex-direction: column; }
+.lbBar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 20px 0 14px; border-bottom: 1.5px solid var(--pu); }
+.lbMark { font: 400 1.5rem/1 "Italiana", "Playfair Display", serif; letter-spacing: .04em; color: var(--pu); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.lbMark b { font-weight: 400; }
+.lbMark span { color: var(--pu2); }
+.lbMark svg { width: 18px; height: 18px; fill: none; stroke: var(--pu); stroke-width: 1.4; stroke-linejoin: round; transform: rotate(-8deg); }
+.lbTag { font: italic 400 .98rem "Playfair Display", serif; color: var(--pu); }
+.lbBody { flex: 1; display: grid; grid-template-columns: 1.05fr 1fr; gap: 0; margin: 28px 0; align-items: stretch; }
+.lbArt { position: relative; background: var(--pu); display: flex; flex-direction: column; min-height: 460px; overflow: hidden; }
+.lbPath { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.lbPath path { fill: none; stroke: rgba(238, 231, 248, .55); stroke-width: 1.2; stroke-dasharray: 5 7; vector-effect: non-scaling-stroke; }
+#stageBox { position: relative; flex: 1; min-height: 260px; }
+#preview { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lbCaption { position: relative; padding: 0 28px 26px; color: #fff; }
+#pickedName { font: italic 400 2.6rem/1 "Playfair Display", serif; color: #fff; }
+.lbCaption p { margin: 6px 0 0; font: 400 .95rem "Playfair Display", serif; color: rgba(255, 255, 255, .78); }
+.lbForm { padding: 6px 0 0 44px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+#lobbyCard h2 { margin: 0; font: 700 clamp(2.6rem, 5.4vw, 3.9rem)/1 "Playfair Display", serif; letter-spacing: -.01em; color: var(--pink); font-variation-settings: normal; }
+#lobbyCard .lead { margin: -4px 0 0; font: 400 1.02rem/1.55 var(--font-body); max-width: 34em; }
 #kinds { border: 0; margin: 0; padding: 0; min-width: 0; }
-#kinds legend, #lobbyCard label { font: 800 .78rem var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 6px; }
-#kindGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.kind {
-  font: 800 .95rem var(--font-body); color: var(--ink);
-  background: #fbf9fe; border: 2px solid #cfc3e8; border-radius: 12px;
-  padding: 10px 6px; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  transition: transform .12s, border-color .12s, background .12s;
-}
-.kind .dot { width: 22px; height: 22px; border-width: 3px; }
-.kind:hover { transform: translateY(-2px); }
-.kind[aria-pressed="true"] { background: var(--tan); border-color: var(--plank-dark); box-shadow: 0 3px 0 var(--plank-dark); }
+#kinds legend, #lobbyCard label { display: block; padding: 0; margin: 0 0 8px; font: italic 400 1.05rem "Playfair Display", serif; color: var(--pu); }
+#kindGrid { display: flex; flex-wrap: wrap; gap: 0; border: 1.5px solid var(--pu); width: fit-content; max-width: 100%; }
+.kind { font: 600 .95rem var(--font-body); color: var(--pu); background: transparent; border: 0; border-right: 1.5px solid var(--pu); border-radius: 0; padding: 10px 18px; cursor: pointer; }
+.kind:last-child { border-right: 0; }
+.kind .dot { display: none; }
+.kind:hover { background: rgba(122, 104, 161, .1); }
+.kind[aria-pressed="true"] { background: var(--pu); color: #fff; }
 #nameField { display: flex; flex-direction: column; }
-#nameInput {
-  font: 700 1.05rem var(--font-body); color: var(--ink);
-  background: #fbf9fe; border: 2px solid #c4b6e2; border-radius: 12px; padding: 10px 12px;
+#nameInput { font: 400 1.05rem var(--font-body); color: #3d3458; background: transparent; border: 0; border-bottom: 1.5px solid var(--pu); border-radius: 0; padding: 8px 2px; outline: none; max-width: 360px; }
+#nameInput:focus { border-bottom-width: 2.5px; padding-bottom: 7px; }
+#nameInput::placeholder { color: #9a8fb6; }
+#enterBtn { align-self: flex-start; font: 400 1.15rem "Playfair Display", serif; letter-spacing: .02em; color: #fff; background: var(--pu); border: 0; border-radius: 0; padding: 13px 34px; cursor: pointer; font-variation-settings: normal; }
+#enterBtn:hover { background: var(--pink); }
+#enterBtn:focus-visible, .kind:focus-visible, .worldBtn:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+#lobby .online { margin: -10px 0 0; color: #7d7396; font-weight: 600; }
+#roomField { display: flex; flex-direction: column; margin-top: 6px; padding-top: 18px; border-top: 1px solid rgba(122, 104, 161, .45); font-size: .9rem; }
+#roomRow { display: flex; max-width: 440px; }
+#roomLink { flex: 1; min-width: 0; font: 400 .86rem var(--font-body); color: #3d3458; background: #fff; border: 1.5px solid var(--pu); border-right: 0; border-radius: 0; padding: 8px 10px; }
+#copyLobbyBtn { font: 600 .84rem var(--font-body); color: #fff; background: var(--pu2); border: 0; border-radius: 0; padding: 0 16px; cursor: pointer; flex: none; }
+#roomTag { margin-top: 2px; font-size: .74rem; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#roomWhere { margin-bottom: 10px; }
+#roomWhere b { font: 700 1.05rem "Playfair Display", serif; color: var(--pink); }
+#roomWhere span { color: #7d7396; }
+#roomSwitch { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+#newRoomLbl { font: italic 400 .98rem "Playfair Display", serif; color: var(--pu); }
+#worldPick { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.worldBtn { font: 600 .9rem var(--font-body); color: var(--pu2); background: none; border: 0; border-radius: 0; padding: 2px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.worldBtn:hover:not(:disabled) { color: var(--pink); }
+.worldBtn i { display: none; }
+.worldBtn:disabled { color: #3d3458; text-decoration: none; cursor: default; }
+.worldBtn:disabled::before { content: "\2192\00a0"; }
+.worldBtn small { font: italic 400 .8rem "Playfair Display", serif; color: #9a6f7f; }
+#lobbyRoomBtn { font: 600 .86rem var(--font-body); background: none; border: 0; padding: 2px 0; align-self: flex-start; color: var(--pu2); text-decoration: underline; cursor: pointer; }
+#lobby .legal { margin: 0; padding-top: 14px; border-top: 1.5px solid var(--pu); font-size: .74rem; color: #7d7396; text-align: left; }
+#lobby .legal a { color: var(--pu); }
+@media (max-width: 760px) {
+  #lobbyCard { padding: 0 16px 16px; }
+  .lbTag { display: none; }
+  .lbBody { grid-template-columns: 1fr; margin: 18px 0; }
+  .lbArt { min-height: 0; }
+  #stageBox { flex: none; height: 210px; min-height: 0; }
+  .lbCaption { padding: 0 20px 18px; }
+  #pickedName { font-size: 2rem; }
+  .lbForm { padding: 22px 0 0; gap: 18px; }
+  #kindGrid { width: 100%; }
+  .kind { flex: 1; padding: 10px 4px; font-size: .88rem; }
+  #enterBtn { align-self: stretch; }
 }
-#enterBtn {
-  font: 800 1.15rem var(--font-display); color: var(--paper);
-  background: var(--plank-dark); border: 0; border-radius: 14px; padding: 10px;
-  box-shadow: 0 4px 0 #4f5d82; cursor: pointer;
-}
-#enterBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4f5d82; }
-#lobby .online { justify-content: center; margin: 0; }
-.legal { margin: -6px 0 0; text-align: center; font-size: .72rem; font-weight: 600; color: var(--muted); }
-.legal a { color: var(--plank-dark); }
 body.in-lobby #title, body.in-lobby #dock, body.in-lobby #meSign, body.in-lobby #hint, body.in-lobby #chat, body.in-lobby #helpBtn,
 body.in-lobby #joy, body.in-lobby #hopBtn, body.in-lobby #tags, body.in-lobby #bubble, body.in-lobby #readBtn,
 body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.in-lobby #ctxBtn, body.in-lobby #soundPanel, body.in-lobby #helpBtn, body.in-lobby #stagePanel, body.in-lobby #stageTv, body.in-lobby #cookMenu, body.in-lobby #jarView, body.in-lobby #fishBar { display: none !important; }
@@ -314,10 +331,6 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
   #title p { display: none; }
   #meSign { max-width: calc(100vw - 190px); }
   #chat { top: calc(112px + env(safe-area-inset-top, 0px)); bottom: auto; }
-  #kindGrid { gap: 5px; }
-  .kind { font-size: .78rem; padding: 8px 2px; }
-  #stageBox { height: 190px; }
-  #lobbyCard h2 { font-size: 1.9rem; }
 }
 @media (prefers-reduced-motion: reduce) { .kind { transition: none; } }
 
@@ -338,31 +351,7 @@ body.in-lobby #interact, body.in-lobby #askCard, body.in-lobby #bagPanel, body.i
 .tag { transition: box-shadow .12s; }
 .tag.talking { box-shadow: 0 0 0 3px #7fd17f, 0 0 12px rgba(127, 209, 127, .8); }
 
-/* invite link in the entrance card */
-#roomField { display: flex; flex-direction: column; }
-#roomRow { display: flex; gap: 6px; }
-#roomLink {
-  flex: 1; min-width: 0; font: 600 .86rem var(--font-body); color: var(--ink);
-  background: #f4f0fb; border: 2px solid #c4b6e2; border-radius: 12px; padding: 8px 10px;
-}
-#copyLobbyBtn {
-  font: 800 .84rem var(--font-body); color: var(--ink); background: var(--tan);
-  border: 0; border-radius: 12px; padding: 0 12px; cursor: pointer; flex: none;
-}
-#roomTag { margin-top: 2px; font-size: .74rem; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#roomWhere { margin-bottom: 8px; font-size: .9rem; }
-#roomWhere b { color: var(--plank-dark); }
-#roomWhere span { color: var(--muted); font-weight: 600; }
-#roomSwitch { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-#newRoomLbl { font-size: .8rem; font-weight: 800; color: var(--muted); }
-#worldPick { display: flex; gap: 6px; flex-wrap: wrap; }
-.worldBtn { display: inline-flex; align-items: center; gap: 6px; font: 800 .8rem var(--font-body); color: var(--ink); background: #f4f0fb; border: 2px solid #c4b6e2; border-radius: 999px; padding: 5px 11px; cursor: pointer; }
-.worldBtn:hover:not(:disabled) { background: #e9e1f7; }
-.worldBtn i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink); flex: none; }
-.worldBtn:disabled { opacity: .55; cursor: default; }
-.worldBtn small { font-weight: 700; color: var(--muted); }
 body[data-world="cafe"] .island-only, body[data-world="castle"] .island-only, body[data-world="fish"] .island-only, body:not([data-world="fish"]) .fish-only, body:not([data-world="cafe"]) .cafe-only, body:not([data-world="castle"]) .castle-only { display: none !important; }
-#lobbyRoomBtn { font: 700 .84rem var(--font-body); background: none; border: 0; padding: 2px 0; align-self: flex-start; color: var(--muted); text-decoration: underline; cursor: pointer; }
 .audio-sink { display: none; }
 #cookMenu, #jarView { position: fixed; left: 50%; transform: translateX(-50%); z-index: 14; box-sizing: border-box; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
 #cookMenu { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(280px, calc(100vw - 32px)); }
@@ -744,42 +733,54 @@ body.in-lobby #copyMark { display: none; }
 <button id="hopBtn" class="touch-only" type="button">Hop</button>
 
 <div id="lobby" role="dialog" aria-modal="true" aria-labelledby="lobbyTitle">
-  <form id="lobbyCard" class="sign" autocomplete="off">
-    <h2 id="lobbyTitle">Couplet Cove</h2>
-    <p class="lead">Pick a critter, write your name on the tag, and wash ashore. The main lobby is open to everyone; private islands are just for people with the link.</p>
-    <div id="stageBox"><canvas id="preview" aria-hidden="true"></canvas><div id="pickedName">Cat</div></div>
-    <fieldset id="kinds">
-      <legend>Your critter</legend>
-      <div id="kindGrid">
-        <button type="button" class="kind" data-kind="cat" aria-pressed="true"><span class="dot" style="background:#f2a65a"></span>Cat</button>
-        <button type="button" class="kind" data-kind="frog" aria-pressed="false"><span class="dot" style="background:#7cc46a"></span>Frog</button>
-        <button type="button" class="kind" data-kind="mouse" aria-pressed="false"><span class="dot" style="background:#b4a6d6"></span>Rosy</button>
-        <button type="button" class="kind" data-kind="fish" aria-pressed="false"><span class="dot" style="background:#5bb8e6"></span>Fish</button>
-        <button type="button" class="kind" data-kind="dog" aria-pressed="false"><span class="dot" style="background:#ecd3ae"></span>Dog</button>
+  <form id="lobbyCard" autocomplete="off">
+    <header class="lbBar">
+      <a class="lbMark" href="https://poetryandplaces.org" target="_blank" rel="noopener"><b>poetry<span>.</span>places</b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 13.5 21 4l-4.5 16-4.2-5.6-5.6 3.4 1.6-5.2z"/></svg></a>
+      <span class="lbTag">an online open mic</span>
+    </header>
+    <div class="lbBody">
+      <div class="lbArt">
+        <svg class="lbPath" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true"><path d="M-10 250 C 90 230, 120 120, 200 140 S 300 260, 250 200 S 330 40, 410 60"/></svg>
+        <div id="stageBox"><canvas id="preview" aria-hidden="true"></canvas></div>
+        <div class="lbCaption"><div id="pickedName">Cat</div><p>somewhere between a poem and a place</p></div>
       </div>
-    </fieldset>
-    <div id="nameField">
-      <label for="nameInput">Your name</label>
-      <input id="nameInput" type="text" maxlength="20" placeholder="What should your tag say?">
-    </div>
-    <div id="roomField">
-      <div id="roomWhere"><b id="roomName">Main lobby</b> <span id="roomDesc"></span></div>
-      <label for="roomLink">Invite link</label>
-      <div id="roomRow"><input id="roomLink" type="text" readonly><button id="copyLobbyBtn" type="button">Copy</button></div>
-      <div id="roomSwitch">
-        <span id="newRoomLbl">Or make a private room:</span>
-        <div id="worldPick">
-          <button type="button" class="worldBtn" data-world="island"><i style="background:#7cc05a"></i>Island</button>
-          <button type="button" class="worldBtn" data-world="cafe"><i style="background:#c98a5a"></i>Cozy Cafe</button>
-          <button type="button" class="worldBtn" data-world="castle"><i style="background:#c9b8f0"></i>Cloudy Castle</button>
-          <button type="button" class="worldBtn" data-world="fish" id="fishWorldBtn"><i style="background:#e8a092"></i>Fish Sky <small>limited</small></button>
+      <div class="lbForm">
+        <h2 id="lobbyTitle">Couplet Cove</h2>
+        <p class="lead">Pick a critter, write your name on the tag, and wash ashore. The main lobby is open to everyone; private islands are just for people with the link.</p>
+        <fieldset id="kinds">
+          <legend>Choose a critter</legend>
+          <div id="kindGrid">
+            <button type="button" class="kind" data-kind="cat" aria-pressed="true"><span class="dot" style="background:#f2a65a"></span>Cat</button>
+            <button type="button" class="kind" data-kind="frog" aria-pressed="false"><span class="dot" style="background:#7cc46a"></span>Frog</button>
+            <button type="button" class="kind" data-kind="mouse" aria-pressed="false"><span class="dot" style="background:#b4a6d6"></span>Rosy</button>
+            <button type="button" class="kind" data-kind="fish" aria-pressed="false"><span class="dot" style="background:#5bb8e6"></span>Fish</button>
+            <button type="button" class="kind" data-kind="dog" aria-pressed="false"><span class="dot" style="background:#ecd3ae"></span>Dog</button>
+          </div>
+        </fieldset>
+        <div id="nameField">
+          <label for="nameInput">Your name tag</label>
+          <input id="nameInput" type="text" maxlength="20" placeholder="What should it say?">
         </div>
-        <button id="lobbyRoomBtn" type="button" hidden>Go to the main lobby</button>
+        <button id="enterBtn" type="submit">Wash ashore</button>
+        <div class="online"><i></i><span class="onlineText">Connecting…</span></div>
+        <div id="roomField">
+          <div id="roomWhere"><b id="roomName">Main lobby</b> <span id="roomDesc"></span></div>
+          <label for="roomLink">Invite link</label>
+          <div id="roomRow"><input id="roomLink" type="text" readonly><button id="copyLobbyBtn" type="button">Copy</button></div>
+          <div id="roomSwitch">
+            <span id="newRoomLbl">Or make a private room:</span>
+            <div id="worldPick">
+              <button type="button" class="worldBtn" data-world="island"><i style="background:#7cc05a"></i>Island</button>
+              <button type="button" class="worldBtn" data-world="cafe"><i style="background:#c98a5a"></i>Cozy Cafe</button>
+              <button type="button" class="worldBtn" data-world="castle"><i style="background:#c9b8f0"></i>Cloudy Castle</button>
+              <button type="button" class="worldBtn" data-world="fish" id="fishWorldBtn"><i style="background:#e8a092"></i>Fish Sky <small>limited</small></button>
+            </div>
+            <button id="lobbyRoomBtn" type="button" hidden>Go to the main lobby</button>
+          </div>
+        </div>
       </div>
     </div>
-    <button id="enterBtn" type="submit">Wash ashore</button>
-    <div class="online"><i></i><span class="onlineText">Connecting…</span></div>
-    <p class="legal">© 2026 Poetry and Places. All rights reserved. <a href="https://github.com/PoetryandPlaces/open-mic-island/blob/main/LICENSE" target="_blank" rel="noopener">License</a></p>
+    <footer class="legal">© 2026 Poetry and Places. All rights reserved. <a href="https://github.com/PoetryandPlaces/open-mic-island/blob/main/LICENSE" target="_blank" rel="noopener">License</a></footer>
   </form>
 </div>
 
@@ -3308,7 +3309,7 @@ function applyPresence(c, pr) {
   c.mic = pr.mic === 1;
   if (c.hasPos && !c.fresh) setRemoteReading(c, pr.rd === 1);
   c.hat = typeof pr.h === 'string' && ITEMS[pr.h] && ITEMS[pr.h].slot === 'head' ? pr.h : '';
-  c.net = pr.nt === 1; c.rod = pr.fr === 1; c.cook = pr.ck === 'fish' || pr.ck === 'smore' || HELD[pr.ck] === 1 ? pr.ck : ''; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
+  c.net = pr.nt === 1 && !SKYFISH; c.rod = pr.fr === 1 || SKYFISH; c.afoot = pr.mt === 1; c.cook = pr.ck === 'fish' || pr.ck === 'smore' || HELD[pr.ck] === 1 ? pr.ck : ''; c.stung = pr.st === 1; c.digging = pr.dg === 1; c.sitting = pr.si === 1;
   if (typeof pr.n === 'string') c.n = cleanName(pr.n);
   if (typeof pr.k === 'string' && KINDS[pr.k]) c.set(pr.k);
   if (c.fresh && c.hasPos) {
@@ -3335,7 +3336,7 @@ function sendPresence(force, target) {
     x: Math.round(pos.x * 100) / 100, y: Math.round(pos.y * 100) / 100, z: Math.round(pos.z * 100) / 100,
     ry: Math.round(me.root.rotation.y * 100) / 100, k: me.kind, n: myName, m: movingNow ? 1 : 0, r: runNow ? 1 : 0,
     w: Math.round(me.w * 10) / 10, mic: micOn ? 1 : 0,
-    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0,
+    h: me.hat || '', nt: me.net ? 1 : 0, fr: me.rod ? 1 : 0, mt: me.afoot ? 1 : 0, ck: me.cook || '', rd: stageReader === me ? 1 : 0, si: me.sitting ? 1 : 0, st: stungT > 0 ? 1 : 0, dg: digT > 0 ? 1 : 0, dj: me.flipN || 0,
     fc: myFish(), rc: recOn ? 1 : 0, ar: ride ? ride.k : 0, rf: Math.round((me.ruffle || 0) * 10) / 10
   };
   const s = JSON.stringify(pr);
@@ -4274,7 +4275,7 @@ function wearItem(id) {
   else bag.head = bag.head === id ? '' : id;
   saveBag(); syncMyGear(); renderBag(); sendPresence(true);
 }
-function syncMyGear() { me.hat = bag.head; me.net = bag.hand === 'net'; me.rod = bag.hand === 'rod'; }
+function syncMyGear() { me.hat = bag.head; me.net = !SKYFISH && bag.hand === 'net'; me.rod = SKYFISH || bag.hand === 'rod'; }   // in Fish Sky everyone carries a rod, like the fisherman in the painting
 syncMyGear();
 
 /* --- digging under rocks --- */
@@ -4450,6 +4451,12 @@ function makeRod() {
   put(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 1.15, 5), mat(0xc99260)), 0, 0.9, 0, pivot);
   const reel = put(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 8), mat(0x7a68a1)), 0.05, 0.3, 0, pivot, false); reel.rotation.z = Math.PI / 2;
   g.position.set(0.4, 0.35, 0.1); pivot.rotation.x = -0.6;
+  if (SKYFISH) {                                                 // a red berry dangling off the tip, Bosch's fisherman bait
+    const tip = new THREE.Group(); tip.position.set(0, 1.47, 0); tip.rotation.x = 0.6; pivot.add(tip);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.5, 3), flat(0xf4efe4)), 0, -0.25, 0, tip, false);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 6), flat(0xd6332f)), 0, -0.54, 0, tip, false);
+    g.userData.tip = tip;
+  }
   g.userData.pivot = pivot;
   return g;
 }
@@ -6521,7 +6528,19 @@ function update(dt) {
   }
 
   if (CAFE && active && !TRAILER && !ride && !hopTo) cafeWind(dt);
-  if (SKYFISH && active) {                                           // riding a fish: Space swims up, then you drift gently back down
+  if (SKYFISH && active) {                                           // step off the fish onto the stage, and it comes right back when you leave
+    const onStageNow = inRect(STAGE, pos.x, pos.z) || inRect(STEPS, pos.x, pos.z);
+    if (!me.afoot && onStageNow && pos.y < STAGE.h + 1.35) {
+      me.afoot = true; vy = 0; flyT = STAGE.h + 0.95;
+      if (me.mount) { me.mount.visible = false; burst(pos.x, pos.y, pos.z, 10, sparkMat, 0.9, 0.6); }
+      sfx.whoosh(); sendPresence(true);
+    } else if (me.afoot && !onStageNow) {
+      me.afoot = false; flyT = Math.max(1.3, pos.y + 0.4);
+      if (me.mount) { me.mount.visible = true; burst(pos.x, pos.y, pos.z, 10, sparkMat, 0.9, 0.6); }
+      sfx.whoosh(); sendPresence(true);
+    }
+  }
+  if (SKYFISH && active && !me.afoot) {                              // riding a fish: Space swims up, then you drift gently back down
     if (wantHop) { flyT = Math.min(10, flyT + 1.7); sfx.whoosh(); }
     const floor = inRect(STAGE, pos.x, pos.z) || inRect(STEPS, pos.x, pos.z) ? STAGE.h + 0.95 : 1.3;   // the fish hovers just above the stage floor
     flyT = Math.max(floor, flyT - dt * 0.45);
@@ -6551,7 +6570,7 @@ function update(dt) {
     vy -= 22 * dt; pos.y += vy * dt;
     if (pos.y <= g) { pos.y = g; vy = 0; grounded = true; } else grounded = false;
   }
-  if (SKYFISH && active) {                                           // glide at your swimming height with a gentle bob
+  if (SKYFISH && active && !me.afoot) {                              // glide at your swimming height with a gentle bob
     const want = flyT + Math.sin(t * 1.6) * 0.12;
     pos.y += (want - pos.y) * Math.min(1, dt * 3); vy = 0; grounded = true;
   }
@@ -6580,10 +6599,10 @@ function update(dt) {
   tickLeaving(dt);
   tickFishSky(dt);
   me.sitT = onSeat && grounded && !movingNow && !me.emote ? (me.sitT || 0) + dt : 0;
-  me.sitting = me.sitT > 0.35 || !!ride || SKYFISH;
+  me.sitting = me.sitT > 0.35 || !!ride || (SKYFISH && !me.afoot);
   if (me.mount) placeMount(me.mount, me.root, dt, movingNow);
   me.root.position.set(pos.x, pos.y, pos.z);
-  animateCritter(me, dt, movingNow && !SKYFISH, runNow, grounded);
+  animateCritter(me, dt, movingNow && (!SKYFISH || me.afoot), runNow, grounded);
   applyPose(me, dt); updateGear(me, dt);
   me.w = inW ? Math.min(1, me.w + dt * 2.5) : Math.max(0, me.w - dt / 22);   // soak fast, dry slowly
   critterFx(me, dt, pos.x, pos.y, pos.z, movingNow, wasAir && grounded);
@@ -6605,8 +6624,8 @@ function update(dt) {
     p.x += (c.target.x - p.x) * k; p.y += (c.target.y - p.y) * k; p.z += (c.target.z - p.z) * k;
     turnToward(c.root, c.target.ry, k);
     const gr = Math.abs(p.y - groundAt(p.x, p.z)) < 0.08;
-    animateCritter(c, dt, c.m === 1 && !SKYFISH, c.run === 1, gr || SKYFISH);
-    if (SKYFISH) { if (!c.mount) c.mount = buildVehicle(4, c.fc || 0); placeMount(c.mount, c.root, dt, c.m === 1); }
+    animateCritter(c, dt, c.m === 1 && (!SKYFISH || c.afoot), c.run === 1, gr || (SKYFISH && !c.afoot));
+    if (SKYFISH) { if (!c.mount) c.mount = buildVehicle(4, c.fc || 0); c.mount.visible = !c.afoot; placeMount(c.mount, c.root, dt, c.m === 1); }
     applyPose(c, dt); updateGear(c, dt);
     c.w += (c.wt - c.w) * Math.min(1, dt * 2);
     c.ruffle = (c.ruffle || 0) + ((c.rft || 0) - (c.ruffle || 0)) * Math.min(1, dt * 2);
