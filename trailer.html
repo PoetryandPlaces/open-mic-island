@@ -54,6 +54,7 @@
         <option value="t1">1 · Somewhere to gather (a vague teaser, ~30s)</option>
         <option value="t2">2 · Take the mic (the open mic, ~35s)</option>
         <option value="t3">3 · Everything (every feature, ~90s)</option>
+        <option value="t4">4 · Fish Frenzy (Being Human open mic, ~50s)</option>
       </select>
     </label>
     <label class="row">Format
@@ -116,6 +117,8 @@ const EVENT = {                       // the closing cards are Yoyi's poster ima
   name: 'Obsession', line: 'a poetry and places open mic',
   link: 'openmic.poetryandplaces.org'
 };
+// the Being Human open mic, for the Fish Frenzy trailer's last card (fill in the date and time once they're set)
+const BEING = { name: 'Being Human', date: '', time: '' };
 const TRAILERS = {
   t1: { name: 'Somewhere to gather', music: 'castle-music.mp3', bars: true, shots: [
     { presents: true, dur: 2.6 },
@@ -157,6 +160,20 @@ const TRAILERS = {
     { scene: 'castle-fun', world: 'castle', from: 7, dur: 6, caption: 'send letters, catch fairies' },
     { scene: 'castle-fun', world: 'castle', from: 13, dur: 8, caption: 'and slide down the rainbow' },
     { end: 'full', dur: 7 }
+  ] },
+  t4: { name: 'Fish Frenzy', music: 'castle-music.mp3', bars: false, shots: [
+    { presents: true, dur: 2.6 },
+    { bubble: ['what does it mean', 'to be human?'], dur: 4.2 },
+    { scene: 'fish-tour', world: 'fish', from: 0, dur: 6.5, caption: 'welcome to Fish Frenzy' },
+    { scene: 'fish-tour', world: 'fish', from: 6.5, dur: 6.5, caption: 'a sky after Bosch’s Garden of Earthly Delights' },
+    { scene: 'fish-mic', world: 'fish', from: 0, dur: 4.6, caption: 'everyone rides their own fish' },
+    { scene: 'fish-mic', world: 'fish', from: 4.6, dur: 4, caption: 'hop off onto the stage' },
+    { scene: 'fish-mic', world: 'fish', from: 8.6, dur: 15.4, captions: [
+      { t: 0.4, d: 4, text: 'inside the Tree Man' },
+      { t: 10.4, d: 4.4, text: 'and everyone cheers you on' }
+    ] },
+    { scene: 'fish-mic', world: 'fish', from: 24, dur: 6, caption: 'then your fish comes right back' },
+    { words: 'Fish Frenzy', sub: () => ['for our ' + BEING.name + ' open mic', [BEING.date, BEING.time].filter(Boolean).join(', '), 'openmic.poetryandplaces.org'].filter(Boolean), dur: 6.5 }
   ] }
 };
 
@@ -175,7 +192,7 @@ function layoutFeeds() {
   }
 }
 function sceneUrl(shot, n) {
-  const room = shot.world === 'cafe' ? 'room=cafe-trailer-take&' : shot.world === 'castle' ? 'room=castle-trailer-take&' : '';
+  const room = shot.world === 'cafe' ? 'room=cafe-trailer-take&' : shot.world === 'castle' ? 'room=castle-trailer-take&' : shot.world === 'fish' ? 'room=fish-trailer-take&' : '';
   return 'index.html?take=' + n + '#' + room + 'trailer=' + shot.scene + ($('tags').checked ? '' : '&tags=0');
 }
 // load a shot into a feed window, wait for the game to be ready, then fast-forward to its start
@@ -394,6 +411,25 @@ function drawTitleCard(shot, local) {
   });
 }
 // the closing card is her Obsession poster: the plain one for the teaser, the one with the link for the others
+// a closing card in words: the name in thin Italiana, the details under it
+function drawWordsCard(shot, local) {
+  const S = SZ(), tall = TALL();
+  lavBg();
+  drift(local, shot.dur, () => {
+    decor(local / 0.6);
+    const cy = H * (tall ? 0.44 : 0.42), k = ease(local / 0.9);
+    g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#6878a1';
+    g.font = F.thin(Math.round((tall ? 150 : 190) * S)); g.fillText(shot.words, W / 2, cy + (1 - k) * 20 * S);
+    g.restore();
+    const sub = typeof shot.sub === 'function' ? shot.sub() : shot.sub || [];
+    sub.forEach((l, i) => {
+      g.save(); g.globalAlpha = ease((local - 0.7 - i * 0.35) / 0.7); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = i === sub.length - 1 ? '#7a68a1' : INK;
+      g.font = F.deco(Math.round((i === 0 ? 64 : 52) * S)); g.fillText(l, W / 2, cy + (tall ? 170 : 175) * S + i * 72 * S);
+      g.restore();
+    });
+    if (ok(CARD['corner-logo'])) { g.save(); g.globalAlpha = ease((local - 0.3) / 0.8); g.drawImage(CARD['corner-logo'], W - 115 * S, 37 * S, 66 * S, 78 * S); g.restore(); }
+  });
+}
 function drawEndCard(shot, local) {
   const S = SZ(), tall = TALL(), full = shot.end === 'full', name = full ? 'end-full' : 'end-tease', im = CARD[name];
   lavBg();
@@ -411,6 +447,7 @@ function drawCardShot(shot, local) {
   if (shot.presents) drawPresents(local, shot.dur);
   else if (shot.bubble) drawBubbleCard(shot, local);
   else if (shot.title) drawTitleCard(shot, local);
+  else if (shot.words) drawWordsCard(shot, local);
   else drawEndCard(shot, local);
 }
 // captions over the game: a scrap of crumpled paper with a purple shadow
