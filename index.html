@@ -6461,9 +6461,9 @@ const TR_SCENES = {
     trShot(0, 6.5, [[44, 20, 52], [0, 4, -10]], [[30, 13, 36], [0, 4, -10]], [[18, 8, 22], [0, 3.5, -8]]);
     trShot(6.5, 13, [[-16, 6, 16], [0, 3.4, -4]], [[-9, 4.6, 9], [0, 3, -6]], [[-2.5, 3.4, 5.5], [0, 2.4, -9]]);
   },
-  // Fish Frenzy's open mic: everyone swims in, Rosy hops off onto the stage inside the Tree Man, reads, and her fish comes back
+  // Fish Frenzy's open mic: everyone swims in, Rosy hops off onto the stage inside the Tree Man, reads, then her fish comes back and she swims off
   'fish-mic'() {
-    TR.dur = 30;
+    TR.dur = 28;
     const spots = [[-4.6, 1.9, 0.6], [-1.8, 2.3, 1.6], [1.8, 2.1, 1.3], [4.6, 2.5, 0.4], [0.2, 2.9, 4.2]];
     const cast = [['cat', 'Mo', 0], ['frog', 'Pip', 1], ['dog', 'Biscuit', 2], ['fish', 'Bubbles', 3], ['cat', 'Juniper', 4]];
     const crowd = cast.map(([k, n, fc], i) => {
@@ -6479,17 +6479,15 @@ const TR_SCENES = {
     trAt(7.8, () => { rosy.talkOn = true; });
     POEM_DREAMS.forEach((line, i) => trAt(8.6 + i * 3.4, () => showSay(rosy, line)));
     trAt(21.6, () => { rosy.talkOn = false; });
-    crowd.forEach((c, i) => trAt(22 + i * 0.18, () => clapFx(c, 0.55)));
-    trAt(22.6, () => { for (const c of crowd) { const p = c.root.position; setTimeout(() => popAt(p.x, p.y + 2, p.z, '♥', 'heart'), Math.random() * 600); } });
-    trAt(24, () => { setRemoteReading(rosy, false); rosy.mic = false; trWalk(rosy, 0, -5.6, 1.8); });
-    trDuring(24, 27, () => { if (rosy.afoot && !inRect(STAGE, rosy.target.x, rosy.target.z) && !inRect(STEPS, rosy.target.x, rosy.target.z)) { trHopOn(rosy, 1.6); popAt(rosy.target.x, 2.8, rosy.target.z, 'Your fish is back!', 'good'); trSwim(rosy, 0.4, 3.6, -1, 3.2); } });
-    trAt(27.2, () => { trSay(crowd[1], 'Encore! ✨'); crowd.forEach((c, i) => trSwim(c, spots[i][0] * 1.4, spots[i][1] + 2.4 + (i % 2), spots[i][2] - 1, 2.4)); });
+    trAt(22.2, () => { setRemoteReading(rosy, false); rosy.mic = false; trWalk(rosy, 0, -5.6, 1.8); });
+    trDuring(22.2, 25, () => { if (rosy.afoot && !inRect(STAGE, rosy.target.x, rosy.target.z) && !inRect(STEPS, rosy.target.x, rosy.target.z)) { trHopOn(rosy, 1.6); trSwim(rosy, 2.6, 4.2, 3, 3); } });
+    trAt(23.6, () => trSwim(crowd[3], 9, 3.6, -2, 2.2));        // someone drifts off to look around, like people do
     trFollow(0, 4.6, () => { const q = rosy.root.position; return [[q.x + 3.2, q.y + 1.8, q.z + 6.2], [q.x - 0.4, q.y + 0.2, q.z - 3]]; });
     trShot(4.6, 8.6, [[0, 3.1, -2.2], [0, 1.4, -8.8]], [[0, 2.7, -4.2], [0, 1.6, -9]]);
     trShot(8.6, 13.6, [[5.4, 2.4, -6], [0, 1.6, -8.9]], [[4.2, 2.2, -7.2], [0, 1.6, -8.9]]);
     trShot(13.6, 18.6, [[0.8, 2.6, -11.6], [0, 1.6, 2]], [[-0.8, 2.7, -11.2], [0, 1.6, 2]]);
-    trShot(18.6, 24, [[-7.5, 4.6, 6], [0, 1.8, -6.5]], [[-4.8, 3.8, 3.4], [0, 1.8, -7]]);
-    trShot(24, 30, [[3.8, 2.8, -1.2], [0, 1.6, -6.4]], [[5, 5.2, 7], [0, 2.6, -4]]);
+    trShot(18.6, 22.2, [[-7.5, 4.6, 6], [0, 1.8, -6.5]], [[-5.6, 4.0, 4.2], [0, 1.8, -7]]);
+    trFollow(22.2, 28, () => { const q = rosy.root.position; return [[q.x - 3.4, q.y + 1.6, q.z + 5.4], [q.x + 0.3, q.y + 0.5, q.z - 1.5]]; });
   },
   // the Cloudy Castle: up past a rainbow to the glass castle
   'castle-tour'() {

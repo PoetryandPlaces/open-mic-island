@@ -117,8 +117,6 @@ const EVENT = {                       // the closing cards are Yoyi's poster ima
   name: 'Obsession', line: 'a poetry and places open mic',
   link: 'openmic.poetryandplaces.org'
 };
-// the Being Human open mic, for the Fish Frenzy trailer's last card (fill in the date and time once they're set)
-const BEING = { name: 'Being Human', date: '', time: '' };
 const TRAILERS = {
   t1: { name: 'Somewhere to gather', music: 'castle-music.mp3', bars: true, shots: [
     { presents: true, dur: 2.6 },
@@ -161,19 +159,19 @@ const TRAILERS = {
     { scene: 'castle-fun', world: 'castle', from: 13, dur: 8, caption: 'and slide down the rainbow' },
     { end: 'full', dur: 7 }
   ] },
-  t4: { name: 'Fish Frenzy', music: 'castle-music.mp3', bars: false, shots: [
+  t4: { name: 'Fish Frenzy', music: '', bars: false, shots: [   // no music on purpose: Yoyi adds her own track
     { presents: true, dur: 2.6 },
-    { bubble: ['what does it mean', 'to be human?'], dur: 4.2 },
-    { scene: 'fish-tour', world: 'fish', from: 0, dur: 6.5, caption: 'welcome to Fish Frenzy' },
-    { scene: 'fish-tour', world: 'fish', from: 6.5, dur: 6.5, caption: 'a sky after Bosch’s Garden of Earthly Delights' },
-    { scene: 'fish-mic', world: 'fish', from: 0, dur: 4.6, caption: 'everyone rides their own fish' },
-    { scene: 'fish-mic', world: 'fish', from: 4.6, dur: 4, caption: 'hop off onto the stage' },
-    { scene: 'fish-mic', world: 'fish', from: 8.6, dur: 15.4, captions: [
-      { t: 0.4, d: 4, text: 'inside the Tree Man' },
-      { t: 10.4, d: 4.4, text: 'and everyone cheers you on' }
+    { bubble: ['What makes', 'you unique?'], dur: 3.8 },
+    { scene: 'fish-tour', world: 'fish', from: 0, dur: 6.5, caption: 'Our next open mic is up in the sky.' },
+    { scene: 'fish-tour', world: 'fish', from: 6.5, dur: 6.5, caption: 'Straight out of a Bosch painting.' },
+    { scene: 'fish-mic', world: 'fish', from: 0, dur: 4.6, caption: 'Everyone gets their own flying fish.' },
+    { scene: 'fish-mic', world: 'fish', from: 4.6, dur: 4, caption: 'Hop off at the stage,' },
+    { scene: 'fish-mic', world: 'fish', from: 8.6, dur: 13.6, captions: [
+      { t: 0.3, d: 4, text: 'right inside the Tree Man.' }
     ] },
-    { scene: 'fish-mic', world: 'fish', from: 24, dur: 6, caption: 'then your fish comes right back' },
-    { words: 'Fish Frenzy', sub: () => ['for our ' + BEING.name + ' open mic', [BEING.date, BEING.time].filter(Boolean).join(', '), 'openmic.poetryandplaces.org'].filter(Boolean), dur: 6.5 }
+    { scene: 'fish-mic', world: 'fish', from: 22.2, dur: 5.8, caption: 'When you’re done, your fish is waiting.' },
+    { poster: 'being-title', dur: 4.2 },
+    { poster: 'being-date', dur: 5 }
   ] }
 };
 
@@ -258,6 +256,7 @@ function lavBg() { g.fillStyle = LAV; g.fillRect(0, 0, W, H); }
 // Yoyi's own card art: decor (flight paths with their loop-de-loops) and content layers cut from her mockups
 const CARD = {};
 for (const n of ['presents-decor', 'presents-content', 'poster-top', 'poster-bottom', 'end-tease', 'end-full', 'corner-logo', 'title', 'loop', 'plane-tr', 'plane-bl', 'plane-pt', 'plane-pb']) { const im = new Image(); im.src = 'cards/' + n + '.png'; CARD[n] = im; }
+for (const n of ['being-title', 'being-date']) { const im = new Image(); im.src = 'cards/' + n + '.jpg'; CARD[n] = im; }   // Yoyi's Being Human posters (4:5)
 // rows of each content image that appear one after another (logo, line, name, date, link)
 const BANDS = { 'presents-content': [[0, 190], [190, 425], [425, 528]], 'end-tease': [[0, 150], [150, 245], [245, 560], [560, 653]], 'end-full': [[0, 140], [140, 231], [231, 546], [546, 652], [652, 716]] };
 const ok = im => im && im.naturalWidth > 0;
@@ -411,23 +410,20 @@ function drawTitleCard(shot, local) {
   });
 }
 // the closing card is her Obsession poster: the plain one for the teaser, the one with the link for the others
-// a closing card in words: the name in thin Italiana, the details under it
-function drawWordsCard(shot, local) {
-  const S = SZ(), tall = TALL();
+// one of Yoyi's posters, whole, over a soft blurred copy of itself so a wide video has no empty sides
+function drawPosterCard(shot, local) {
+  const im = CARD[shot.poster];
   lavBg();
+  if (!ok(im)) return;
+  const iw = im.naturalWidth, ih = im.naturalHeight, k = ease(local / 0.6);
+  const cover = Math.max(W / iw, H / ih) * 1.08;
+  g.save(); g.filter = 'blur(' + Math.round(28 * SZ()) + 'px)'; g.globalAlpha = 0.55;
+  g.drawImage(im, W / 2 - iw * cover / 2, H / 2 - ih * cover / 2, iw * cover, ih * cover); g.restore();
+  g.save(); g.fillStyle = LAV; g.globalAlpha = 0.35; g.fillRect(0, 0, W, H); g.restore();
   drift(local, shot.dur, () => {
-    decor(local / 0.6);
-    const cy = H * (tall ? 0.44 : 0.42), k = ease(local / 0.9);
-    g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#6878a1';
-    g.font = F.thin(Math.round((tall ? 150 : 190) * S)); g.fillText(shot.words, W / 2, cy + (1 - k) * 20 * S);
-    g.restore();
-    const sub = typeof shot.sub === 'function' ? shot.sub() : shot.sub || [];
-    sub.forEach((l, i) => {
-      g.save(); g.globalAlpha = ease((local - 0.7 - i * 0.35) / 0.7); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = i === sub.length - 1 ? '#7a68a1' : INK;
-      g.font = F.deco(Math.round((i === 0 ? 64 : 52) * S)); g.fillText(l, W / 2, cy + (tall ? 170 : 175) * S + i * 72 * S);
-      g.restore();
-    });
-    if (ok(CARD['corner-logo'])) { g.save(); g.globalAlpha = ease((local - 0.3) / 0.8); g.drawImage(CARD['corner-logo'], W - 115 * S, 37 * S, 66 * S, 78 * S); g.restore(); }
+    const fit = Math.min(W / iw, H / ih), w = iw * fit, h = ih * fit;
+    g.save(); g.globalAlpha = k; g.shadowColor = 'rgba(92, 74, 134, .25)'; g.shadowBlur = 30 * SZ();
+    g.drawImage(im, W / 2 - w / 2, H / 2 - h / 2 + (1 - k) * 16 * SZ(), w, h); g.restore();
   });
 }
 function drawEndCard(shot, local) {
@@ -447,7 +443,7 @@ function drawCardShot(shot, local) {
   if (shot.presents) drawPresents(local, shot.dur);
   else if (shot.bubble) drawBubbleCard(shot, local);
   else if (shot.title) drawTitleCard(shot, local);
-  else if (shot.words) drawWordsCard(shot, local);
+  else if (shot.poster) drawPosterCard(shot, local);
   else drawEndCard(shot, local);
 }
 // captions over the game: a scrap of crumpled paper with a purple shadow
@@ -613,7 +609,7 @@ async function begin(record) {
   const footage = $('mode').value === 'footage';
   const shots = def.shots.filter(s => !footage || s.scene).map(s => Object.assign({}, s, footage ? { blur: 0 } : {}));
   run = { footage, key, def, shots, i: 0, clock: 0, last: performance.now(), total: shots.reduce((a, s) => a + s.dur, 0), waiting: false, chunks: [] };
-  $('shotList').innerHTML = shots.map(s => '<li>' + (s.presents ? 'poetry and places presents' : s.bubble ? 'Bubble: ' + s.bubble.join(' ') : s.title ? 'Title: ' + s.title : s.end ? 'Closing card' : s.scene + (s.caption ? ' · “' + s.caption + '”' : '')) + ' (' + s.dur + 's)</li>').join('');
+  $('shotList').innerHTML = shots.map(s => '<li>' + (s.presents ? 'poetry and places presents' : s.bubble ? 'Bubble: ' + s.bubble.join(' ') : s.title ? 'Title: ' + s.title : s.poster ? 'Poster: ' + s.poster : s.end ? 'Closing card' : s.scene + (s.caption ? ' · “' + s.caption + '”' : '')) + ' (' + s.dur + 's)</li>').join('');
   $('preview').disabled = $('record').disabled = true; $('stop').disabled = false;
   setStatus('Loading the first shots…');
   await Promise.all(FONT_LOADS.map(f => document.fonts.load(f).catch(() => {})));
